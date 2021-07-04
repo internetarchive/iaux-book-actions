@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en-GB">
+
+<head>
+  <meta charset="utf-8">
+  <style>
+    html {
+      font-size: 10px;
+      /* This is to match petabox's base font size */
+    }
+
+    body {
+      background: #fafafa;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="demo"></div>
+
+  <script type="module">
+    import { html, render } from 'lit-html';
+    import '../src/your-webcomponent.js';
+
+    const title = 'Hello owc World!';
+    render(
+      html`
+        <your-webcomponent .title=${title}>
+          <div slot="my-slot">
+            Some lightDOM slotted content
+          </div>
+        </your-webcomponent>
+      `,
+      document.querySelector('#demo')
+    );
+  </script>
+</body>
+
+</html>
