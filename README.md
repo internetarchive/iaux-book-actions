@@ -2,7 +2,12 @@
 
 # Internet Archive Javascript WebComponent Template
 
-This is a base template for creating Javascript WebComponents. It is based off of the [Open WebComponents generator](https://open-wc.org/docs/development/generator/) with some IA-specific customizations and some development niceities.
+This webcomponent follows the [open-wc](https://github.com/open-wc/open-wc) recommendation.
+
+## Installation
+
+1. Click the "Use this Template" button in GitHub to create a new repository based on this one.
+2. Clone your new repo and update the things below.
 
 ## Usage
 
