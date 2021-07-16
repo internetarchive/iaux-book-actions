@@ -6,9 +6,9 @@
 This webcomponent follows the [open-wc](https://github.com/open-wc/open-wc) recommendation.
 
 ## Installation
-```bash
-npm i ia-book-actions
-```
+
+1. Click the "Use this Template" button in GitHub to create a new repository based on this one.
+2. Clone your new repo and update the things below.
 
 ## Usage
 ```html
