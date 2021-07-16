@@ -1,7 +1,7 @@
 {
   "name": "@internetarchive/your-webcomponent",
   "version": "0.0.0",
-  "description": "The Internet Archive Typescript WebComponent template. It is based on the @open-wc template.",
+  "description": "The Internet Archive JavaScript WebComponent template. It is based on the @open-wc template.",
   "author": "Internet Archive",
   "license": "AGPL-3.0-only",
   "main": "index.js",
