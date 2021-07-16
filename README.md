@@ -7,7 +7,7 @@ This is a base template for creating Javascript WebComponents. It is based off o
 ## Usage
 
 1. Click the "Use this Template" button in GitHub to create a new repository based on this one.
-2. Clone your new repo and update the things below:
+2. Clone your new repo and update the things below.
 
 ### Things to update in your copy
 1. Remove this section
