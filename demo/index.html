@@ -3,6 +3,7 @@
 
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <style>
     html {
       font-size: 10px;
@@ -10,7 +11,40 @@
     }
 
     body {
-      background: #fafafa;
+      background: #fff;
+      margin: 0;
+      padding: 0;
+    }
+    #demo {
+      text-align: center;
+    }
+    .mode td {
+      font-size: 14px;
+      border: 1px solid gray;
+      padding: 10px;
+    }
+    .mode td input {
+      vertical-align: middle;
+    }
+    .slidecontainer {
+      display: none;
+      width: 100%;
+      margin-top: 100px;
+      text-align: center;
+    }
+
+    .slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 15px;
+      background: #d3d3d3;
+      outline: none;
+      -webkit-transition: .2s;
+      transition: opacity .2s;
+    }
+    #range-value {
+      font-size: 20px;
+      text-align: center;
     }
   </style>
 </head>
@@ -18,22 +52,53 @@
 <body>
   <div id="demo"></div>
 
+  <div>
+    <table class="mode" style="display: none;">
+      <tr>
+        <td><input type="checkbox" />Normal View</td>
+        <td><input type="checkbox" />Login and Borrow</td>
+        <td><input type="checkbox" />Borrow for 1/14 hour/day</td>
+        <td><input type="checkbox" />Borrow and Purchase</td>
+        <td><input type="checkbox" />Borrow and Purchase</td>
+        <td><input type="checkbox" />Return and Purchase</td>
+      </tr>
+    </table>
+  </div>
+
   <script type="module">
     import { html, render } from 'lit-html';
-    import '../src/your-webcomponent.js';
+    import '../src/ia-book-actions.js';
 
-    const title = 'Hello owc World!';
     render(
       html`
-        <your-webcomponent .title=${title}>
-          <div slot="my-slot">
-            Some lightDOM slotted content
-          </div>
-        </your-webcomponent>
+        <ia-book-actions>
+        </ia-book-actions>
       `,
       document.querySelector('#demo')
     );
   </script>
+
+  <div class="slidecontainer">
+    <input type="range" min="390" max="1400" value="900" class="slider" id="my-range">
+    <span id="range-value"></span>PX
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // const topnav = document.querySelector('ia-book-actions');
+      // var lendingWrapper = topnav.shadowRoot.querySelector('.lending-wrapper');
+
+      // var slider = document.getElementById("my-range");
+      // var output = document.getElementById("range-value");
+      // output.innerHTML = slider.value;
+      // lendingWrapper.setAttribute('style', `width:${slider.value}px`);
+
+      // slider.oninput = function() {
+      //   output.innerHTML = this.value;
+      //   lendingWrapper.setAttribute('style', `width:${this.value}px`);
+      // }
+    });
+  </script>
+ 
 </body>
 
 </html>

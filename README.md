@@ -1,65 +1,63 @@
-[![Build Status](https://travis-ci.com/internetarchive/iaux-your-webcomponent.svg?branch=master)](https://travis-ci.com/internetarchive/iaux-your-webcomponent) [![codecov](https://codecov.io/gh/internetarchive/iaux-your-webcomponent/branch/master/graph/badge.svg)](https://codecov.io/gh/internetarchive/iaux-your-webcomponent)
+[![Build Status](https://travis-ci.com/internetarchive/iaux-book-search-results.svg?branch=master)](https://travis-ci.com/internetarchive/iaux-book-search-results)
+[![codecov](https://codecov.io/gh/internetarchive/iaux-book-search-results/branch/master/graph/badge.svg)](https://codecov.io/gh/internetarchive/iaux-book-search-results)
 
-# Internet Archive Javascript WebComponent Template
+# \<ia-book-actions>
 
-This is a base template for creating Javascript WebComponents. It is based off of the [Open WebComponents generator](https://open-wc.org/docs/development/generator/) with some IA-specific customizations and some development niceities.
+This webcomponent follows the [open-wc](https://github.com/open-wc/open-wc) recommendation.
+
+## Installation
+```bash
+npm i ia-book-actions
+```
 
 ## Usage
+```html
+<script type="module">
+  import 'ia-book-actions/ia-book-actions.js';
+</script>
 
-1. Click the "Use this Template" button in GitHub to create a new repository based on this one.
-2. Clone your new repo and update the things below:
-
-### Things to update in your copy
-1. Remove this section
-2. Search for the strings `your-webcomponent` and `YourWebComponent` and those are most of the spots that need to be updated.
-3. `README.md` (this file). Update the readme in general, but also the badge URLs
-4. `package.json` Update the name and description
-5. Rename the `your-webcomponent.ts` and its associated `.test` file
-6. Update `.travis.yml` with the proper secure key. See the [Travis docs](https://blog.travis-ci.com/2014-03-13-slack-notifications/) for more information.
-
-## Local Demo with `web-dev-server`
-```bash
-yarn start
-```
-To run a local development server that serves the basic demo located in `demo/index.html`
-
-## Testing with Web Test Runner
-To run the suite of Web Test Runner tests, run
-```bash
-yarn run test
+<ia-book-actions .query='bristol'></ia-book-actions>
 ```
 
-To run the tests in watch mode (for &lt;abbr title=&#34;test driven development&#34;&gt;TDD&lt;/abbr&gt;, for example), run
+Supply the element with an optional array of search results to immediately
+render. Each result can have these properties:
 
-```bash
-yarn run test:watch
+```js
+{
+  title: 'Book title', // The item's title
+  cover: '//archive.org/img/cover.jpg', // The item's cover image
+  hits: ['Hello {{{world}}}'], // Search results taken from the `matches` property in returned search results
+}
 ```
 
-## Linting with ESLint, Prettier, and Types
+## Styling
+
+```css
+ia-book-actions {
+  --primaryTextColor: #fff;
+  --activeButtonBg: #282828;
+  --searchResultText: #adaedc;
+  --searchResultBg: #272958;
+  --searchResultBorder: #fff;
+}
+```
+
+## Linting with ESLint
 To scan the project for linting errors, run
 ```bash
-yarn run lint
+npm run lint
 ```
 
-You can lint with ESLint and Prettier individually as well
+## Testing with Karma
+To run the suite of karma tests, run
 ```bash
-yarn run lint:eslint
-```
-```bash
-yarn run lint:prettier
+npm run test
 ```
 
-To automatically fix many linting errors, run
-```bash
-yarn run format
-```
+To run the tests in watch mode (for <abbr title="test driven development">TDD</abbr>, for example), run
 
-You can format using ESLint and Prettier individually as well
 ```bash
-yarn run format:eslint
-```
-```bash
-yarn run format:prettier
+npm run test:watch
 ```
 
 ## Tooling configs
@@ -67,3 +65,9 @@ yarn run format:prettier
 For most of the tools, the configuration is in the `package.json` to reduce the amount of files in your project.
 
 If you customize the configuration a lot, you can consider moving them to individual files.
+
+## Local Demo with `es-dev-server`
+```bash
+npm start
+```
+To run a local development server that serves the basic demo located in `demo/index.html`
