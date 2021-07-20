@@ -3,6 +3,7 @@
 export default /** @type {import("@web/test-runner").TestRunnerConfig} */ ({
   files: 'test/**/*.test.js',
   nodeResolve: true,
+  watch: true,
 
   /** Compile JS for older browsers. Requires @web/dev-server-esbuild plugin */
   // esbuildTarget: 'auto',
