@@ -56,11 +56,12 @@ export class CollapsibleActionGroup extends LitElement {
   get renderPrimaryActions() {
     if (!this.primaryActions.length) return nothing;
 
-    // if we single action button, let's just not show dropdown list
+    // If single button, let just not show dropdown list
     if (this.primaryActions.length === 1) {
       return this.initialActionTemplate;
     }
 
+    // TODO - wrap dropdown button with ia-icons
     return html`
       ${this.initialActionTemplate}
       <div class="dropdown">
@@ -83,6 +84,7 @@ export class CollapsibleActionGroup extends LitElement {
         action => html`<ia-action-link .action=${action}></ia-action-link>`
       );
     }
+
     return nothing;
   }
 
@@ -99,11 +101,12 @@ export class CollapsibleActionGroup extends LitElement {
           html`<li><ia-action-button .action=${action}></ia-action-button></li>`
       );
     }
+
     return nothing;
   }
 
   get menuClass() {
-    return this.open ? ' visible-dropdown' : ' hidden';
+    return this.open ? 'visible-dropdown' : 'hidden';
   }
 
   get isBelowTabletContainer() {

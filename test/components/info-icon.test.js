@@ -1,5 +1,4 @@
 import { html, fixture, expect } from '@open-wc/testing';
-
 import '../../src/components/info-icon.js';
 
 const container = ({ width = 900 } = {}) =>

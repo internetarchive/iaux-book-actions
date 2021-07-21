@@ -14,13 +14,13 @@ export class InfoIcon extends LitElement {
   }
 
   get iconClass() {
-    return this.width < mobileContainerWidth ? ' mobile' : ' desktop';
+    return this.width < mobileContainerWidth ? 'mobile' : 'desktop';
   }
 
   render() {
     return html`
       <a
-        class="more-info-icon${this.iconClass}"
+        class="more-info-icon ${this.iconClass}"
         href="https://help.archive.org/hc/en-us/articles/360016554912-Borrowing-From-The-Lending-Library-A-Basic-Guide"
         target="_blank"
         title="Get more info on borrowing from The Lending Library."

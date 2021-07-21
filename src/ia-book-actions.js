@@ -99,14 +99,16 @@ export class IABookActions extends LitElement {
   }
 
   firstUpdated() {
-    // intentional
-    // var resizeObserver = new ResizeObserver( entries => {
-    //   for (let entry of entries) {
-    //     this.width = entry.contentBoxSize ? entry.contentBoxSize[0].inlineSize : entry.contentRect.width;
-    //   }
-    // });
-    // resizeObserver.observe(this.shadowRoot.querySelector('.lending-wrapper'));
-    // intentional
+    const resizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        this.width = entry.contentBoxSize
+          ? entry.contentBoxSize[0].inlineSize
+          : entry.contentRect.width;
+      }
+    });
+    resizeObserver.observe(this.shadowRoot.querySelector('.lending-wrapper'));
+
+    // INTENTIONAL
     // if (!lendingStatus) return;
     // console.log('s1s', )
     // get lending bar buttons and dropdown
@@ -121,7 +123,6 @@ export class IABookActions extends LitElement {
     // } catch (error) {
     //   console.error();
     // }
-    // // this.actions = this.lendingOptions.actions;
     // this.title = this.lendingOptions.title ?? this.actions.title;
   }
 

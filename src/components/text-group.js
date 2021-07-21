@@ -17,12 +17,12 @@ export class TextGroup extends LitElement {
   }
 
   get textClass() {
-    return this.width >= mobileContainerWidth ? ' visible' : ' hidden';
+    return this.width >= mobileContainerWidth ? 'visible' : 'hidden';
   }
 
   render() {
     return html`
-      <span class="variable-texts${this.textClass}"> ${this.texts} </span>
+      <span class="variable-texts ${this.textClass}">${this.texts}</span>
     `;
   }
 

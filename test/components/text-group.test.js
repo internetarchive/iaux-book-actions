@@ -1,5 +1,4 @@
 import { html, fixture, expect } from '@open-wc/testing';
-
 import '../../src/components/text-group.js';
 
 const container = ({ width, texts } = {}) =>

@@ -1,5 +1,4 @@
 import { html, fixture, expect } from '@open-wc/testing';
-
 import '../src/ia-book-actions.js';
 
 const container = ({

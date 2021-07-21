@@ -1,5 +1,4 @@
 import { html, fixture, expect } from '@open-wc/testing';
-
 import '../../../src/components/book-action-type/ia-action-button.js';
 import {
   analyticsCategories,
