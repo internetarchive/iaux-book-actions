@@ -1,26 +1,21 @@
 import { html, css, LitElement } from 'lit-element';
-import { mobileContainerWidth } from '../core/config/constants.js';
 
 export class InfoIcon extends LitElement {
   static get properties() {
     return {
-      width: { type: Number },
+      class: { type: String },
     };
   }
 
   constructor() {
     super();
-    this.width = 0;
-  }
-
-  get iconClass() {
-    return this.width < mobileContainerWidth ? 'mobile' : 'desktop';
+    this.class = 0;
   }
 
   render() {
     return html`
       <a
-        class="more-info-icon ${this.iconClass}"
+        class="more-info-icon ${this.class}"
         href="https://help.archive.org/hc/en-us/articles/360016554912-Borrowing-From-The-Lending-Library-A-Basic-Guide"
         target="_blank"
         title="Get more info on borrowing from The Lending Library."
@@ -32,7 +27,7 @@ export class InfoIcon extends LitElement {
   }
 
   static get styles() {
-    const mainCSS = css`
+    return css`
       :host {
         display: inline-block;
         margin-left: 10px;
@@ -61,7 +56,6 @@ export class InfoIcon extends LitElement {
         display: inline-block;
       }
     `;
-    return [mainCSS];
   }
 }
 

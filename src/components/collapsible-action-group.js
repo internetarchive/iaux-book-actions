@@ -48,7 +48,7 @@ export class CollapsibleActionGroup extends LitElement {
         ${this.renderPrimaryActions}
       </section>
       <section class="action-buttons secondary">
-        ${this.renderSecontoryActions}
+        ${this.renderSecondaryActions}
       </section>
     `;
   }
@@ -78,7 +78,7 @@ export class CollapsibleActionGroup extends LitElement {
     `;
   }
 
-  get renderSecontoryActions() {
+  get renderSecondaryActions() {
     if (Array.isArray(this.secondaryActions)) {
       return this.secondaryActions.map(
         action => html`<ia-action-link .action=${action}></ia-action-link>`
@@ -142,7 +142,7 @@ export class CollapsibleActionGroup extends LitElement {
         color: #fff;
         text-decoration: none;
       }
-      .dropdown-content .ia-button {
+      .dropdown-content ia-action-button .ia-button {
         width: 100%;
         text-align: initial;
         background: none;

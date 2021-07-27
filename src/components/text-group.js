@@ -1,33 +1,27 @@
 import { html, css, LitElement } from 'lit-element';
-import buttonBaseStyle from '../assets/styles/ia-button.js';
-import { mobileContainerWidth } from '../core/config/constants.js';
 
 export class TextGroup extends LitElement {
   static get properties() {
     return {
       texts: { type: String },
-      width: { type: Number },
+      class: { type: String },
     };
   }
 
   constructor() {
     super();
     this.texts = '';
-    this.width = 0;
-  }
-
-  get textClass() {
-    return this.width >= mobileContainerWidth ? 'visible' : 'hidden';
+    this.class = '';
   }
 
   render() {
     return html`
-      <span class="variable-texts ${this.textClass}">${this.texts}</span>
+      <span class="variable-texts ${this.class}">${this.texts}</span>
     `;
   }
 
   static get styles() {
-    const mainCSS = css`
+    return css`
       :host {
         display: inline-block;
         margin-left: 10px;
@@ -41,7 +35,6 @@ export class TextGroup extends LitElement {
         display: inline-block;
       }
     `;
-    return [mainCSS, buttonBaseStyle];
   }
 }
 

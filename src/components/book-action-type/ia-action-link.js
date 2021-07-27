@@ -4,7 +4,7 @@ import buttonBaseStyle from '../../assets/styles/ia-button.js';
 export class IAActionLink extends LitElement {
   static get properties() {
     return {
-      action: { type: Object },
+      action: { type: Array },
     };
   }
 

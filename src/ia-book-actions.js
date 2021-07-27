@@ -8,6 +8,8 @@ import {
   analyticsCategories,
   analyticsActions,
 } from './core/config/analytics-event-and-category.js';
+import GetLendingActions from './core/services/get-lending-actions.js';
+import { mobileContainerWidth } from './core/config/constants.js';
 
 export class IABookActions extends LitElement {
   static get properties() {
@@ -28,29 +30,16 @@ export class IABookActions extends LitElement {
     this.width = 800;
     this.BWBPurchaseInfo = '';
     this.actions = {};
-    this.lendingOptions = {};
+    this.lendingOptions = [];
     this.analyticsCategories = analyticsCategories;
     this.analyticsActions = analyticsActions;
     this.primaryTitle = 'Join waitlist for 14 day borrow';
     this.primaryColor = 'danger';
 
-    // intentional
-    // this.primaryActions = [
-    //   html`<ia-book-1-day-borrow
-    //     texts='Borrow for 1 day'
-    //     cssClass='primary'
-    //     bookId='this.bookId'
-    //   ></ia-book-1-day-borrow>`,
-    //   html`<ia-book-14-days-borrow
-    //     texts='Borrow for 14 days'
-    //     cssClass='primary'
-    //     bookId='this.bookId'
-    //   ></ia-book-14-days-borrow>`,
-    // ],
     this.primaryActions = [
       {
         text: 'Return now',
-        callback: 'self.handleReturnIt',
+        callback: this.handleReturnIt,
         className: 'ia-button danger 12',
         analyticsEvent: {
           category: this.analyticsCategories.borrow,
@@ -68,7 +57,7 @@ export class IABookActions extends LitElement {
       },
     ];
 
-    // this.primaryActions = []; // reset for testing
+    this.primaryActions = []; // reset for testing
     this.secondaryActions = [
       {
         text: 'Purchase',
@@ -95,7 +84,7 @@ export class IABookActions extends LitElement {
         },
       },
     ];
-    // this.secondaryActions = []; // reset for testing
+    this.secondaryActions = []; // reset for testing
   }
 
   firstUpdated() {
@@ -108,22 +97,27 @@ export class IABookActions extends LitElement {
     });
     resizeObserver.observe(this.shadowRoot.querySelector('.lending-wrapper'));
 
-    // INTENTIONAL
-    // if (!lendingStatus) return;
-    // console.log('s1s', )
-    // get lending bar buttons and dropdown
-    // try {
-    //   this.lendingOptions = new LendingActionGroup(lendingStatus, this.width);
-    //   // console.log(this.lendingOptions)
-    //   var data = this.lendingOptions.getActions();
-    //   this.primaryTitle = data.primaryTitle;
-    //   this.primaryActions = data.primaryActions;
-    //   this.primaryColor = data.primaryColor;
-    //   this.secondaryActions = data.secondaryActions;
-    // } catch (error) {
-    //   console.error();
-    // }
-    // this.title = this.lendingOptions.title ?? this.actions.title;
+    this.setupLendingToolbarActions();
+  }
+
+  async setupLendingToolbarActions() {
+    this.lendingOptions = new GetLendingActions(this.lendingStatus, this.width);
+    const actions = this.lendingOptions.getCurrentLendingToolbar();
+
+    this.primaryTitle = actions.primaryTitle;
+    this.primaryActions = actions.primaryActions.filter(action => {
+      return action != null;
+    });
+    this.primaryColor = actions.primaryColor;
+    this.secondaryActions = actions.secondaryActions;
+  }
+
+  get infoIconClass() {
+    return this.width < mobileContainerWidth ? 'mobile' : 'desktop';
+  }
+
+  get textGroupClass() {
+    return this.width >= mobileContainerWidth ? 'visible' : 'hidden';
   }
 
   render() {
@@ -136,9 +130,11 @@ export class IABookActions extends LitElement {
           .width=${this.width}
         >
         </collapsible-action-group>
-        <text-group texts="${this.primaryTitle}" .width=${this.width}>
+
+        <text-group .class=${this.textGroupClass} texts="${this.primaryTitle}">
         </text-group>
-        <info-icon .width=${this.width}></info-icon>
+
+        <info-icon .class=${this.infoIconClass}></info-icon>
       </section>
     `;
   }
