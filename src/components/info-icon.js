@@ -1,22 +1,18 @@
 import { html, css, LitElement } from 'lit-element';
-import { mobileContainerWidth } from '../core/config/constants.js';
 
 export class InfoIcon extends LitElement {
   static get properties() {
     return {
-      width: { type: Number },
+      iconClass: { type: String },
     };
   }
 
   constructor() {
     super();
-    this.width = 0;
+    this.iconClass = '';
   }
 
-  get iconClass() {
-    return this.width < mobileContainerWidth ? 'mobile' : 'desktop';
-  }
-
+  // TODO- fetch info-icon using ia-icon 
   render() {
     return html`
       <a
@@ -32,7 +28,7 @@ export class InfoIcon extends LitElement {
   }
 
   static get styles() {
-    const mainCSS = css`
+    return css`
       :host {
         display: inline-block;
         margin-left: 10px;
@@ -61,7 +57,6 @@ export class InfoIcon extends LitElement {
         display: inline-block;
       }
     `;
-    return [mainCSS];
   }
 }
 

@@ -4,20 +4,12 @@ import { nothing } from 'lit-html';
 import buttonBaseStyle from '../assets/styles/ia-button.js';
 import { tabletContainerWidth } from '../core/config/constants.js';
 
-import './book-action-type/ia-action-button.js';
-import './book-action-type/ia-action-link.js';
-
-// intentional
-// import '../components/book-actions/ia-book-admin-view.js';
-// import '../components/book-actions/ia-book-1-day-borrow.js';
-// import '../components/book-actions/ia-book-14-days-borrow.js';
-
 export class CollapsibleActionGroup extends LitElement {
   static get properties() {
     return {
-      primaryActions: { type: Object },
+      primaryActions: { type: Array },
+      secondaryActions: { type: Array },
       primaryColor: { type: String },
-      secondaryActions: { type: Object },
       open: { type: Boolean },
       width: { type: Number },
     };
@@ -26,13 +18,14 @@ export class CollapsibleActionGroup extends LitElement {
   constructor() {
     super();
     this.primaryActions = [];
-    this.primaryColor = '';
     this.secondaryActions = [];
+    this.primaryColor = '';
     this.title = '';
     this.width = 0;
     this.open = false;
   }
 
+  // TODO:- remove purchase/admin button and draw inside dropdown
   resetActions() {
     // remove secondary buttons
     if (this.isBelowTabletContainer) {
@@ -54,9 +47,9 @@ export class CollapsibleActionGroup extends LitElement {
   }
 
   get renderPrimaryActions() {
-    if (!this.primaryActions.length) return nothing;
+    if (this.primaryActions === null) return nothing;
 
-    // If single button, let just not show dropdown list
+    // If its single action, let just not show dropdown list
     if (this.primaryActions.length === 1) {
       return this.initialActionTemplate;
     }
@@ -79,30 +72,41 @@ export class CollapsibleActionGroup extends LitElement {
   }
 
   get renderSecontoryActions() {
-    if (Array.isArray(this.secondaryActions)) {
-      return this.secondaryActions.map(
-        action => html`<ia-action-link .action=${action}></ia-action-link>`
-      );
-    }
+    if (this.secondaryActions === null) return nothing;
 
-    return nothing;
+    return this.secondaryActions.map(
+      action => html`<a
+        class=${action.className}
+        href="${action.url}"
+        data-event-click-tracking="${action.analyticsEvent.category}|${action.analyticsEvent.action}"
+        target=${action.target}
+      >
+        ${action.title}
+      </a>`
+    );
   }
 
   get initialActionTemplate() {
-    return html`<ia-action-button
-      .action=${this.primaryActions[0]}
-    ></ia-action-button>`;
+    const action = this.primaryActions[0];
+
+    return html`<button
+      class="ia-button ${action.className}"
+      @click=${action.callback}
+    >
+      ${action.text}
+    </button>`;
   }
 
   get getPrimaryItems() {
-    if (Array.isArray(this.primaryActions)) {
-      return this.primaryActions.map(
-        action =>
-          html`<li><ia-action-button .action=${action}></ia-action-button></li>`
-      );
-    }
-
-    return nothing;
+    return this.primaryActions.map(
+      action =>
+        html`<button
+          class="ia-button ${action.className}"
+          @click=${action.callback}
+        >
+          ${action.text}
+        </button>`
+    );
   }
 
   get menuClass() {
@@ -136,18 +140,11 @@ export class CollapsibleActionGroup extends LitElement {
         color: var(--primaryBGColor);
         list-style: none;
       }
-      .dropdown-content li a1 {
-        display: block;
-        padding: 6px 8px;
-        color: #fff;
-        text-decoration: none;
-      }
       .dropdown-content .ia-button {
-        width: 100%;
-        text-align: initial;
         background: none;
         border: none;
         box-sizing: border-box;
+        display: block;
       }
       .dropdown-content li .ia-button:hover {
         background: var(--primaryTextColor);

@@ -8,6 +8,7 @@ import {
   analyticsCategories,
   analyticsActions,
 } from './core/config/analytics-event-and-category.js';
+import { mobileContainerWidth } from './core/config/constants.js';
 
 export class IABookActions extends LitElement {
   static get properties() {
@@ -34,19 +35,6 @@ export class IABookActions extends LitElement {
     this.primaryTitle = 'Join waitlist for 14 day borrow';
     this.primaryColor = 'danger';
 
-    // intentional
-    // this.primaryActions = [
-    //   html`<ia-book-1-day-borrow
-    //     texts='Borrow for 1 day'
-    //     cssClass='primary'
-    //     bookId='this.bookId'
-    //   ></ia-book-1-day-borrow>`,
-    //   html`<ia-book-14-days-borrow
-    //     texts='Borrow for 14 days'
-    //     cssClass='primary'
-    //     bookId='this.bookId'
-    //   ></ia-book-14-days-borrow>`,
-    // ],
     this.primaryActions = [
       {
         text: 'Return now',
@@ -107,23 +95,23 @@ export class IABookActions extends LitElement {
       }
     });
     resizeObserver.observe(this.shadowRoot.querySelector('.lending-wrapper'));
+  }
 
-    // INTENTIONAL
-    // if (!lendingStatus) return;
-    // console.log('s1s', )
-    // get lending bar buttons and dropdown
-    // try {
-    //   this.lendingOptions = new LendingActionGroup(lendingStatus, this.width);
-    //   // console.log(this.lendingOptions)
-    //   var data = this.lendingOptions.getActions();
-    //   this.primaryTitle = data.primaryTitle;
-    //   this.primaryActions = data.primaryActions;
-    //   this.primaryColor = data.primaryColor;
-    //   this.secondaryActions = data.secondaryActions;
-    // } catch (error) {
-    //   console.error();
-    // }
-    // this.title = this.lendingOptions.title ?? this.actions.title;
+  get iconClass() {
+    return this.width <= mobileContainerWidth ? 'mobile' : 'desktop';
+  }
+
+  get textClass() {
+    return this.width >= mobileContainerWidth ? 'visible' : 'hidden';
+  }
+
+  get infoIconTemplate() {
+    return html`<info-icon iconClass=${this.iconClass}></info-icon>`;
+  }
+
+  get textGroupTemplate() {
+    return html`<text-group textClass=${this.textClass} texts="${this.primaryTitle}">
+    </text-group>`;
   }
 
   render() {
@@ -136,9 +124,8 @@ export class IABookActions extends LitElement {
           .width=${this.width}
         >
         </collapsible-action-group>
-        <text-group texts="${this.primaryTitle}" .width=${this.width}>
-        </text-group>
-        <info-icon .width=${this.width}></info-icon>
+        ${this.textGroupTemplate}
+        ${this.infoIconTemplate}
       </section>
     `;
   }
