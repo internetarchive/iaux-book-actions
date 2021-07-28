@@ -4,19 +4,19 @@ export class TextGroup extends LitElement {
   static get properties() {
     return {
       texts: { type: String },
-      class: { type: String },
+      textClass: { type: String },
     };
   }
 
   constructor() {
     super();
     this.texts = '';
-    this.class = '';
+    this.textClass = '';
   }
 
   render() {
     return html`
-      <span class="variable-texts ${this.class}">${this.texts}</span>
+      <span class="variable-texts ${this.textClass}">${this.texts}</span>
     `;
   }
 

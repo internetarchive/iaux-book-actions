@@ -3,19 +3,20 @@ import { html, css, LitElement } from 'lit-element';
 export class InfoIcon extends LitElement {
   static get properties() {
     return {
-      class: { type: String },
+      iconClass: { type: String },
     };
   }
 
   constructor() {
     super();
-    this.class = 0;
+    this.iconClass = '';
   }
 
+  // TODO- fetch info-icon using ia-icon
   render() {
     return html`
       <a
-        class="more-info-icon ${this.class}"
+        class="more-info-icon ${this.iconClass}"
         href="https://help.archive.org/hc/en-us/articles/360016554912-Borrowing-From-The-Lending-Library-A-Basic-Guide"
         target="_blank"
         title="Get more info on borrowing from The Lending Library."

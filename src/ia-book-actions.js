@@ -8,7 +8,6 @@ import {
   analyticsCategories,
   analyticsActions,
 } from './core/config/analytics-event-and-category.js';
-import GetLendingActions from './core/services/get-lending-actions.js';
 import { mobileContainerWidth } from './core/config/constants.js';
 
 export class IABookActions extends LitElement {
@@ -30,7 +29,7 @@ export class IABookActions extends LitElement {
     this.width = 800;
     this.BWBPurchaseInfo = '';
     this.actions = {};
-    this.lendingOptions = [];
+    this.lendingOptions = {};
     this.analyticsCategories = analyticsCategories;
     this.analyticsActions = analyticsActions;
     this.primaryTitle = 'Join waitlist for 14 day borrow';
@@ -39,7 +38,7 @@ export class IABookActions extends LitElement {
     this.primaryActions = [
       {
         text: 'Return now',
-        callback: this.handleReturnIt,
+        callback: 'self.handleReturnIt',
         className: 'ia-button danger 12',
         analyticsEvent: {
           category: this.analyticsCategories.borrow,
@@ -57,7 +56,7 @@ export class IABookActions extends LitElement {
       },
     ];
 
-    this.primaryActions = []; // reset for testing
+    // this.primaryActions = []; // reset for testing
     this.secondaryActions = [
       {
         text: 'Purchase',
@@ -84,7 +83,7 @@ export class IABookActions extends LitElement {
         },
       },
     ];
-    this.secondaryActions = []; // reset for testing
+    // this.secondaryActions = []; // reset for testing
   }
 
   firstUpdated() {
@@ -96,28 +95,26 @@ export class IABookActions extends LitElement {
       }
     });
     resizeObserver.observe(this.shadowRoot.querySelector('.lending-wrapper'));
-
-    this.setupLendingToolbarActions();
   }
 
-  async setupLendingToolbarActions() {
-    this.lendingOptions = new GetLendingActions(this.lendingStatus, this.width);
-    const actions = this.lendingOptions.getCurrentLendingToolbar();
-
-    this.primaryTitle = actions.primaryTitle;
-    this.primaryActions = actions.primaryActions.filter(action => {
-      return action != null;
-    });
-    this.primaryColor = actions.primaryColor;
-    this.secondaryActions = actions.secondaryActions;
+  get iconClass() {
+    return this.width <= mobileContainerWidth ? 'mobile' : 'desktop';
   }
 
-  get infoIconClass() {
-    return this.width < mobileContainerWidth ? 'mobile' : 'desktop';
-  }
-
-  get textGroupClass() {
+  get textClass() {
     return this.width >= mobileContainerWidth ? 'visible' : 'hidden';
+  }
+
+  get infoIconTemplate() {
+    return html`<info-icon iconClass=${this.iconClass}></info-icon>`;
+  }
+
+  get textGroupTemplate() {
+    return html`<text-group
+      textClass=${this.textClass}
+      texts="${this.primaryTitle}"
+    >
+    </text-group>`;
   }
 
   render() {
@@ -130,11 +127,7 @@ export class IABookActions extends LitElement {
           .width=${this.width}
         >
         </collapsible-action-group>
-
-        <text-group .class=${this.textGroupClass} texts="${this.primaryTitle}">
-        </text-group>
-
-        <info-icon .class=${this.infoIconClass}></info-icon>
+        ${this.textGroupTemplate} ${this.infoIconTemplate}
       </section>
     `;
   }
