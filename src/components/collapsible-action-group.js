@@ -78,7 +78,8 @@ export class CollapsibleActionGroup extends LitElement {
       action => html`<a
         class=${action.className}
         href="${action.url}"
-        data-event-click-tracking="${action.analyticsEvent.category}|${action.analyticsEvent.action}"
+        data-event-click-tracking="${action.analyticsEvent.category}|${action
+          .analyticsEvent.action}"
         target=${action.target}
       >
         ${action.title}
@@ -126,6 +127,9 @@ export class CollapsibleActionGroup extends LitElement {
       .dropdown,
       .action-buttons {
         display: inline-block;
+      }
+      .secondary .ia-button {
+        margin-left: 5px;
       }
       .dropdown-content {
         position: absolute;
