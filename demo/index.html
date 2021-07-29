@@ -3,33 +3,52 @@
 
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <style>
     html {
       font-size: 10px;
       /* This is to match petabox's base font size */
     }
-
     body {
-      background: #fafafa;
+      margin: 0;
+      text-align: center;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+    ia-book-actions {
+      --white: #fff;
+      --black: #000;
+      --primaryBGColor: var(--black);
+      --secondaryBGColor: #222;
+      --tertiaryBGColor: #333;
+      --primaryTextColor:  var(--white);
+      --primaryCTAFill: #194880;
+      --primaryCTABorder: #c5d1df;
+      --secondaryCTAFill: #333;
+      --secondaryCTABorder: #999;
+      --primaryErrorCTAFill: #e51c26;
+      --primaryErrorCTABorder: #f8c6c8;
     }
   </style>
 </head>
 
 <body>
   <div id="demo"></div>
-
   <script type="module">
     import { html, render } from 'lit-html';
-    import '../src/your-webcomponent.js';
+    import { lendingStatus } from '../src/core/services/lending-get-status-service.js';
+    import '../src/ia-book-actions.js';
 
-    const title = 'Hello owc World!';
+    const userid = '@neeraj-archive';
+    const identifier = 'goody';
+
     render(
       html`
-        <your-webcomponent .title=${title}>
-          <div slot="my-slot">
-            Some lightDOM slotted content
-          </div>
-        </your-webcomponent>
+        <ia-book-actions
+          .userid=${userid}
+          .identifier=${identifier}
+          .lendingStatus=${lendingStatus}          
+        >
+        </ia-book-actions>
       `,
       document.querySelector('#demo')
     );
