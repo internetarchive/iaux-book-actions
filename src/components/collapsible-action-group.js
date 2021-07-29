@@ -111,7 +111,7 @@ export class CollapsibleActionGroup extends LitElement {
   }
 
   get menuClass() {
-    return this.open ? 'visible-dropdown' : 'hidden';
+    return this.open ? 'open' : 'close';
   }
 
   get isBelowTabletContainer() {
@@ -159,14 +159,14 @@ export class CollapsibleActionGroup extends LitElement {
         padding: 0.6rem;
         border-radius: 0 0.4rem 0.4rem 0;
       }
-      .hidden {
+      .close {
         display: none;
+      }
+      .open {
+        display: block;
       }
       .visible {
         display: inline-block;
-      }
-      .visible-dropdown {
-        display: block;
       }
       .btn:hover,
       .dropdown:hover .btn {

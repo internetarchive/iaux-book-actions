@@ -2,13 +2,14 @@
 /* eslint no-console: "off" */
 /* eslint no-nested-ternary: "off" */
 /* eslint-disable */
+
 import { nothing } from 'lit-html';
-import ActionsConfig from './actions-config.js';
 import { URLHelper } from '../config/url-helper.js';
 import {
   analyticsCategories,
   analyticsActions,
 } from '../config/analytics-event-and-category.js';
+import ActionsConfig from './actions-config.js';
 
 // TODO more normalization in sub-files
 export default class GetLendingActions {

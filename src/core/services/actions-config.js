@@ -2,6 +2,7 @@
 /* eslint no-console: "off" */
 /* eslint no-nested-ternary: "off" */
 /* eslint-disable */
+
 import { nothing } from 'lit-html';
 import actionHandlers from './actions-handlers.js';
 import { URLHelper } from '../config/url-helper.js';
@@ -11,8 +12,9 @@ import {
 } from '../config/analytics-event-and-category.js';
 
 export default class ActionsConfig extends actionHandlers {
-  constructor() {
+  constructor(lendingStatus) {
     super();
+    this.lendingStatus = lendingStatus;
     this.analyticsCategories = analyticsCategories;
     this.analyticsActions = analyticsActions;
   }
@@ -109,7 +111,6 @@ export default class ActionsConfig extends actionHandlers {
     const deprioritize =
       lendingStatus.user_has_browsed || lendingStatus.available_to_browse;
     const buttonStyle = deprioritize ? 'btn-dark' : 'btn-warning';
-
     return {
       text: waitlistButtonText,
       callback: clickAction,
