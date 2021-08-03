@@ -10,6 +10,8 @@ export class InfoIcon extends LitElement {
   constructor() {
     super();
     this.iconClass = '';
+    this.helpURL =
+      'https://help.archive.org/hc/en-us/articles/360016554912-Borrowing-From-The-Lending-Library-A-Basic-Guide';
   }
 
   // TODO- fetch info-icon using ia-icon
@@ -17,12 +19,12 @@ export class InfoIcon extends LitElement {
     return html`
       <a
         class="more-info-icon ${this.iconClass}"
-        href="https://help.archive.org/hc/en-us/articles/360016554912-Borrowing-From-The-Lending-Library-A-Basic-Guide"
+        href=${this.helpURL}
         target="_blank"
-        title="Get more info on borrowing from The Lending Library."
+        title="Get more info on borrowing from The Lending Library"
         data-event-click-tracking="BookReader|BrowsableMoreInfo"
       >
-        <img src="./info-icon1.jpg" alt="Information Icon" />
+        <img src="./demo/info-icon1.jpg" alt="Icon" />
       </a>
     `;
   }

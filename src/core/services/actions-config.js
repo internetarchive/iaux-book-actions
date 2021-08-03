@@ -4,17 +4,18 @@
 /* eslint-disable */
 
 import { nothing } from 'lit-html';
-import actionHandlers from './actions-handlers.js';
+import ActionHandlers from './actions-handlers.js';
 import { URLHelper } from '../config/url-helper.js';
 import {
   analyticsCategories,
   analyticsActions,
 } from '../config/analytics-event-and-category.js';
 
-export default class ActionsConfig extends actionHandlers {
-  constructor(lendingStatus) {
+export default class ActionsConfig extends ActionHandlers {
+  constructor(lendingStatus, bwbPurchaseUrl) {
     super();
     this.lendingStatus = lendingStatus;
+    this.bwbPurchaseUrl = bwbPurchaseUrl;
     this.analyticsCategories = analyticsCategories;
     this.analyticsActions = analyticsActions;
   }
@@ -88,11 +89,13 @@ export default class ActionsConfig extends actionHandlers {
     const bookHasWaitlist = lendingStatus.available_to_waitlist;
 
     let clickAction = this.handleLoginOk;
+    // console.log('here');
 
     if (!bookHasWaitlist || lendingStatus.available_to_borrow) {
       return null;
     }
 
+    // console.log('here');
     const waitlistIsOpen =
       lendingStatus.available_to_waitlist && !lendingStatus.available_to_borrow;
 
@@ -123,11 +126,13 @@ export default class ActionsConfig extends actionHandlers {
   }
 
   purchaseButton() {
+    // console.log(this.bwbPurchaseUrl)
+    if (!this.bwbPurchaseUrl || this.bwbPurchaseUrl == '') return;
+
     return {
-      text: 'Purchase',
-      title: 'Purchase',
-      url:
-        'https://www.betterworldbooks.com/product/detail/cambridge-ancient-hist-v04-0521044863',
+      text: 'Better World Books',
+      title: 'Better World Books',
+      url: this.bwbPurchaseUrl,
       target: '_blank',
       className: 'ia-button purchase dark',
       analyticsEvent: {
@@ -138,15 +143,20 @@ export default class ActionsConfig extends actionHandlers {
   }
 
   accessAdminOrPrintDisabled() {
-    // const backHref = URLHelper.getBackHref();
-    // console.log(backHref)
-
     const mode =
       URLHelper.getQueryParam('admin') === '1' ? 'admin' : 'print-disabled';
     const message = `← Exit ${mode} access mode`;
 
-    // this.title = html`<a href=${backHref}>${message}</a>`;
-    this.title = message;
+    return {
+      title: message,
+      url: URLHelper.getBackHref(),
+      target: '_blank',
+      className: 'ia-button danger',
+      analyticsEvent: {
+        category: this.analyticsCategories.purchase,
+        action: this.analyticsActions.purchase,
+      },
+    };
   }
 
   unavailableBook() {

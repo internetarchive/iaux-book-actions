@@ -31,6 +31,6 @@ export default class ActionHandlers {
     const target = `/account/login?referer=${encodeURIComponent(
       URLHelper.getRedirectUrl()
     )}`;
-    this.URLHelper(target, true);
+    URLHelper.goToUrl(target, true);
   }
 }

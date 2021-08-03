@@ -27,8 +27,11 @@ export class CollapsibleActionGroup extends LitElement {
 
   // TODO:- remove purchase/admin button and draw inside dropdown
   resetActions() {
-    // remove secondary buttons
     if (this.isBelowTabletContainer) {
+      // concat primaryActions and secondaryActions to draw in dropdown list
+      this.primaryActions = this.primaryActions.concat(this.secondaryActions);
+
+      // remove secondaryActions
       this.secondaryActions = [];
     }
   }
@@ -47,7 +50,7 @@ export class CollapsibleActionGroup extends LitElement {
   }
 
   get renderPrimaryActions() {
-    if (this.primaryActions === null) return nothing;
+    if (this.primaryActions === '') return nothing;
 
     // If its single action, let just not show dropdown list
     if (this.primaryActions.length === 1) {
@@ -71,42 +74,46 @@ export class CollapsibleActionGroup extends LitElement {
     `;
   }
 
-  get renderSecontoryActions() {
-    if (this.secondaryActions === null) return nothing;
+  get renderSecondaryActions() {
+    if (this.secondaryActions === '' || this.secondaryActions === undefined)
+      return nothing;
 
     return this.secondaryActions.map(
       action => html`<a
         class=${action.className}
         href="${action.url}"
+        target=${action.target}
         data-event-click-tracking="${action.analyticsEvent.category}|${action
           .analyticsEvent.action}"
-        target=${action.target}
       >
         ${action.title}
       </a>`
     );
   }
 
-  get initialActionTemplate() {
-    const action = this.primaryActions[0];
-
+  static renderActionButton(action) {
     return html`<button
       class="ia-button ${action.className}"
+      data-event-click-tracking="${action.analyticsEvent.category}|${action
+        .analyticsEvent.action}"
       @click=${action.callback}
     >
       ${action.text}
     </button>`;
   }
 
+  toggleDropdown() {
+    this.open = this.open !== true;
+  }
+
+  get initialActionTemplate() {
+    return CollapsibleActionGroup.renderActionButton(this.primaryActions[0]);
+  }
+
   get getPrimaryItems() {
     return this.primaryActions.map(
       action =>
-        html`<button
-          class="ia-button ${action.className}"
-          @click=${action.callback}
-        >
-          ${action.text}
-        </button>`
+        html`<li>${CollapsibleActionGroup.renderActionButton(action)}</li>`
     );
   }
 
@@ -116,10 +123,6 @@ export class CollapsibleActionGroup extends LitElement {
 
   get isBelowTabletContainer() {
     return this.width <= tabletContainerWidth;
-  }
-
-  toggleDropdown() {
-    this.open = this.open !== true;
   }
 
   static get styles() {
@@ -149,6 +152,8 @@ export class CollapsibleActionGroup extends LitElement {
         border: none;
         box-sizing: border-box;
         display: block;
+        width: 100%;
+        text-align: left;
       }
       .dropdown-content li .ia-button:hover {
         background: var(--primaryTextColor);

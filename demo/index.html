@@ -14,6 +14,9 @@
       text-align: center;
       font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     }
+    #demo {
+      height: 50px;
+    }
     ia-book-actions {
       --white: #fff;
       --black: #000;
@@ -35,24 +38,124 @@
   <div id="demo"></div>
   <script type="module">
     import { html, render } from 'lit-html';
-    import { lendingStatus } from '../src/core/services/lending-get-status-service.js';
+    import {
+      defaultLendingStatus,
+      canBrowse,
+      browsed,
+      canBrowseAndBorrow,
+      browsedAndBorrow,
+      canBrowseAndBorrowod,
+      canBrowseAndJoinWaitlistForBorrow,
+    } from '../src/core/services/lending-get-status-service.js';
     import '../src/ia-book-actions.js';
+    import { URLHelper } from '../src/core/config/url-helper.js';
 
     const userid = '@neeraj-archive';
     const identifier = 'goody';
+    const bwbPurchaseUrl = 'https://www.betterworldbooks.com/product/detail/cambridge-ancient-hist-v04-0521044863';
+
+    let mode = URLHelper.getQueryParam('mode');
+    switch (mode) {
+      case 'canBrowse':
+        mode = canBrowse;
+        break;
+      case 'browsed':
+        mode = browsed;
+        break;
+      case 'canBrowseAndBorrow':
+        mode = canBrowseAndBorrow;
+        break;
+      case 'browsedAndBorrow':
+        mode = browsedAndBorrow;
+        break;
+      case 'canBrowseAndBorrowod':
+        mode = canBrowseAndBorrowod;
+        break;
+      case 'canBrowseAndJoinWaitlistForBorrow':
+        mode = canBrowseAndJoinWaitlistForBorrow;
+        break;
+      default:
+        mode = defaultLendingStatus;
+    }
 
     render(
       html`
         <ia-book-actions
           .userid=${userid}
           .identifier=${identifier}
-          .lendingStatus=${lendingStatus}          
+          .lendingStatus=${mode}
+          .bwbPurchaseUrl=${bwbPurchaseUrl}
         >
         </ia-book-actions>
       `,
       document.querySelector('#demo')
     );
   </script>
-</body>
 
+  <div>
+    <style>
+      fieldset {
+        width: fit-content;
+        margin-top: 50px;
+      }
+      fieldset legend {
+        text-align: left;
+        font-size: 12px;
+      }
+      td {
+        background: #4e545a;
+        color: white;
+        font-size: 14px;
+        border-radius: 5%;
+        display: table-cell;
+        text-align: initial;
+        margin: 5px 0;
+        width: max-content;
+        display: block;
+      }
+      label {
+        padding: 10px;
+        display: block;
+        cursor: pointer;
+      }
+      input[type="radio"] {
+        margin-top: 0;
+        vertical-align: middle;
+        display: none;
+      }
+    </style>
+    <fieldset>
+      <legend>Dev try for lending banner</legend>
+        <table class="mode">
+        <tr>
+          <td>
+            <label><input type="radio" name="contact" value="canBrowse" />CanBrowse</label>
+          </td>
+          <td>
+            <label><input type="radio" name="contact" value="browsed" />browsed</label>
+          </td>
+          <td>
+            <label><input type="radio" name="contact" value="canBrowseAndBorrow" />canBrowseAndBorrow</label>
+          </td>
+          <td>
+            <label><input type="radio" name="contact" value="browsedAndBorrow" />browsedAndBorrow</label>
+          </td>
+          <td>
+            <label><input type="radio" name="contact" value="canBrowseAndBorrowod" />canBrowseAndBorrowod</label>
+          </td>
+          <td>
+            <label><input type="radio" name="contact" value="canBrowseAndJoinWaitlistForBorrow" />canBrowseAndJoinWaitlistForBorrow</label>
+          </td>
+        </tr>
+      </table>
+      <script>
+        document.querySelectorAll('.mode label').forEach((item) => {
+          item.addEventListener('click', (e) => {
+            window.location.href = `?mode=${e.target.value}`;
+          })
+        });
+      </script>
+    </fieldset>
+  </div>
+</body>
 </html>
