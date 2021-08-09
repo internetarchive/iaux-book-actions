@@ -20,7 +20,7 @@ export default class ActionsConfig extends ActionHandlers {
     this.analyticsActions = analyticsActions;
   }
 
-  returnBook() {
+  returnBookConfig() {
     return {
       text: 'Return now',
       callback: this.handleReturnIt,
@@ -32,7 +32,7 @@ export default class ActionsConfig extends ActionHandlers {
     };
   }
 
-  borrowBook(disableBorrow = false) {
+  borrowBookConfig(disableBorrow = false) {
     return {
       text: 'Borrow for 14 days',
       callback: this.handleBorrowIt,
@@ -45,7 +45,7 @@ export default class ActionsConfig extends ActionHandlers {
     };
   }
 
-  loginAndBorrowBook() {
+  loginAndBorrowBookConfig() {
     return {
       text: 'Log In and Borrow',
       callback: this.handleLoginOk,
@@ -57,7 +57,7 @@ export default class ActionsConfig extends ActionHandlers {
     };
   }
 
-  browseBook() {
+  browseBookConfig() {
     return {
       text: 'Borrow for 1 hour',
       callback: this.handleBrowseIt,
@@ -69,7 +69,7 @@ export default class ActionsConfig extends ActionHandlers {
     };
   }
 
-  leaveWaitlist() {
+  leaveWaitlistConfig() {
     return {
       text: 'Leave waitlist',
       callback: this.handleRemoveFromWaitingList,
@@ -81,7 +81,7 @@ export default class ActionsConfig extends ActionHandlers {
     };
   }
 
-  waitlistButton() {
+  waitlistConfig() {
     const isLoggedIn = !!this.userid;
     const mustLogIn = true;
 
@@ -89,13 +89,11 @@ export default class ActionsConfig extends ActionHandlers {
     const bookHasWaitlist = lendingStatus.available_to_waitlist;
 
     let clickAction = this.handleLoginOk;
-    // console.log('here');
 
     if (!bookHasWaitlist || lendingStatus.available_to_borrow) {
       return null;
     }
 
-    // console.log('here');
     const waitlistIsOpen =
       lendingStatus.available_to_waitlist && !lendingStatus.available_to_borrow;
 
@@ -125,15 +123,14 @@ export default class ActionsConfig extends ActionHandlers {
     };
   }
 
-  purchaseButton() {
-    // console.log(this.bwbPurchaseUrl)
+  purchaseConfig() {
     if (!this.bwbPurchaseUrl || this.bwbPurchaseUrl == '') return;
 
     return {
       text: 'Better World Books',
       title: 'Better World Books',
       url: this.bwbPurchaseUrl,
-      target: '_blank',
+      // target: '_blank',
       className: 'ia-button purchase dark',
       analyticsEvent: {
         category: this.analyticsCategories.purchase,
@@ -142,7 +139,7 @@ export default class ActionsConfig extends ActionHandlers {
     };
   }
 
-  accessAdminOrPrintDisabled() {
+  adminOrPrintDisabledConfig() {
     const mode =
       URLHelper.getQueryParam('admin') === '1' ? 'admin' : 'print-disabled';
     const message = `← Exit ${mode} access mode`;
@@ -159,7 +156,7 @@ export default class ActionsConfig extends ActionHandlers {
     };
   }
 
-  unavailableBook() {
+  unavailableBookConfig() {
     return {
       text: 'Borrow unavailable',
       callback: '',

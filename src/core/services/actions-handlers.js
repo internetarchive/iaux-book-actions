@@ -23,6 +23,10 @@ export default class ActionHandlers {
     console.log('Book is browsed successfully!');
   }
 
+  handleReserveIt() {
+    console.log('Book added in waitlist!');
+  }
+
   handleRemoveFromWaitingList() {
     console.log('removed you from waitlist!!');
   }

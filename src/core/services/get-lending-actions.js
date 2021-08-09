@@ -11,7 +11,6 @@ import {
 } from '../config/analytics-event-and-category.js';
 import ActionsConfig from './actions-config.js';
 
-// TODO more normalization in sub-files
 export default class GetLendingActions {
   constructor(lendingStatus, bwbPurchaseUrl) {
     this.userid = lendingStatus.userid;
@@ -25,7 +24,7 @@ export default class GetLendingActions {
     );
   }
 
-  isBrowsing() {
+  browsingAction() {
     const lendingStatus = this.lendingStatus || [];
     const disableBorrow = lendingStatus.loanCount >= lendingStatus.maxLoans;
 
@@ -34,16 +33,16 @@ export default class GetLendingActions {
         lendingStatus.secondsLeftOnLoan
       ),
       primaryActions: [
-        this.actionsConfig.returnBook(),
-        this.actionsConfig.borrowBook(disableBorrow),
-        this.actionsConfig.waitlistButton(),
+        this.actionsConfig.returnBookConfig(),
+        this.actionsConfig.borrowBookConfig(disableBorrow),
+        this.actionsConfig.waitlistConfig(),
       ],
       primaryColor: 'danger',
-      secondaryActions: [this.actionsConfig.purchaseButton()],
+      secondaryActions: [this.actionsConfig.purchaseConfig()],
     };
   }
 
-  isBorrowing() {
+  borrowingAction() {
     if (URLHelper.isOnStreamPage()) {
       return nothing;
     }
@@ -55,51 +54,143 @@ export default class GetLendingActions {
 
     return {
       primaryTitle: daysLeftStr,
-      primaryActions: [this.actionsConfig.returnBook()],
+      primaryActions: [this.actionsConfig.returnBookConfig()],
       primaryColor: 'danger',
-      secondaryActions: [],
+      secondaryActions: [this.actionsConfig.purchaseConfig()],
     };
   }
 
-  readyToRedeemBorrow() {
-    const leaveWaitlist = this.actionsConfig.leaveWaitlist();
-    const borrowBook = this.actionsConfig.borrowBook();
-    const browseBook = this.actionsConfig.browseBook();
+  redeemBorrowAction() {
+    const lendingStatus = this.lendingStatus || [];
+
+    const leaveWaitlist = this.actionsConfig.leaveWaitlistConfig();
+    const borrowBook = this.actionsConfig.borrowBookConfig();
+    const browseBook = lendingStatus.available_to_browse
+      ? this.actionsConfig.browseBookConfig()
+      : null;
 
     const dropdownOptions = browseBook ? [borrowBook, browseBook] : [];
     const actions = !browseBook ? [borrowBook, leaveWaitlist] : [leaveWaitlist];
 
     return {
-      primaryTitle: 'You are at the top of the waitlist for this book.',
+      primaryTitle: 'You are at the top of the waitlist for this book',
       primaryActions: actions,
-      primaryColor: 'danger',
-      // secondaryActions: [`(<ia-bwb-purchase>|nothing)`],
+      primaryColor: 'ia-button primary',
       footer: 'printDisabilityLine()',
       prefixActions: dropdownOptions,
     };
   }
 
-  canBorrowPrintDisabled() {
-    const lendingStatus = this.lendingStatus || [];
-
-    // if user isn't printDisabled, book is available to browse & borrow, then we
-    // redirect to canborrow
-    if (
-      !lendingStatus.user_is_printdisabled &&
-      (lendingStatus.available_to_browse || lendingStatus.available_to_borrow)
-    ) {
-      return this.canBorrow();
-    }
-
+  borrowPrintDisabledAction() {
     return {
       primaryTitle: 'You are eligible for print-disabled access.',
-      primaryActions: [this.actionsConfig.borrowBook()],
+      primaryActions: [this.actionsConfig.borrowBookConfig()],
       primaryColor: 'danger',
-      // secondaryActions: [`(<ia-bwb-purchase>|nothing)`],
+      secondaryActions: [this.actionsConfig.purchaseConfig()],
     };
   }
 
-  canBorrow1Hr() {
+  onlyPrintDisabledAction() {
+    return {
+      primaryTitle: 'Book available to patrons with print disabilities.',
+      primaryActions: [
+        !this.lendingStatus.isAdmin
+          ? this.actionsConfig.unavailableBookConfig()
+          : '',
+      ],
+      primaryColor: 'danger',
+    };
+  }
+
+  onWaitlistAction() {
+    return {
+      primaryTitle: 'You are on the waitlist for this book.',
+      primaryActions: [this.actionsConfig.leaveWaitlistConfig()],
+      primaryColor: 'danger',
+      secondaryActions: [this.actionsConfig.purchaseConfig()],
+    };
+  }
+
+  restrictedAction() {
+    // Visit /details/activemeasuresse0000ridt
+
+    const restrictedDescription =
+      '<div class="BookReaderMessage">' +
+      'Its access has been restricted.  ' +
+      '<a href="/details/inlibrary">Browse our lendable books</a>.' +
+      '</div>';
+
+    return {
+      primaryTitle: 'This book is not available at this time.',
+      primaryActions: [this.actionsConfig.unavailableBookConfig()],
+      primaryColor: 'danger',
+      footer: restrictedDescription,
+      secondaryActions: [this.actionsConfig.purchaseConfig()],
+    };
+  }
+
+  loggedOutOptions() {
+    const lendingStatus = this.lendingStatus || [];
+
+    const showCantBorrowPlaceholder =
+      !lendingStatus.available_to_waitlist &&
+      !lendingStatus.available_to_borrow;
+
+    const borrow =
+      lendingStatus.available_to_borrow || lendingStatus.available_to_browse
+        ? this.actionsConfig.loginAndborrowBookConfig()
+        : showCantBorrowPlaceholder
+        ? this.actionsConfig.unavailableBookConfig()
+        : null;
+
+    const actions = [borrow, this.actionsConfig.waitlistConfig()].filter(
+      function (action) {
+        return action !== null;
+      }
+    );
+
+    const title = lendingStatus.available_to_browse
+      ? 'Renewable every hour, pending availability.'
+      : lendingStatus.available_to_borrow
+      ? 'This book can be borrowed for 14 days.'
+      : 'Another patron is using this book.';
+
+    // console.log(actions)
+    return {
+      primaryTitle: title,
+      primaryActions: actions,
+      primaryColor: 'danger',
+      footer: 'printDisabilityLine()',
+      secondaryActions: [this.actionsConfig.purchaseConfig()],
+    };
+  }
+
+  /**
+   * Builds the countdown toolbar title.
+   *
+   * @param integer secondsRemaining
+   * @return string innerHTML for the dialogOpts title attribute
+   */
+  getBrowseCountdownTitle(secondsRemaining) {
+    var borrowEndTime = new Date(+new Date() + secondsRemaining * 1000);
+    var hour = borrowEndTime.getHours() % 12;
+    var minute = ('' + borrowEndTime.getMinutes()).replace(/^(\d{1})$/, '0$1');
+    var ampm = borrowEndTime.getHours() > 11 ? ' PM' : ' AM';
+    if (hour === 0) {
+      hour = 12;
+    }
+    return 'Borrow ends at ' + hour + ':' + minute + ampm;
+  }
+
+  adminAccessOrPrintDisabledAction() {
+    return {
+      primaryActions: [],
+      primaryTitle: '',
+      secondaryActions: [this.actionsConfig.adminOrPrintDisabledConfig()],
+    };
+  }
+
+  borrow1HrAction() {
     const lendingStatus = this.lendingStatus || [];
 
     const possibleTitles = {
@@ -114,14 +205,17 @@ export default class GetLendingActions {
       !lendingStatus.available_to_browse && lendingStatus.browsingExpired;
     const canBrowse = lendingStatus.available_to_browse || browsingHasExpired;
     const canBrowseAndBorrow = canBrowse && lendingStatus.available_to_borrow;
+
     const canBrowseHasWaitlist =
       canBrowse &&
       !lendingStatus.available_to_borrow &&
       lendingStatus.available_to_waitlist;
+
     const canBrowseCantBorrowCantWaitlist =
       canBrowse &&
       !lendingStatus.available_to_borrow &&
       !lendingStatus.available_to_waitlist;
+
     const allBrowsableCopiesTaken =
       lendingStatus.available_browsable_copies < 1 &&
       lendingStatus.available_browsable_copies <
@@ -152,13 +246,13 @@ export default class GetLendingActions {
       ? browseAgainEvent
       : firstBrowseEvent;
 
-    const oneHrBorrow = this.actionsConfig.browseBook(
+    const oneHrBorrow = this.actionsConfig.browseBookConfig(
       oneHrBorrowText,
       oneHrBorrowEvent
     );
 
-    const borrow = this.actionsConfig.borrowBook();
-    const waitlist = this.actionsConfig.waitlistButton();
+    const borrow = this.actionsConfig.borrowBookConfig();
+    const waitlist = this.actionsConfig.waitlistConfig();
 
     const dropdownOptions = canBrowseAndBorrow
       ? [oneHrBorrow, borrow]
@@ -174,11 +268,11 @@ export default class GetLendingActions {
       primaryActions: actions,
       primaryColor: 'ia-button primary',
       footer: 'printDisabilityLine()',
-      secondaryActions: [this.actionsConfig.purchaseButton()],
+      secondaryActions: [this.actionsConfig.purchaseConfig()],
     };
   }
 
-  canBorrow() {
+  borrowAction() {
     const lendingStatus = this.lendingStatus || [];
     const isLoggedIn = !!this.userid;
 
@@ -190,19 +284,19 @@ export default class GetLendingActions {
       lendingStatus.available_to_browse ||
       (!lendingStatus.available_to_browse && lendingStatus.browsingExpired);
     if (canBrowse) {
-      return this.canBorrow1Hr();
+      return this.borrow1HrAction();
     }
 
     /* Borrow 14day */
-    const waitlist = this.actionsConfig.waitlistButton();
+    const waitlist = this.actionsConfig.waitlistConfig();
 
     const disableBorrow = lendingStatus.loanCount >= lendingStatus.maxLoans;
     const cantBorrowNorWaitlist =
       !lendingStatus.available_to_borrow && !waitlist;
     const borrow = cantBorrowNorWaitlist
-      ? this.actionsConfig.unavailableBook()
+      ? this.actionsConfig.unavailableBookConfig()
       : lendingStatus.available_to_borrow
-      ? this.actionsConfig.borrowBook(disableBorrow)
+      ? this.actionsConfig.borrowBookConfig(disableBorrow)
       : null;
 
     const actions = [borrow, waitlist].filter(function (action) {
@@ -215,101 +309,6 @@ export default class GetLendingActions {
       primaryActions: actions,
       primaryColor: 'primary',
       secondaryActions: [this.actionsConfig.purchaseButton],
-    };
-  }
-
-  onlyPrintDisabled() {
-    return {
-      primaryTitle: 'Book available to patrons with print disabilities.',
-      primaryActions: [
-        !this.lendingStatus.isAdmin ? this.actionsConfig.unavailableBook() : '',
-      ],
-      primaryColor: 'danger',
-    };
-  }
-
-  isOnWaitlist() {
-    return {
-      primaryTitle: 'You are on the waitlist for this book.',
-      primaryActions: [this.actionsConfig.leaveWaitlist()],
-      primaryColor: 'danger',
-    };
-  }
-
-  isRestricted() {
-    // Visit /details/activemeasuresse0000ridt
-
-    const restrictedDescription =
-      '<div class="BookReaderMessage">' +
-      'Its access has been restricted.  ' +
-      '<a href="/details/inlibrary">Browse our lendable books</a>.' +
-      '</div>';
-
-    return {
-      primaryTitle: 'This book is not available at this time.',
-      primaryActions: [this.actionsConfig.unavailableBook()],
-      primaryColor: 'danger',
-      footer: restrictedDescription,
-    };
-  }
-
-  loggedOutOptions() {
-    const lendingStatus = this.lendingStatus || [];
-
-    const showCantBorrowPlaceholder =
-      !lendingStatus.available_to_waitlist &&
-      !lendingStatus.available_to_borrow;
-
-    const borrow =
-      lendingStatus.available_to_borrow || lendingStatus.available_to_browse
-        ? this.actionsConfig.loginAndBorrowBook()
-        : showCantBorrowPlaceholder
-        ? this.actionsConfig.unavailableBook()
-        : null;
-
-    const actions = [borrow, this.actionsConfig.waitlistButton()].filter(
-      function (action) {
-        return action !== null;
-      }
-    );
-
-    const title = lendingStatus.available_to_browse
-      ? 'Renewable every hour, pending availability.'
-      : lendingStatus.available_to_borrow
-      ? 'This book can be borrowed for 14 days.'
-      : 'Another patron is using this book.';
-
-    // console.log(actions)
-    return {
-      primaryTitle: title,
-      primaryActions: actions,
-      primaryColor: 'danger',
-      footer: 'printDisabilityLine()',
-    };
-  }
-
-  /**
-   * Builds the countdown toolbar title.
-   *
-   * @param integer secondsRemaining
-   * @return string innerHTML for the dialogOpts title attribute
-   */
-  getBrowseCountdownTitle(secondsRemaining) {
-    var borrowEndTime = new Date(+new Date() + secondsRemaining * 1000);
-    var hour = borrowEndTime.getHours() % 12;
-    var minute = ('' + borrowEndTime.getMinutes()).replace(/^(\d{1})$/, '0$1');
-    var ampm = borrowEndTime.getHours() > 11 ? ' PM' : ' AM';
-    if (hour === 0) {
-      hour = 12;
-    }
-    return 'Borrow ends at ' + hour + ':' + minute + ampm;
-  }
-
-  isAccessAdminOrPrintDisabled() {
-    return {
-      primaryActions: [],
-      primaryTitle: '',
-      secondaryActions: [this.actionsConfig.accessAdminOrPrintDisabled()],
     };
   }
 
@@ -333,40 +332,39 @@ export default class GetLendingActions {
     // sequential order of hierarchal access
     // admin -> is borrowing -> is waitlist -> can borrow print disabled -> can borrow -> isOnWaitlist userCanAccessPrintDisabled-> restricted
     if (isAdmin || accessPrintDisabled) {
-      toolbarType = this.isAccessAdminOrPrintDisabled();
-      currentToolbar = 'isAccessAdminOrPrintDisabled';
+      toolbarType = this.adminAccessOrPrintDisabledAction();
+      currentToolbar = 'adminAccessOrPrintDisabledAction';
     } else if (lendingStatus.user_has_borrowed) {
-      toolbarType = this.isBorrowing();
-      currentToolbar = 'isBorrowing';
+      toolbarType = this.borrowingAction();
+      currentToolbar = 'borrowingAction';
     } else if (lendingStatus.user_has_browsed) {
-      toolbarType = this.isBrowsing();
-      currentToolbar = 'isBrowsing';
+      toolbarType = this.browsingAction();
+      currentToolbar = 'browsingAction';
     } else if (lendingStatus.user_can_claim_waitlist) {
-      // userHoldIsReady
-      toolbarType = this.readyToRedeemBorrow();
-      currentToolbar = 'readyToRedeemBorrow';
+      toolbarType = this.redeemBorrowAction();
+      currentToolbar = 'redeemBorrowAction';
     } else if (userCanAccessPrintDisabled) {
-      toolbarType = this.canBorrowPrintDisabled();
-      currentToolbar = 'canBorrowPrintDisabled';
+      toolbarType = this.borrowPrintDisabledAction();
+      currentToolbar = 'borrowPrintDisabledAction';
     } else if (
       notBorrowed &&
       lendingStatus.is_lendable &&
       !lendingStatus.user_on_waitlist
     ) {
-      toolbarType = this.canBorrow();
-      currentToolbar = 'canBorrow';
+      toolbarType = this.borrowAction();
+      currentToolbar = 'borrowAction';
     } else if (lendingStatus.isPrintDisabledOnly) {
-      toolbarType = this.onlyPrintDisabled();
-      currentToolbar = 'onlyPrintDisabled';
+      toolbarType = this.onlyPrintDisabledAction();
+      currentToolbar = 'onlyPrintDisabledAction';
     } else if (
       !lendingStatus.user_on_waitlist &&
       !lendingStatus.user_can_claim_waitlist
     ) {
-      toolbarType = this.isOnWaitlist();
-      currentToolbar = 'isOnWaitlist';
+      toolbarType = this.onWaitlistAction();
+      currentToolbar = 'onWaitlistAction';
     } else {
-      toolbarType = this.isRestricted();
-      currentToolbar = 'isRestricted';
+      toolbarType = this.restrictedAction();
+      currentToolbar = 'restrictedAction';
     }
 
     console.log(currentToolbar);

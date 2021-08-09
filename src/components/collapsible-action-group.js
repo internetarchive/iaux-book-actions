@@ -102,10 +102,6 @@ export class CollapsibleActionGroup extends LitElement {
     </button>`;
   }
 
-  toggleDropdown() {
-    this.open = this.open !== true;
-  }
-
   get initialActionTemplate() {
     return CollapsibleActionGroup.renderActionButton(this.primaryActions[0]);
   }
@@ -123,6 +119,10 @@ export class CollapsibleActionGroup extends LitElement {
 
   get isBelowTabletContainer() {
     return this.width <= tabletContainerWidth;
+  }
+
+  toggleDropdown() {
+    this.open = this.open !== true;
   }
 
   static get styles() {
