@@ -24,7 +24,7 @@ export default class ActionsConfig extends ActionHandlers {
     return {
       text: 'Return now',
       callback: this.handleReturnIt,
-      className: 'ia-button danger 10',
+      className: 'ia-button danger',
       analyticsEvent: {
         category: this.analyticsCategories.browse,
         action: this.analyticsActions.doneBorrowing,

@@ -43,9 +43,7 @@ export default class GetLendingActions {
   }
 
   borrowingAction() {
-    if (URLHelper.isOnStreamPage()) {
-      return nothing;
-    }
+    if (URLHelper.isOnStreamPage()) return nothing;
 
     const daysLeftStr =
       this.lendingStatus.daysLeftOnLoan > 1
@@ -155,7 +153,6 @@ export default class GetLendingActions {
       ? 'This book can be borrowed for 14 days.'
       : 'Another patron is using this book.';
 
-    // console.log(actions)
     return {
       primaryTitle: title,
       primaryActions: actions,

@@ -46,7 +46,7 @@
       browsedAndBorrow,
       canBrowseAndBorrowod,
       canBrowseAndJoinWaitlistForBorrow,
-    } from '../src/core/services/lending-get-status-service.js';
+    } from '../src/assets/data/lending-get-status-service.js';
     import '../src/ia-book-actions.js';
     import { URLHelper } from '../src/core/config/url-helper.js';
 
@@ -54,28 +54,28 @@
     const identifier = 'goody';
     const bwbPurchaseUrl = 'https://www.betterworldbooks.com/product/detail/cambridge-ancient-hist-v04-0521044863';
 
-    let mode = URLHelper.getQueryParam('mode');
-    switch (mode) {
+    let lendingStatus = URLHelper.getQueryParam('mode');
+    switch (lendingStatus) {
       case 'canBrowse':
-        mode = canBrowse;
+       lendingStatus = canBrowse;
         break;
       case 'browsed':
-        mode = browsed;
+        lendingStatus = browsed;
         break;
       case 'canBrowseAndBorrow':
-        mode = canBrowseAndBorrow;
+       lendingStatus = canBrowseAndBorrow;
         break;
       case 'browsedAndBorrow':
-        mode = browsedAndBorrow;
+        lendingStatus = browsedAndBorrow;
         break;
       case 'canBrowseAndBorrowod':
-        mode = canBrowseAndBorrowod;
+        lendingStatus = canBrowseAndBorrowod;
         break;
       case 'canBrowseAndJoinWaitlistForBorrow':
-        mode = canBrowseAndJoinWaitlistForBorrow;
+        lendingStatus = canBrowseAndJoinWaitlistForBorrow;
         break;
       default:
-        mode = defaultLendingStatus;
+        lendingStatus = defaultLendingStatus;
     }
 
     render(
@@ -83,7 +83,7 @@
         <ia-book-actions
           .userid=${userid}
           .identifier=${identifier}
-          .lendingStatus=${mode}
+          .lendingStatus=${lendingStatus}
           .bwbPurchaseUrl=${bwbPurchaseUrl}
         >
         </ia-book-actions>
