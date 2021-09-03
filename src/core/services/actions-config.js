@@ -32,16 +32,20 @@ export default class ActionsConfig extends ActionHandlers {
     };
   }
 
-  borrowBookConfig(disableBorrow = false) {
+  borrowBookConfig(disableBorrow = false, analyticsEvent) {
+    if (!this.lendingStatus.available_to_borrow) return nothing;
+
+    var borrowEvent = {
+      category: this.analyticsCategories.browse,
+      action: this.analyticsActions.borrow,
+    };
+
     return {
       text: 'Borrow for 14 days',
       callback: this.handleBorrowIt,
-      className: 'ia-button primary 11',
+      className: 'ia-button primary',
       disabled: disableBorrow,
-      analyticsEvent: {
-        category: this.analyticsCategories.browse,
-        action: this.analyticsActions.borrow,
-      },
+      analyticsEvent: analyticsEvent ? analyticsEvent : borrowEvent,
     };
   }
 
@@ -61,7 +65,7 @@ export default class ActionsConfig extends ActionHandlers {
     return {
       text: 'Borrow for 1 hour',
       callback: this.handleBrowseIt,
-      className: 'ia-button primary 12',
+      className: 'ia-button primary',
       analyticsEvent: {
         category: this.analyticsCategories.preview,
         action: this.analyticsActions.browse,
@@ -124,7 +128,7 @@ export default class ActionsConfig extends ActionHandlers {
   }
 
   purchaseConfig() {
-    if (!this.bwbPurchaseUrl || this.bwbPurchaseUrl == '') return;
+    if (!this.bwbPurchaseUrl || this.bwbPurchaseUrl == '') return nothing;
 
     return {
       text: 'Better World Books',
@@ -145,10 +149,10 @@ export default class ActionsConfig extends ActionHandlers {
     const message = `← Exit ${mode} access mode`;
 
     return {
-      title: message,
+      text: message,
       url: URLHelper.getBackHref(),
       target: '_blank',
-      className: 'ia-button danger',
+      className: 'ia-button',
       analyticsEvent: {
         category: this.analyticsCategories.purchase,
         action: this.analyticsActions.purchase,
@@ -162,6 +166,10 @@ export default class ActionsConfig extends ActionHandlers {
       callback: '',
       className: 'ia-button primary',
       disabled: true,
+      analyticsEvent: {
+        category: this.analyticsCategories.unavailable,
+        action: this.analyticsActions.unavailable,
+      },
     };
   }
 

@@ -50,7 +50,7 @@ export class IABookActions extends LitElement {
       this.lendingStatus,
       this.bwbPurchaseUrl
     );
-    const actions = this.lendingOptions.getCurrentLendingToolbar();
+    const actions = this.lendingOptions.getCurrentLendingActions();
 
     if (!actions) return;
 

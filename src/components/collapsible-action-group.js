@@ -25,10 +25,17 @@ export class CollapsibleActionGroup extends LitElement {
     this.open = false;
   }
 
-  // TODO:- remove purchase/admin button and draw inside dropdown
+  updated(changed) {
+    if (changed.has('width')) {
+      if (this.isBelowTabletContainer) {
+        this.resetActions();
+      }
+    }
+  }
+
   resetActions() {
-    if (this.isBelowTabletContainer) {
-      // concat primaryActions and secondaryActions to draw in dropdown list
+    // concat primaryActions and secondaryActions to draw in dropdown list
+    if (this.primaryActions.length !== 0) {
       this.primaryActions = this.primaryActions.concat(this.secondaryActions);
 
       // remove secondaryActions
@@ -37,8 +44,6 @@ export class CollapsibleActionGroup extends LitElement {
   }
 
   render() {
-    this.resetActions();
-
     return html`
       <section class="action-buttons primary">
         ${this.renderPrimaryActions}
@@ -50,7 +55,7 @@ export class CollapsibleActionGroup extends LitElement {
   }
 
   get renderPrimaryActions() {
-    if (this.primaryActions === '') return nothing;
+    if (this.primaryActions.length === 0) return nothing;
 
     // If its single action, let just not show dropdown list
     if (this.primaryActions.length === 1) {
@@ -86,7 +91,7 @@ export class CollapsibleActionGroup extends LitElement {
         data-event-click-tracking="${action.analyticsEvent.category}|${action
           .analyticsEvent.action}"
       >
-        ${action.title}
+        ${action.text}
       </a>`
     );
   }

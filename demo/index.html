@@ -4,6 +4,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <!-- <script type="module" src="/src/ia-book-actions.js"></script> -->
+  <!-- <script type="module" src="/demo/dev-trey.js"></script> -->
+
   <style>
     html {
       font-size: 10px;
@@ -35,7 +38,7 @@
 </head>
 
 <body>
-  <div id="demo"></div>
+  <!-- <div id="demo"></div> -->
   <script type="module">
     import { html, render } from 'lit-html';
     import {
@@ -46,8 +49,10 @@
       browsedAndBorrow,
       canBrowseAndBorrowod,
       canBrowseAndJoinWaitlistForBorrow,
+      canBorrowOnly,
     } from '../src/assets/data/lending-get-status-service.js';
     import '../src/ia-book-actions.js';
+    // import '../demo/dev-trey.js';
     import { URLHelper } from '../src/core/config/url-helper.js';
 
     const userid = '@neeraj-archive';
@@ -74,22 +79,39 @@
       case 'canBrowseAndJoinWaitlistForBorrow':
         lendingStatus = canBrowseAndJoinWaitlistForBorrow;
         break;
+      case 'canBorrowOnly':
+        lendingStatus = canBorrowOnly;
+        break;
       default:
         lendingStatus = defaultLendingStatus;
     }
 
-    render(
-      html`
-        <ia-book-actions
-          .userid=${userid}
-          .identifier=${identifier}
-          .lendingStatus=${lendingStatus}
-          .bwbPurchaseUrl=${bwbPurchaseUrl}
-        >
-        </ia-book-actions>
-      `,
-      document.querySelector('#demo')
-    );
+
+    const iaBookActions = document.querySelector('ia-book-actions');
+
+    iaBookActions.userid = userid;
+    iaBookActions.identifier = identifier;
+    iaBookActions.lendingStatus = canBrowse;
+    iaBookActions.bwbPurchaseUrl = bwbPurchaseUrl;
+
+    const joinWaitlist = document.querySelector('#canBrowseAndJoinWaitlistForBorrow');
+    joinWaitlist.addEventListener('click', () => {
+      iaBookActions.lendingStatus = canBrowseAndJoinWaitlistForBorrow;
+      console.log(canBrowseAndJoinWaitlistForBorrow)
+    })
+
+    // render(
+    //   html`
+    //     <ia-book-actions
+    //       .userid=${userid}
+    //       .identifier=${identifier}
+    //       .lendingStatus=${lendingStatus}
+    //       .bwbPurchaseUrl=${bwbPurchaseUrl}
+    //     >
+    //     </ia-book-actions>
+    //   `,
+    //   document.querySelector('#demo')
+    // );
   </script>
 
   <div>
@@ -124,6 +146,10 @@
         display: none;
       }
     </style>
+
+    <ia-book-actions></ia-book-actions>
+    <dev-trey></dev-trey>
+
     <fieldset>
       <legend>Dev try for lending banner</legend>
         <table class="mode">
@@ -144,14 +170,15 @@
             <label><input type="radio" name="contact" value="canBrowseAndBorrowod" />canBrowseAndBorrowod</label>
           </td>
           <td>
-            <label><input type="radio" name="contact" value="canBrowseAndJoinWaitlistForBorrow" />canBrowseAndJoinWaitlistForBorrow</label>
+            <label><input type="radio" name="contact"
+              id="canBrowseAndJoinWaitlistForBorrow" value="canBrowseAndJoinWaitlistForBorrow" />canBrowseAndJoinWaitlistForBorrow</label>
           </td>
         </tr>
       </table>
       <script>
         document.querySelectorAll('.mode label').forEach((item) => {
           item.addEventListener('click', (e) => {
-            window.location.href = `?mode=${e.target.value}`;
+            // window.location.href = `?mode=${e.target.value}`;
           })
         });
       </script>
