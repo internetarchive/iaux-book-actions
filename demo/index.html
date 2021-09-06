@@ -49,7 +49,6 @@
       browsedAndBorrow,
       canBrowseAndBorrowod,
       canBrowseAndJoinWaitlistForBorrow,
-      canBorrowOnly,
     } from '../src/assets/data/lending-get-status-service.js';
     import '../src/ia-book-actions.js';
     // import '../demo/dev-trey.js';
@@ -78,9 +77,6 @@
         break;
       case 'canBrowseAndJoinWaitlistForBorrow':
         lendingStatus = canBrowseAndJoinWaitlistForBorrow;
-        break;
-      case 'canBorrowOnly':
-        lendingStatus = canBorrowOnly;
         break;
       default:
         lendingStatus = defaultLendingStatus;
