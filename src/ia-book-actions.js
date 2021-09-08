@@ -41,8 +41,17 @@ export class IABookActions extends LitElement {
       }
     });
     resizeObserver.observe(this.shadowRoot.querySelector('.lending-wrapper'));
-
+    console.log('first updated !!');
     this.setupLendingToolbarActions();
+  }
+
+  updated(changed) {
+    console.log('*** CHANGED', changed, changed.has('lendingStatus'));
+    console.log('THIS - ', this.lendingStatus, changed.get('lendingStatus'));
+    if (changed.has('lendingStatus')) {
+      // debugger;
+      this.setupLendingToolbarActions();
+    }
   }
 
   async setupLendingToolbarActions() {
