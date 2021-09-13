@@ -25,29 +25,37 @@ export class CollapsibleActionGroup extends LitElement {
     this.open = false;
   }
 
-  // TODO:- remove purchase/admin button and draw inside dropdown
+  updated(changed) {
+    if (changed.has('width')) {
+      if (this.isBelowTabletContainer) {
+        this.resetActions();
+      }
+    }
+  }
+
   resetActions() {
-    // remove secondary buttons
-    if (this.isBelowTabletContainer) {
+    // concat primaryActions and secondaryActions to draw in dropdown list
+    if (this.primaryActions.length !== 0) {
+      this.primaryActions = this.primaryActions.concat(this.secondaryActions);
+
+      // remove secondaryActions
       this.secondaryActions = [];
     }
   }
 
   render() {
-    this.resetActions();
-
     return html`
       <section class="action-buttons primary">
         ${this.renderPrimaryActions}
       </section>
       <section class="action-buttons secondary">
-        ${this.renderSecontoryActions}
+        ${this.renderSecondaryActions}
       </section>
     `;
   }
 
   get renderPrimaryActions() {
-    if (this.primaryActions === null) return nothing;
+    if (this.primaryActions.length === 0) return nothing;
 
     // If its single action, let just not show dropdown list
     if (this.primaryActions.length === 1) {
@@ -71,47 +79,46 @@ export class CollapsibleActionGroup extends LitElement {
     `;
   }
 
-  get renderSecontoryActions() {
-    if (this.secondaryActions === null) return nothing;
+  get renderSecondaryActions() {
+    if (this.secondaryActions.length === 0) return nothing;
 
     return this.secondaryActions.map(
       action => html`<a
         class=${action.className}
         href="${action.url}"
+        target=${action.target}
         data-event-click-tracking="${action.analyticsEvent.category}|${action
           .analyticsEvent.action}"
-        target=${action.target}
       >
-        ${action.title}
+        ${action.text}
       </a>`
     );
   }
 
-  get initialActionTemplate() {
-    const action = this.primaryActions[0];
-
+  static renderActionButton(action) {
     return html`<button
       class="ia-button ${action.className}"
+      data-event-click-tracking="${action.analyticsEvent.category}|${action
+        .analyticsEvent.action}"
       @click=${action.callback}
     >
       ${action.text}
     </button>`;
   }
 
+  get initialActionTemplate() {
+    return CollapsibleActionGroup.renderActionButton(this.primaryActions[0]);
+  }
+
   get getPrimaryItems() {
     return this.primaryActions.map(
       action =>
-        html`<button
-          class="ia-button ${action.className}"
-          @click=${action.callback}
-        >
-          ${action.text}
-        </button>`
+        html`<li>${CollapsibleActionGroup.renderActionButton(action)}</li>`
     );
   }
 
   get menuClass() {
-    return this.open ? 'visible-dropdown' : 'hidden';
+    return this.open ? 'open' : 'close';
   }
 
   get isBelowTabletContainer() {
@@ -149,6 +156,8 @@ export class CollapsibleActionGroup extends LitElement {
         border: none;
         box-sizing: border-box;
         display: block;
+        width: 100%;
+        text-align: left;
       }
       .dropdown-content li .ia-button:hover {
         background: var(--primaryTextColor);
@@ -159,14 +168,14 @@ export class CollapsibleActionGroup extends LitElement {
         padding: 0.6rem;
         border-radius: 0 0.4rem 0.4rem 0;
       }
-      .hidden {
+      .close {
         display: none;
+      }
+      .open {
+        display: block;
       }
       .visible {
         display: inline-block;
-      }
-      .visible-dropdown {
-        display: block;
       }
       .btn:hover,
       .dropdown:hover .btn {
