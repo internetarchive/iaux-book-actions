@@ -173,6 +173,7 @@ export class CollapsibleActionGroup extends LitElement {
       }
       .open {
         display: block;
+        z-index: 2;
       }
       .visible {
         display: inline-block;

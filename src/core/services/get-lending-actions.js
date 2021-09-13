@@ -381,7 +381,7 @@ export default class GetLendingActions {
       lendingActions = this.onlyPrintDisabledAction();
       currentToolbar = 'onlyPrintDisabledAction';
     } else if (
-      !lendingStatus.user_on_waitlist &&
+      lendingStatus.user_on_waitlist &&
       !lendingStatus.user_can_claim_waitlist
     ) {
       lendingActions = this.onWaitlistAction();
