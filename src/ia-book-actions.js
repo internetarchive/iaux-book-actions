@@ -7,7 +7,7 @@ import './components/info-icon.js';
 import GetLendingActions from './core/services/get-lending-actions.js';
 import { mobileContainerWidth } from './core/config/constants.js';
 
-export class IABookActions extends LitElement {
+export default class IABookActions extends LitElement {
   static get properties() {
     return {
       userid: { type: String },
@@ -45,8 +45,17 @@ export class IABookActions extends LitElement {
     this.setupLendingToolbarActions();
   }
 
+  updated(changed) {
+    if (changed.has('lendingStatus')) {
+      this.setupLendingToolbarActions();
+      this.update();
+    }
+  }
+
   async setupLendingToolbarActions() {
     this.lendingOptions = new GetLendingActions(
+      this.userid,
+      this.identifier,
       this.lendingStatus,
       this.bwbPurchaseUrl
     );

@@ -12,13 +12,16 @@ import {
 import ActionsConfig from './actions-config.js';
 
 export default class GetLendingActions {
-  constructor(lendingStatus, bwbPurchaseUrl) {
-    this.userid = lendingStatus.userid;
+  constructor(userid, identifier, lendingStatus, bwbPurchaseUrl) {
+    this.userid = userid;
+    this.identifier = identifier;
     this.lendingStatus = lendingStatus;
     this.bwbPurchaseUrl = bwbPurchaseUrl;
     this.analyticsCategories = analyticsCategories;
     this.analyticsActions = analyticsActions;
     this.actionsConfig = new ActionsConfig(
+      this.userid,
+      this.identifier,
       this.lendingStatus,
       this.bwbPurchaseUrl
     );
@@ -350,7 +353,6 @@ export default class GetLendingActions {
     // tests variable
     let currentToolbar = '';
 
-    console.log(lendingStatus);
     // sequential order of hierarchal access
     // admin -> is browsing/borrowing -> is waitlist -> can borrow print disabled -> can borrow -> isOnWaitlist -> userCanAccessPrintDisabled-> restricted
     if (isAdmin || accessPrintDisabled) {

@@ -80,8 +80,7 @@ export class CollapsibleActionGroup extends LitElement {
   }
 
   get renderSecondaryActions() {
-    if (this.secondaryActions === '' || this.secondaryActions === undefined)
-      return nothing;
+    if (this.secondaryActions.length === 0) return nothing;
 
     return this.secondaryActions.map(
       action => html`<a

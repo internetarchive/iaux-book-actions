@@ -4,16 +4,18 @@
 /* eslint-disable */
 
 import { nothing } from 'lit-html';
-import ActionHandlers from './actions-handlers.js';
+import ActionsHandler from './actions-handler/actions-handler.js';
 import { URLHelper } from '../config/url-helper.js';
 import {
   analyticsCategories,
   analyticsActions,
 } from '../config/analytics-event-and-category.js';
 
-export default class ActionsConfig extends ActionHandlers {
-  constructor(lendingStatus, bwbPurchaseUrl) {
+export default class ActionsConfig extends ActionsHandler {
+  constructor(userid, identifier, lendingStatus, bwbPurchaseUrl) {
     super();
+    this.userid = userid;
+    this.identifier = identifier;
     this.lendingStatus = lendingStatus;
     this.bwbPurchaseUrl = bwbPurchaseUrl;
     this.analyticsCategories = analyticsCategories;
@@ -33,7 +35,7 @@ export default class ActionsConfig extends ActionHandlers {
   }
 
   borrowBookConfig(disableBorrow = false, analyticsEvent) {
-    if (!this.lendingStatus.available_to_borrow) return nothing;
+    if (!this.lendingStatus.available_to_borrow) return null;
 
     var borrowEvent = {
       category: this.analyticsCategories.browse,

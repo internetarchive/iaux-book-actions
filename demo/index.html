@@ -4,9 +4,6 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <!-- <script type="module" src="/src/ia-book-actions.js"></script> -->
-  <!-- <script type="module" src="/demo/dev-trey.js"></script> -->
-
   <style>
     html {
       font-size: 10px;
@@ -38,9 +35,10 @@
 </head>
 
 <body>
-  <!-- <div id="demo"></div> -->
+  <ia-book-actions></ia-book-actions>
+
   <script type="module">
-    import { html, render } from 'lit-html';
+    import '../src/ia-book-actions.js';
     import {
       defaultLendingStatus,
       canBrowse,
@@ -50,38 +48,10 @@
       canBrowseAndBorrowod,
       canBrowseAndJoinWaitlistForBorrow,
     } from '../src/assets/data/lending-get-status-service.js';
-    import '../src/ia-book-actions.js';
-    // import '../demo/dev-trey.js';
-    import { URLHelper } from '../src/core/config/url-helper.js';
 
     const userid = '@neeraj-archive';
-    const identifier = 'goody';
+    const identifier = 'naturalhistoryof00unse_4';
     const bwbPurchaseUrl = 'https://www.betterworldbooks.com/product/detail/cambridge-ancient-hist-v04-0521044863';
-
-    let lendingStatus = URLHelper.getQueryParam('mode');
-    switch (lendingStatus) {
-      case 'canBrowse':
-       lendingStatus = canBrowse;
-        break;
-      case 'browsed':
-        lendingStatus = browsed;
-        break;
-      case 'canBrowseAndBorrow':
-       lendingStatus = canBrowseAndBorrow;
-        break;
-      case 'browsedAndBorrow':
-        lendingStatus = browsedAndBorrow;
-        break;
-      case 'canBrowseAndBorrowod':
-        lendingStatus = canBrowseAndBorrowod;
-        break;
-      case 'canBrowseAndJoinWaitlistForBorrow':
-        lendingStatus = canBrowseAndJoinWaitlistForBorrow;
-        break;
-      default:
-        lendingStatus = defaultLendingStatus;
-    }
-
 
     const iaBookActions = document.querySelector('ia-book-actions');
 
@@ -90,24 +60,35 @@
     iaBookActions.lendingStatus = canBrowse;
     iaBookActions.bwbPurchaseUrl = bwbPurchaseUrl;
 
-    const joinWaitlist = document.querySelector('#canBrowseAndJoinWaitlistForBorrow');
-    joinWaitlist.addEventListener('click', () => {
-      iaBookActions.lendingStatus = canBrowseAndJoinWaitlistForBorrow;
-      console.log(canBrowseAndJoinWaitlistForBorrow)
-    })
+    document.querySelectorAll('.mode label').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        let lendingStatus = defaultLendingStatus;
+        switch (e.target.value) {
+          case 'canBrowse':
+          lendingStatus = canBrowse;
+            break;
+          case 'browsed':
+            lendingStatus = browsed;
+            break;
+          case 'canBrowseAndBorrow':
+          lendingStatus = canBrowseAndBorrow;
+            break;
+          case 'browsedAndBorrow':
+            lendingStatus = browsedAndBorrow;
+            break;
+          case 'canBrowseAndBorrowod':
+            lendingStatus = canBrowseAndBorrowod;
+            break;
+          case 'canBrowseAndJoinWaitlistForBorrow':
+            lendingStatus = canBrowseAndJoinWaitlistForBorrow;
+            break;
+          default:
+            lendingStatus = defaultLendingStatus;
+        }
 
-    // render(
-    //   html`
-    //     <ia-book-actions
-    //       .userid=${userid}
-    //       .identifier=${identifier}
-    //       .lendingStatus=${lendingStatus}
-    //       .bwbPurchaseUrl=${bwbPurchaseUrl}
-    //     >
-    //     </ia-book-actions>
-    //   `,
-    //   document.querySelector('#demo')
-    // );
+        iaBookActions.lendingStatus = lendingStatus;
+      })
+    });
   </script>
 
   <div>
@@ -139,12 +120,8 @@
       input[type="radio"] {
         margin-top: 0;
         vertical-align: middle;
-        display: none;
       }
     </style>
-
-    <ia-book-actions></ia-book-actions>
-    <dev-trey></dev-trey>
 
     <fieldset>
       <legend>Dev try for lending banner</legend>
@@ -171,13 +148,6 @@
           </td>
         </tr>
       </table>
-      <script>
-        document.querySelectorAll('.mode label').forEach((item) => {
-          item.addEventListener('click', (e) => {
-            // window.location.href = `?mode=${e.target.value}`;
-          })
-        });
-      </script>
     </fieldset>
   </div>
 </body>

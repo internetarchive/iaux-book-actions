@@ -1,8 +1,9 @@
 /* eslint class-methods-use-this: "off" */
 /* eslint no-console: "off" */
-import { URLHelper } from '../config/url-helper.js';
+import { URLHelper } from '../../config/url-helper.js';
+// import { callService } from './actions-handler-service.js';
 
-export default class ActionHandlers {
+export default class ActionsHandler {
   constructor() {
     this.userid = '@neeraj-archive';
   }
