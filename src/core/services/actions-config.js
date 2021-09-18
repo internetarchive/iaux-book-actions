@@ -25,7 +25,7 @@ export default class ActionsConfig extends ActionsHandler {
   returnBookConfig() {
     return {
       text: 'Return now',
-      callback: this.handleReturnIt,
+      callback: this.handleReturnIt(this.identifier),
       className: 'ia-button danger',
       analyticsEvent: {
         category: this.analyticsCategories.browse,
@@ -38,13 +38,13 @@ export default class ActionsConfig extends ActionsHandler {
     if (!this.lendingStatus.available_to_borrow) return null;
 
     var borrowEvent = {
-      category: this.analyticsCategories.browse,
+      category: this.analyticsCategories.borrow,
       action: this.analyticsActions.borrow,
     };
 
     return {
       text: 'Borrow for 14 days',
-      callback: this.handleBorrowIt,
+      callback: this.handleBorrowIt('sitaram'),
       className: 'ia-button primary',
       disabled: disableBorrow,
       analyticsEvent: analyticsEvent ? analyticsEvent : borrowEvent,
@@ -66,7 +66,7 @@ export default class ActionsConfig extends ActionsHandler {
   browseBookConfig() {
     return {
       text: 'Borrow for 1 hour',
-      callback: this.handleBrowseIt,
+      callback: this.handleBrowseIt(this.identifier),
       className: 'ia-button primary',
       analyticsEvent: {
         category: this.analyticsCategories.preview,
@@ -130,7 +130,7 @@ export default class ActionsConfig extends ActionsHandler {
   }
 
   purchaseConfig() {
-    if (!this.bwbPurchaseUrl || this.bwbPurchaseUrl == '') return nothing;
+    if (!this.bwbPurchaseUrl || this.bwbPurchaseUrl === '') return null;
 
     return {
       text: 'Better World Books',

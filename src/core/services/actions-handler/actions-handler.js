@@ -1,15 +1,22 @@
 /* eslint class-methods-use-this: "off" */
 /* eslint no-console: "off" */
 import { URLHelper } from '../../config/url-helper.js';
-// import { callService } from './actions-handler-service.js';
+// import { ActionsHandlerService } from './actions-handler-service.js';
+import ActionsHandlerService from './actions-handler-service.js';
 
 export default class ActionsHandler {
   constructor() {
     this.userid = '@neeraj-archive';
   }
 
-  handleReturnIt() {
-    console.log('Book is returned successfully!');
+  handleReturnIt(identifier) {
+    return () => {
+      ActionsHandlerService({
+        action: 'return_loan',
+        identifier,
+      });
+      console.log('Book is returned successfully!');
+    };
   }
 
   borrowPrintDisabledBook() {
@@ -20,8 +27,14 @@ export default class ActionsHandler {
     console.log('Book is borrowed successfully!');
   }
 
-  handleBrowseIt() {
-    console.log('Book is browsed successfully!');
+  handleBrowseIt(identifier) {
+    return () => {
+      ActionsHandlerService({
+        action: 'browse_book',
+        identifier,
+      });
+      console.log('Book is browsed successfully!');
+    };
   }
 
   handleReserveIt() {
