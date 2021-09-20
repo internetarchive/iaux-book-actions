@@ -1,9 +1,3 @@
-/* eslint class-methods-use-this: "off" */
-/* eslint no-console: "off" */
-/* eslint no-nested-ternary: "off" */
-/* eslint-disable */
-
-import { nothing } from 'lit-html';
 import ActionsHandler from './actions-handler/actions-handler.js';
 import { URLHelper } from '../config/url-helper.js';
 import {
@@ -20,12 +14,27 @@ export default class ActionsConfig extends ActionsHandler {
     this.bwbPurchaseUrl = bwbPurchaseUrl;
     this.analyticsCategories = analyticsCategories;
     this.analyticsActions = analyticsActions;
+
+    /* eslint-disable no-new */
+    new ActionsHandler(this.identifier, this.lendingStatus);
+  }
+
+  browseBookConfig() {
+    return {
+      text: 'Borrow for 1 hour',
+      callback: this.handleBrowseIt(),
+      className: 'ia-button primary',
+      analyticsEvent: {
+        category: this.analyticsCategories.preview,
+        action: this.analyticsActions.browse,
+      },
+    };
   }
 
   returnBookConfig() {
     return {
       text: 'Return now',
-      callback: this.handleReturnIt(this.identifier),
+      callback: this.handleReturnIt(),
       className: 'ia-button danger',
       analyticsEvent: {
         category: this.analyticsCategories.browse,
@@ -37,24 +46,24 @@ export default class ActionsConfig extends ActionsHandler {
   borrowBookConfig(disableBorrow = false, analyticsEvent) {
     if (!this.lendingStatus.available_to_borrow) return null;
 
-    var borrowEvent = {
+    const borrowEvent = {
       category: this.analyticsCategories.borrow,
       action: this.analyticsActions.borrow,
     };
 
     return {
       text: 'Borrow for 14 days',
-      callback: this.handleBorrowIt('sitaram'),
+      callback: this.handleBorrowIt(),
       className: 'ia-button primary',
       disabled: disableBorrow,
-      analyticsEvent: analyticsEvent ? analyticsEvent : borrowEvent,
+      analyticsEvent: analyticsEvent || borrowEvent,
     };
   }
 
   loginAndBorrowBookConfig() {
     return {
       text: 'Log In and Borrow',
-      callback: this.handleLoginOk,
+      callback: this.handleLoginOk(),
       className: 'ia-button primary',
       analyticsEvent: {
         category: this.analyticsCategories.preview,
@@ -63,22 +72,10 @@ export default class ActionsConfig extends ActionsHandler {
     };
   }
 
-  browseBookConfig() {
-    return {
-      text: 'Borrow for 1 hour',
-      callback: this.handleBrowseIt(this.identifier),
-      className: 'ia-button primary',
-      analyticsEvent: {
-        category: this.analyticsCategories.preview,
-        action: this.analyticsActions.browse,
-      },
-    };
-  }
-
   leaveWaitlistConfig() {
     return {
       text: 'Leave waitlist',
-      callback: this.handleRemoveFromWaitingList,
+      callback: this.handleRemoveFromWaitingList(),
       className: 'ia-button dark',
       analyticsEvent: {
         category: this.analyticsCategories.preview,
@@ -89,12 +86,11 @@ export default class ActionsConfig extends ActionsHandler {
 
   waitlistConfig() {
     const isLoggedIn = !!this.userid;
-    const mustLogIn = true;
 
     const lendingStatus = this.lendingStatus || [];
     const bookHasWaitlist = lendingStatus.available_to_waitlist;
 
-    let clickAction = this.handleLoginOk;
+    let clickAction = this.handleLoginOk();
 
     if (!bookHasWaitlist || lendingStatus.available_to_borrow) {
       return null;
@@ -112,7 +108,7 @@ export default class ActionsConfig extends ActionsHandler {
     const analyticsAction = isLoggedIn ? 'waitlistJoin' : 'login';
 
     if (isLoggedIn && !lendingStatus.user_on_waitlist && waitlistIsOpen) {
-      clickAction = this.handleReserveIt;
+      clickAction = this.handleReserveIt();
     }
 
     const deprioritize =
@@ -175,8 +171,8 @@ export default class ActionsConfig extends ActionsHandler {
     };
   }
 
-  isEmbed(identifier, title) {
-    const description = `<img src=/images/glogo-jw.png> <a href=/details/${identifier}>${title}</a>`;
+  isEmbed(title) {
+    const description = `<img src=/images/glogo-jw.png> <a href=/details/${this.identifier}>${title}</a>`;
     return {
       primaryTitle: description,
       primaryActions: [],
