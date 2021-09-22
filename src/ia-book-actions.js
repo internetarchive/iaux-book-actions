@@ -20,12 +20,12 @@ export default class IABookActions extends LitElement {
 
   constructor() {
     super();
-    this.userid = '@neeraj-archive';
+    this.userid = '';
     this.identifier = '';
     this.lendingStatus = {};
     this.primaryActions = [];
-    this.primaryTitle = 'Join waitlist for 14 day borrow';
-    this.primaryColor = 'danger';
+    this.primaryTitle = '';
+    this.primaryColor = 'primary';
     this.secondaryActions = [];
     this.width = 0;
     this.bwbPurchaseUrl = '';
@@ -81,6 +81,7 @@ export default class IABookActions extends LitElement {
           .primaryActions=${this.primaryActions}
           .secondaryActions=${this.secondaryActions}
           .width=${this.width}
+          .isAdminAccess=${this.isAdminAccess}
         >
         </collapsible-action-group>
         ${this.textGroupTemplate} ${this.infoIconTemplate}
@@ -106,6 +107,10 @@ export default class IABookActions extends LitElement {
       texts="${this.primaryTitle}"
     >
     </text-group>`;
+  }
+
+  get isAdminAccess() {
+    return !this.lendingStatus.userHasBorrowed && this.lendingStatus.isAdmin;
   }
 
   static get styles() {

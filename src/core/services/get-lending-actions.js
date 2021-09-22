@@ -96,7 +96,7 @@ export default class GetLendingActions {
     return {
       primaryTitle: 'You are at the top of the waitlist for this book',
       primaryActions: actions,
-      primaryColor: 'ia-button primary',
+      primaryColor: 'primary',
       footer: 'printDisabilityLine()',
       prefixActions: dropdownOptions,
     };
@@ -107,7 +107,7 @@ export default class GetLendingActions {
     return {
       primaryTitle: 'You are eligible for print-disabled access.',
       primaryActions: [this.actionsConfig.borrowBookConfig()],
-      primaryColor: 'danger',
+      primaryColor: 'primary',
       secondaryActions: [this.actionsConfig.purchaseConfig()],
     };
   }
@@ -120,7 +120,7 @@ export default class GetLendingActions {
     return {
       primaryTitle: 'Book available to patrons with print disabilities.',
       primaryActions: [unavailable],
-      primaryColor: 'danger',
+      primaryColor: 'primary',
     };
   }
 
@@ -129,7 +129,7 @@ export default class GetLendingActions {
     return {
       primaryTitle: 'You are on the waitlist for this book.',
       primaryActions: [this.actionsConfig.leaveWaitlistConfig()],
-      primaryColor: 'danger',
+      primaryColor: 'primary',
       secondaryActions: [this.actionsConfig.purchaseConfig()],
     };
   }
@@ -185,7 +185,7 @@ export default class GetLendingActions {
     return {
       primaryTitle: title,
       primaryActions: actions,
-      primaryColor: 'danger',
+      primaryColor: 'primary',
       footer: 'printDisabilityLine()',
       secondaryActions: [this.actionsConfig.purchaseConfig()],
     };
@@ -268,9 +268,12 @@ export default class GetLendingActions {
     return {
       primaryTitle: title,
       primaryActions: actions,
-      primaryColor: 'ia-button primary',
+      primaryColor: 'primary',
       footer: 'printDisabilityLine()',
-      secondaryActions: [this.actionsConfig.purchaseConfig()],
+      secondaryActions: [
+        this.actionsConfig.purchaseConfig(),
+        this.actionsConfig.adminAccessConfig(),
+      ],
     };
   }
 
@@ -313,7 +316,10 @@ export default class GetLendingActions {
       primaryTitle: title,
       primaryActions: actions,
       primaryColor: 'primary',
-      secondaryActions: [this.actionsConfig.purchaseButton],
+      secondaryActions: [
+        this.actionsConfig.purchaseConfig(),
+        this.actionsConfig.adminAccessConfig(),
+      ],
       foot: 'printDisabilityLine()',
     };
   }

@@ -24,7 +24,7 @@ export class InfoIcon extends LitElement {
         title="Get more info on borrowing from The Lending Library"
         data-event-click-tracking="BookReader|BrowsableMoreInfo"
       >
-        <img src="./info.svg" alt="Icon" />
+        <img src="../src/assets/image/info.svg" alt="Icon" />
       </a>
     `;
   }

@@ -26,7 +26,9 @@ export default css`
   .ia-button:disabled,
   .ia-button.disabled {
     cursor: not-allowed;
-    opacity: 0.5;
+    background-color: var(--primaryDisableCTAFill);
+    border: 1px solid var(--secondaryCTABorder);
+    color: var(--primaryTextColor);
   }
   .ia-button.transparent {
     background-color: transparent;
@@ -38,6 +40,15 @@ export default css`
   .ia-button.primary {
     background-color: #194880;
     border-color: #c5d1df;
+  }
+  .ia-button.primary:hover {
+    background-color: rgba(var(--primaryCTAFillRGB), 0.9);
+  }
+  .ia-button.primary:focus {
+    background-color: rgba(var(--primaryCTAFillRGB), 0.8);
+  }
+  .ia-button.primary:active {
+    background-color: rgba(var(--primaryCTAFillRGB), 0.7);
   }
   .ia-button.dark {
     color: #fff;
@@ -52,5 +63,14 @@ export default css`
   .ia-button.cancel {
     background-color: #e51c26;
     border-color: #f8c6c8;
+  }
+  .ia-button.cancel:hover {
+    background-color: rgba(var(--primaryErrorCTAFillRGB), 0.9);
+  }
+  .ia-button.cancel:focus {
+    background-color: rgba(var(--primaryErrorCTAFillRGB), 0.8);
+  }
+  .ia-button.cancel:active {
+    background-color: rgba(var(--primaryErrorCTAFillRGB), 0.7);
   }
 `;

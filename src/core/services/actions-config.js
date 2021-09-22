@@ -23,7 +23,7 @@ export default class ActionsConfig extends ActionsHandler {
     return {
       text: 'Borrow for 1 hour',
       callback: this.handleBrowseIt(),
-      className: 'ia-button primary',
+      className: 'primary',
       analyticsEvent: {
         category: this.analyticsCategories.preview,
         action: this.analyticsActions.browse,
@@ -35,7 +35,7 @@ export default class ActionsConfig extends ActionsHandler {
     return {
       text: 'Return now',
       callback: this.handleReturnIt(),
-      className: 'ia-button danger',
+      className: 'danger',
       analyticsEvent: {
         category: this.analyticsCategories.browse,
         action: this.analyticsActions.doneBorrowing,
@@ -54,7 +54,7 @@ export default class ActionsConfig extends ActionsHandler {
     return {
       text: 'Borrow for 14 days',
       callback: this.handleBorrowIt(),
-      className: 'ia-button primary',
+      className: 'primary',
       disabled: disableBorrow,
       analyticsEvent: analyticsEvent || borrowEvent,
     };
@@ -64,7 +64,7 @@ export default class ActionsConfig extends ActionsHandler {
     return {
       text: 'Log In and Borrow',
       callback: this.handleLoginOk(),
-      className: 'ia-button primary',
+      className: 'primary',
       analyticsEvent: {
         category: this.analyticsCategories.preview,
         action: this.analyticsActions.login,
@@ -76,7 +76,7 @@ export default class ActionsConfig extends ActionsHandler {
     return {
       text: 'Leave waitlist',
       callback: this.handleRemoveFromWaitingList(),
-      className: 'ia-button dark',
+      className: 'dark',
       analyticsEvent: {
         category: this.analyticsCategories.preview,
         action: this.analyticsActions.waitlistLeave,
@@ -132,13 +132,30 @@ export default class ActionsConfig extends ActionsHandler {
       text: 'Better World Books',
       title: 'Better World Books',
       url: this.bwbPurchaseUrl,
-      // target: '_blank',
-      className: 'ia-button purchase dark',
+      target: '_blank',
+      className: 'purchase dark',
       analyticsEvent: {
         category: this.analyticsCategories.purchase,
         action: this.analyticsActions.purchase,
       },
     };
+  }
+
+  adminAccessConfig() {
+    if (!this.lendingStatus.userHasBorrowed && this.lendingStatus.isAdmin) {
+      return {
+        text: 'Admin Access',
+        title: 'You have administrative privileges to read this book',
+        url: '?admin=1',
+        className: 'danger',
+        analyticsEvent: {
+          category: '',
+          action: '',
+        },
+      };
+    }
+
+    return null;
   }
 
   adminOrPrintDisabledConfig() {
@@ -162,7 +179,7 @@ export default class ActionsConfig extends ActionsHandler {
     return {
       text: 'Borrow unavailable',
       callback: '',
-      className: 'ia-button primary',
+      className: 'primary',
       disabled: true,
       analyticsEvent: {
         category: this.analyticsCategories.unavailable,
