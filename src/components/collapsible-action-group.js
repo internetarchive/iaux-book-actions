@@ -12,7 +12,7 @@ export class CollapsibleActionGroup extends LitElement {
       primaryColor: { type: String },
       open: { type: Boolean },
       width: { type: Number },
-      isAdminAccess: { type: Boolean },
+      hasAdminAccess: { type: Boolean },
     };
   }
 
@@ -24,7 +24,7 @@ export class CollapsibleActionGroup extends LitElement {
     this.title = '';
     this.width = 0;
     this.open = false;
-    this.isAdminAccess = false;
+    this.hasAdminAccess = false;
   }
 
   updated(changed) {
@@ -36,21 +36,12 @@ export class CollapsibleActionGroup extends LitElement {
   }
 
   resetActions() {
-    const [tempSecondaryActions] = [];
-
     // concat primaryActions and secondaryActions to draw in dropdown list
-    if (this.primaryActions.length !== 0) {
-      if (this.isAdminAccess && this.secondaryActions.length > 1) {
-        // if yes, make admin button at top and drop with dropdown
-        /* eslint prefer-destructuring: "off" */
-        const temp = this.secondaryActions[0];
-        tempSecondaryActions[0] = this.secondaryActions[1];
-        tempSecondaryActions[1] = temp;
-        this.primaryColor = 'danger';
-        this.primaryActions = tempSecondaryActions.concat(this.primaryActions);
-      } else {
-        // else, drop with dropdown
-        this.primaryActions = this.primaryActions.concat(this.secondaryActions);
+    if (this.primaryActions.length) {
+      this.primaryActions = this.primaryActions.concat(this.secondaryActions);
+
+      if (this.hasAdminAccess) {
+        this.changeActionButtonOrder();
       }
 
       // remove secondaryActions
@@ -58,13 +49,20 @@ export class CollapsibleActionGroup extends LitElement {
     }
   }
 
+  changeActionButtonOrder() {
+    const toIndex = 0;
+    const fromIndex = this.primaryActions.length - 2;
+
+    const element = this.primaryActions[fromIndex];
+    this.primaryActions.splice(fromIndex, 1);
+    this.primaryActions.splice(toIndex, 0, element);
+
+    this.primaryColor = 'danger';
+  }
+
   render() {
     return html`
-      <section
-        class="action-buttons primary ${this.isBelowTabletContainer
-          ? 'extra-space'
-          : ''}"
-      >
+      <section class="action-buttons primary">
         ${this.renderPrimaryActions}
       </section>
       <section class="action-buttons secondary">
@@ -119,8 +117,7 @@ export class CollapsibleActionGroup extends LitElement {
   }
 
   static renderActionButton(action) {
-    if (action.url !== undefined)
-      return CollapsibleActionGroup.renderActionLink(action);
+    if (action.url) return CollapsibleActionGroup.renderActionLink(action);
 
     return html`<button
       class="ia-button ${action.className}"
@@ -159,18 +156,18 @@ export class CollapsibleActionGroup extends LitElement {
     const CollapsibleActionGroupStyle = css`
       .dropdown,
       .action-buttons {
-        display: inline-block;
+        display: inline-table;
+      }
+      .action-buttons .ia-button {
+        display: initial;
       }
       .secondary .ia-button {
         margin-left: 5px;
       }
-      .dropdown {
-        position: absolute;
-        margin-left: -3px;
-      }
       .dropdown-content {
+        position: absolute;
         min-width: 14rem;
-        margin: 0 0 0 -13rem;
+        margin: 0 0 0 -12.4rem;
         padding: 0;
         background: #2d2d2d;
         border-radius: 0.4rem;
@@ -206,9 +203,6 @@ export class CollapsibleActionGroup extends LitElement {
       }
       .visible {
         display: inline-block;
-      }
-      .extra-space {
-        margin-right: 15px;
       }
       .btn:hover,
       .dropdown:hover .btn {

@@ -3,6 +3,17 @@
 import { URLHelper } from '../../config/url-helper.js';
 import ActionsHandlerService from './actions-handler-service.js';
 
+/**
+ * These are callback functions calling from actions-config.js file.
+ *
+ * ActionsHandlerService is a function being used to execute
+ * APIs based of the request made by user. It consist some parameters are as follows:-
+ * 1. action: action name like browse_book, return_book, borrow_book etc...
+ * 2. identifier: book name.
+ * 3. success: This is callback function which will be executed after the API request
+ *    return reponse as a success.
+ */
+
 export default class ActionsHandler {
   constructor(identifier, lendingStatus) {
     this.identifier = identifier;
@@ -16,7 +27,9 @@ export default class ActionsHandler {
         action: 'browse_book',
         identifier: this.identifier,
         success: () => {
-          this.handleReadItNow();
+          setTimeout(() => {
+            this.handleReadItNow();
+          }, 6000);
         },
       });
       console.log('Book is browsed successfully!');
@@ -43,7 +56,9 @@ export default class ActionsHandler {
         action: 'borrow_book',
         identifier: this.identifier,
         success: () => {
-          this.handleReadItNow();
+          setTimeout(() => {
+            this.handleReadItNow();
+          }, 6000);
         },
       });
       console.log('Book is borrowed successfully!');

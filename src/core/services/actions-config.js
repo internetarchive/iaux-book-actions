@@ -5,6 +5,27 @@ import {
   analyticsActions,
 } from '../config/analytics-event-and-category.js';
 
+/**
+ * This class is reponsible for return different action buttons configurations.
+ * e.g. If you want to render borrow button, this class will return
+ * {
+ *   text: 'Borrow for 14 days',
+ *   callback: 'callback function for onclick event',
+ *   className: 'btn-primary'
+ *   analyticsEvent: {
+ *     category: 'category-name',
+ *     action: 'action-name',
+ *   }
+ * }
+ *
+ * More details of above object keys are as follow
+ * 1. text: texts displayed on the button.
+ * 2. callback: callback functions being extended from ActionsHandler class below
+ *    which contains functions to perform [borrow, browse, return] api calls.
+ * 3. className: name of the class for buttons.
+ * 4. analyticsEvent: being used to apply event tracking with google analytics
+ *    it contains category name and action name to different in tracking.
+ */
 export default class ActionsConfig extends ActionsHandler {
   constructor(userid, identifier, lendingStatus, bwbPurchaseUrl) {
     super();

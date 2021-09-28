@@ -21,7 +21,7 @@ describe('Get Lending Actions', () => {
     expect(actions.primaryActions.length).to.equal(2);
     expect(actions.primaryActions[0].text).to.equal('Borrow for 1 hour');
     expect(actions.primaryActions[1].text).to.equal('Borrow for 14 days');
-    expect(actions.secondaryActions[0].text).to.equal('Better World Books');
+    expect(actions.secondaryActions[1].text).to.equal('Better World Books');
   });
 
   it('Borrowable without user', async () => {

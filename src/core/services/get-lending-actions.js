@@ -2,7 +2,6 @@
 /* eslint no-console: "off" */
 /* eslint no-nested-ternary: "off" */
 /* eslint-disable */
-
 import { nothing } from 'lit-html';
 import { URLHelper } from '../config/url-helper.js';
 import {
@@ -10,6 +9,31 @@ import {
   analyticsActions,
 } from '../config/analytics-event-and-category.js';
 import ActionsConfig from './actions-config.js';
+
+/**
+ * This is the main controller/service class helps to fetch different action buttons
+ * from a lendable item.
+ *
+ * We are showing action button in two column
+ * 1. primaryAction: contains primary action button like Browse, Borrow, Return, Waitlist etc...
+ * 2. secondaryActions: container secondary action button like Admin Access, Purchase link etc...
+ *
+ * Response of this class contain an object as follows:-
+ * {
+ *   primaryTitle: 'Renewable every hour, pending availability.',
+ *   primaryActions: [this.actionsConfig.returnBookConfig()],
+ *   primaryColor: 'primary',
+ *   secondaryActions: [this.actionsConfig.purchaseConfig()],
+ * }
+ *
+ * Explanation of above fields are as follows:-
+ * 1. primaryTitle: Describe current loan status of this book.
+ * 2. primaryActions: Consists an array of action buttons (Browse, Borrow, Return) based on loanStatus.
+ *    The action buttons configuration is coming from ActionsConfig class.
+ * 3. primaryColor: Color of initial action button and dropdown button on mobile devices.
+ * 4. secondaryActions: Consists an array of action buttons (Admin Acess, Purchase Link) based on availability.
+ *    The action buttons configuration is coming from ActionsConfig class.
+ */
 
 export default class GetLendingActions {
   constructor(userid, identifier, lendingStatus, bwbPurchaseUrl) {
@@ -271,8 +295,8 @@ export default class GetLendingActions {
       primaryColor: 'primary',
       footer: 'printDisabilityLine()',
       secondaryActions: [
-        this.actionsConfig.purchaseConfig(),
         this.actionsConfig.adminAccessConfig(),
+        this.actionsConfig.purchaseConfig(),
       ],
     };
   }
@@ -317,8 +341,8 @@ export default class GetLendingActions {
       primaryActions: actions,
       primaryColor: 'primary',
       secondaryActions: [
-        this.actionsConfig.purchaseConfig(),
         this.actionsConfig.adminAccessConfig(),
+        this.actionsConfig.purchaseConfig(),
       ],
       foot: 'printDisabilityLine()',
     };

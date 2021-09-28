@@ -81,7 +81,7 @@ export default class IABookActions extends LitElement {
           .primaryActions=${this.primaryActions}
           .secondaryActions=${this.secondaryActions}
           .width=${this.width}
-          .isAdminAccess=${this.isAdminAccess}
+          .hasAdminAccess=${this.hasAdminAccess}
         >
         </collapsible-action-group>
         ${this.textGroupTemplate} ${this.infoIconTemplate}
@@ -109,7 +109,7 @@ export default class IABookActions extends LitElement {
     </text-group>`;
   }
 
-  get isAdminAccess() {
+  get hasAdminAccess() {
     return !this.lendingStatus.userHasBorrowed && this.lendingStatus.isAdmin;
   }
 
