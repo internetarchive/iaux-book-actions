@@ -73,7 +73,10 @@ export default class GetLendingActions {
       primaryTitle: daysLeftStr,
       primaryActions: [this.actionsConfig.returnBookConfig()],
       primaryColor: 'danger',
-      secondaryActions: [this.actionsConfig.purchaseConfig()],
+      secondaryActions: [
+        this.actionsConfig.adminAccessConfig(),
+        this.actionsConfig.purchaseConfig(),
+      ],
     };
   }
 
@@ -100,7 +103,10 @@ export default class GetLendingActions {
         this.actionsConfig.waitlistConfig(),
       ],
       primaryColor: 'danger',
-      secondaryActions: [this.actionsConfig.purchaseConfig()],
+      secondaryActions: [
+        this.actionsConfig.adminAccessConfig(),
+        this.actionsConfig.purchaseConfig(),
+      ],
     };
   }
 
@@ -132,7 +138,10 @@ export default class GetLendingActions {
       primaryTitle: 'You are eligible for print-disabled access.',
       primaryActions: [this.actionsConfig.borrowBookConfig()],
       primaryColor: 'primary',
-      secondaryActions: [this.actionsConfig.purchaseConfig()],
+      secondaryActions: [
+        this.actionsConfig.adminAccessConfig(),
+        this.actionsConfig.purchaseConfig(),
+      ],
     };
   }
 
@@ -154,7 +163,10 @@ export default class GetLendingActions {
       primaryTitle: 'You are on the waitlist for this book.',
       primaryActions: [this.actionsConfig.leaveWaitlistConfig()],
       primaryColor: 'primary',
-      secondaryActions: [this.actionsConfig.purchaseConfig()],
+      secondaryActions: [
+        this.actionsConfig.adminAccessConfig(),
+        this.actionsConfig.purchaseConfig(),
+      ],
     };
   }
 
@@ -172,7 +184,10 @@ export default class GetLendingActions {
       primaryActions: [this.actionsConfig.unavailableBookConfig()],
       primaryColor: 'primary',
       footer: restrictedDescription,
-      secondaryActions: [this.actionsConfig.purchaseConfig()],
+      secondaryActions: [
+        this.actionsConfig.adminAccessConfig(),
+        this.actionsConfig.purchaseConfig(),
+      ],
     };
   }
 
@@ -211,7 +226,10 @@ export default class GetLendingActions {
       primaryActions: actions,
       primaryColor: 'primary',
       footer: 'printDisabilityLine()',
-      secondaryActions: [this.actionsConfig.purchaseConfig()],
+      secondaryActions: [
+        this.actionsConfig.adminAccessConfig(),
+        this.actionsConfig.purchaseConfig(),
+      ],
     };
   }
 

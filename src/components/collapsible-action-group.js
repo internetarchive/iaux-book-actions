@@ -25,6 +25,7 @@ export class CollapsibleActionGroup extends LitElement {
     this.width = 0;
     this.open = false;
     this.hasAdminAccess = false;
+    this.initialButton = false;
   }
 
   updated(changed) {
@@ -104,9 +105,9 @@ export class CollapsibleActionGroup extends LitElement {
     );
   }
 
-  static renderActionLink(action) {
+  static renderActionLink(action, initialButton = false) {
     return html`<a
-      class="ia-button ${action.className}"
+      class="ia-button ${action.className} ${initialButton ? 'initial' : ''}"
       href="${action.url}"
       target=${action.target}
       data-event-click-tracking="${action.analyticsEvent.category}|${action
@@ -116,11 +117,12 @@ export class CollapsibleActionGroup extends LitElement {
     </a>`;
   }
 
-  static renderActionButton(action) {
-    if (action.url) return CollapsibleActionGroup.renderActionLink(action);
+  static renderActionButton(action, initialButton = false) {
+    if (action.url)
+      return CollapsibleActionGroup.renderActionLink(action, initialButton);
 
     return html`<button
-      class="ia-button ${action.className}"
+      class="ia-button ${action.className}  ${initialButton ? 'initial' : ''}"
       data-event-click-tracking="${action.analyticsEvent.category}|${action
         .analyticsEvent.action}"
       @click=${action.callback}
@@ -130,13 +132,26 @@ export class CollapsibleActionGroup extends LitElement {
   }
 
   get initialActionTemplate() {
-    return CollapsibleActionGroup.renderActionButton(this.primaryActions[0]);
+    this.initialButton = false;
+    if (this.primaryActions.length > 1) {
+      this.initialButton = true;
+    }
+
+    return CollapsibleActionGroup.renderActionButton(
+      this.primaryActions[0],
+      this.initialButton
+    );
   }
 
   get getPrimaryItems() {
     return this.primaryActions.map(
       action =>
-        html`<li>${CollapsibleActionGroup.renderActionButton(action)}</li>`
+        html`<li>
+          ${CollapsibleActionGroup.renderActionButton(
+            action,
+            this.initialButton
+          )}
+        </li>`
     );
   }
 
@@ -156,13 +171,18 @@ export class CollapsibleActionGroup extends LitElement {
     const CollapsibleActionGroupStyle = css`
       .dropdown,
       .action-buttons {
-        display: inline-table;
+        display: inline-block;
       }
       .action-buttons .ia-button {
         display: initial;
       }
+      .primary .initial {
+        float: left;
+        border-right: 0;
+        border-radius: 0.4rem 0 0 0.4rem;
+      }
       .secondary .ia-button {
-        margin-left: 5px;
+        margin: 0 3px;
       }
       .dropdown-content {
         position: absolute;

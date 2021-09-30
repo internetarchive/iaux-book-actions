@@ -41,15 +41,6 @@ export default css`
     background-color: #194880;
     border-color: #c5d1df;
   }
-  .ia-button.primary:hover {
-    background-color: rgba(var(--primaryCTAFillRGB), 0.9);
-  }
-  .ia-button.primary:focus {
-    background-color: rgba(var(--primaryCTAFillRGB), 0.8);
-  }
-  .ia-button.primary:active {
-    background-color: rgba(var(--primaryCTAFillRGB), 0.7);
-  }
   .ia-button.dark {
     color: #fff;
     background-color: #333;
@@ -63,14 +54,5 @@ export default css`
   .ia-button.cancel {
     background-color: #e51c26;
     border-color: #f8c6c8;
-  }
-  .ia-button.cancel:hover {
-    background-color: rgba(var(--primaryErrorCTAFillRGB), 0.9);
-  }
-  .ia-button.cancel:focus {
-    background-color: rgba(var(--primaryErrorCTAFillRGB), 0.8);
-  }
-  .ia-button.cancel:active {
-    background-color: rgba(var(--primaryErrorCTAFillRGB), 0.7);
   }
 `;
