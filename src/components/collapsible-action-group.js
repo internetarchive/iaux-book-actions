@@ -26,6 +26,7 @@ export class CollapsibleActionGroup extends LitElement {
     this.open = false;
     this.hasAdminAccess = false;
     this.initialButton = false;
+    this.loaderIcon = 'https://archive.org/upload/images/tree/loading.gif';
   }
 
   updated(changed) {
@@ -57,8 +58,6 @@ export class CollapsibleActionGroup extends LitElement {
     const element = this.primaryActions[fromIndex];
     this.primaryActions.splice(fromIndex, 1);
     this.primaryActions.splice(toIndex, 0, element);
-
-    this.primaryColor = 'danger';
   }
 
   render() {
@@ -67,7 +66,7 @@ export class CollapsibleActionGroup extends LitElement {
         ${this.renderPrimaryActions}
       </section>
       <section class="action-buttons secondary">
-        ${this.renderSecondaryActions}
+        ${this.renderSecondaryActions} ${this.getLoaderIcon}
       </section>
     `;
   }
@@ -137,6 +136,8 @@ export class CollapsibleActionGroup extends LitElement {
       this.initialButton = true;
     }
 
+    this.primaryColor = this.primaryActions[0].className;
+
     return CollapsibleActionGroup.renderActionButton(
       this.primaryActions[0],
       this.initialButton
@@ -153,6 +154,14 @@ export class CollapsibleActionGroup extends LitElement {
           )}
         </li>`
     );
+  }
+
+  get getLoaderIcon() {
+    return html`<img
+      class="action-loader close"
+      alt=""
+      src="${this.loaderIcon}"
+    />`;
   }
 
   get menuClass() {
@@ -212,6 +221,9 @@ export class CollapsibleActionGroup extends LitElement {
       .down-arrow {
         padding: 0.6rem;
         border-radius: 0 0.4rem 0.4rem 0;
+      }
+      .action-loader {
+        vertical-align: middle;
       }
       .close {
         display: none;

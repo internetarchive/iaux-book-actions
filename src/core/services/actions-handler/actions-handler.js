@@ -19,6 +19,7 @@ export default class ActionsHandler {
     this.identifier = identifier;
     this.lendingStatus = lendingStatus;
     this.userid = '@neeraj-archive';
+    this.ajaxTimeout = 5000;
   }
 
   handleBrowseIt() {
@@ -27,9 +28,8 @@ export default class ActionsHandler {
         action: 'browse_book',
         identifier: this.identifier,
         success: () => {
-          setTimeout(() => {
-            this.handleReadItNow();
-          }, 6000);
+          this.showActionButtonLoader();
+          this.handleReadItNow();
         },
       });
       console.log('Book is browsed successfully!');
@@ -42,6 +42,7 @@ export default class ActionsHandler {
         action: 'return_loan',
         identifier: this.identifier,
         success: () => {
+          this.showActionButtonLoader();
           this.deleteLoanCookies();
           URLHelper.goToUrl(this.lendingStatus.bookUrl, true);
         },
@@ -56,9 +57,8 @@ export default class ActionsHandler {
         action: 'borrow_book',
         identifier: this.identifier,
         success: () => {
-          setTimeout(() => {
-            this.handleReadItNow();
-          }, 6000);
+          this.showActionButtonLoader();
+          this.handleReadItNow();
         },
       });
       console.log('Book is borrowed successfully!');
@@ -120,7 +120,28 @@ export default class ActionsHandler {
     // get current URL and add query parameters including search
     const redirectTo =
       window.location.origin + window.location.pathname + newParams;
-    URLHelper.goToUrl(redirectTo, true);
+
+    // redirection on details page after 5 seconds because borrowing book takes time to create item creation.
+    setTimeout(() => {
+      URLHelper.goToUrl(redirectTo, true);
+    }, this.ajaxTimeout);
+  }
+
+  showActionButtonLoader() {
+    const collapsibleElement = document
+      .querySelector('ia-book-actions')
+      .shadowRoot.querySelector('collapsible-action-group');
+    collapsibleElement.setAttribute(
+      'style',
+      'opacity:0.8; pointer-events:none'
+    );
+
+    // const primaryActionsElement = collapsibleElement.shadowRoot.querySelector('.primary');
+
+    const actionLoader = collapsibleElement.shadowRoot.querySelector(
+      '.action-loader'
+    );
+    actionLoader.setAttribute('style', 'display: inline-block');
   }
 
   deleteLoanCookies() {
