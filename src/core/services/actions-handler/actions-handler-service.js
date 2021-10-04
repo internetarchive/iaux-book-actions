@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 /**
  * Helper to call loan service
  * @param {Object} options
@@ -9,7 +11,7 @@ export default function ActionsHandlerService(options) {
     data: {},
     success() {},
     error: null,
-    useLoader: true,
+    loader: true,
     type: 'POST',
     ...options,
   };
@@ -27,10 +29,10 @@ export default function ActionsHandlerService(options) {
 
   // callback binding for success reponse
   const callbackSuccess = function (data, textStatus, jqXHR) {
-    if (options.useLoader) {
-      this.showBookReaderMessageLoader();
+    if (option.loader) {
+      showActionButtonLoader();
     }
-    options.success.call(this, data, textStatus, jqXHR);
+    option.success.call(this, data, textStatus, jqXHR);
   }.bind(this);
 
   xhr.onreadystatechange = () => {
@@ -41,4 +43,16 @@ export default function ActionsHandlerService(options) {
 
   xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
   xhr.send(`action=${option.action}&identifier=${option.identifier}`);
+}
+
+function showActionButtonLoader() {
+  const collapsibleElement = document
+    .querySelector('ia-book-actions')
+    .shadowRoot.querySelector('collapsible-action-group');
+  collapsibleElement.setAttribute('style', 'opacity:0.8; pointer-events:none');
+
+  const actionLoader = collapsibleElement.shadowRoot.querySelector(
+    '.action-loader'
+  );
+  actionLoader.setAttribute('style', 'display: inline-block');
 }

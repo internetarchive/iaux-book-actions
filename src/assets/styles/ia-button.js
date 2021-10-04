@@ -51,6 +51,11 @@ export default css`
     background-color: #d9534f;
     border-color: #d43f3a;
   }
+  .ia-button.warning {
+    color: #fff;
+    background-color: #ee8950;
+    border-color: #ec7939;
+  }
   .ia-button.cancel {
     background-color: #e51c26;
     border-color: #f8c6c8;

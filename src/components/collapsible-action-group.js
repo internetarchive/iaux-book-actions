@@ -4,6 +4,31 @@ import { nothing } from 'lit-html';
 import buttonBaseStyle from '../assets/styles/ia-button.js';
 import { tabletContainerWidth } from '../core/config/constants.js';
 
+const arrowIcons = {
+  up: html`<svg
+    viewBox="0 0 1024 574"
+    aria-labelledby="grsi-ant-up-title"
+    id="si-ant-up"
+    fill="#fff"
+  >
+    <title id="grsi-ant-up-title">icon up</title>
+    <path
+      d="M1015 564q-10 10-23 10t-23-10L512 82 55 564q-10 10-23 10T9 564q-9-10-9-24t9-24L489 10q10-10 23-10t23 10l480 506q9 10 9 24t-9 24z"
+    ></path>
+  </svg> `,
+  down: html`<svg
+    viewBox="0 0 1024 574"
+    aria-labelledby="cmsi-ant-down-title"
+    id="si-ant-down"
+    fill="#fff"
+  >
+    <title id="cmsi-ant-down-title">icon down</title>
+    <path
+      d="M1015 10q-10-10-23-10t-23 10L512 492 55 10Q45 0 32 0T9 10Q0 20 0 34t9 24l480 506q10 10 23 10t23-10l480-506q9-10 9-24t-9-24z"
+    ></path>
+  </svg> `,
+};
+
 export class CollapsibleActionGroup extends LitElement {
   static get properties() {
     return {
@@ -13,6 +38,7 @@ export class CollapsibleActionGroup extends LitElement {
       open: { type: Boolean },
       width: { type: Number },
       hasAdminAccess: { type: Boolean },
+      dropdownArrow: { type: String },
     };
   }
 
@@ -27,6 +53,7 @@ export class CollapsibleActionGroup extends LitElement {
     this.hasAdminAccess = false;
     this.initialButton = false;
     this.loaderIcon = 'https://archive.org/upload/images/tree/loading.gif';
+    this.dropdownArrow = arrowIcons.down;
   }
 
   updated(changed) {
@@ -63,10 +90,10 @@ export class CollapsibleActionGroup extends LitElement {
   render() {
     return html`
       <section class="action-buttons primary">
-        ${this.renderPrimaryActions}
+        ${this.getLoaderIcon} ${this.renderPrimaryActions}
       </section>
       <section class="action-buttons secondary">
-        ${this.renderSecondaryActions} ${this.getLoaderIcon}
+        ${this.renderSecondaryActions}
       </section>
     `;
   }
@@ -74,12 +101,15 @@ export class CollapsibleActionGroup extends LitElement {
   get renderPrimaryActions() {
     if (this.primaryActions.length === 0) return nothing;
 
+    if (!this.primaryColor) {
+      this.primaryColor = this.primaryActions[0].className;
+    }
+
     // If its single action, let just not show dropdown list
     if (this.primaryActions.length === 1) {
       return this.initialActionTemplate;
     }
 
-    // TODO - wrap dropdown button with ia-icons
     return html`
       ${this.initialActionTemplate}
       <div class="dropdown">
@@ -87,7 +117,7 @@ export class CollapsibleActionGroup extends LitElement {
           class="ia-button ${this.primaryColor} down-arrow"
           @click=${this.toggleDropdown}
         >
-          + <i class="fa fa-caret-down"></i>
+          ${this.dropdownArrow}
         </button>
         <ul class="dropdown-content ${this.menuClass}">
           ${this.getPrimaryItems}
@@ -136,8 +166,6 @@ export class CollapsibleActionGroup extends LitElement {
       this.initialButton = true;
     }
 
-    this.primaryColor = this.primaryActions[0].className;
-
     return CollapsibleActionGroup.renderActionButton(
       this.primaryActions[0],
       this.initialButton
@@ -174,6 +202,14 @@ export class CollapsibleActionGroup extends LitElement {
 
   toggleDropdown() {
     this.open = this.open !== true;
+
+    if (this.primaryColor === 'dark') {
+      this.primaryColor = this.primaryActions[0].className;
+      this.dropdownArrow = arrowIcons.down;
+    } else {
+      this.primaryColor = 'dark';
+      this.dropdownArrow = arrowIcons.up;
+    }
   }
 
   static get styles() {
@@ -186,7 +222,6 @@ export class CollapsibleActionGroup extends LitElement {
         display: initial;
       }
       .primary .initial {
-        float: left;
         border-right: 0;
         border-radius: 0.4rem 0 0 0.4rem;
       }
@@ -196,7 +231,7 @@ export class CollapsibleActionGroup extends LitElement {
       .dropdown-content {
         position: absolute;
         min-width: 14rem;
-        margin: 0 0 0 -12.4rem;
+        margin: 0 0 0 -12.6rem;
         padding: 0;
         background: #2d2d2d;
         border-radius: 0.4rem;
@@ -219,8 +254,11 @@ export class CollapsibleActionGroup extends LitElement {
         color: rgb(45, 45, 45);
       }
       .down-arrow {
-        padding: 0.6rem;
-        border-radius: 0 0.4rem 0.4rem 0;
+        border-left: 0;
+        border-radius: 0px 0.4rem 0.4rem 0px;
+        width: 20px;
+        padding: 0.6rem 0.3rem;
+        margin-left: -4px;
       }
       .action-loader {
         vertical-align: middle;

@@ -11,7 +11,7 @@ import {
  * {
  *   text: 'Borrow for 14 days',
  *   callback: 'callback function for onclick event',
- *   className: 'btn-primary'
+ *   className: 'primary'
  *   analyticsEvent: {
  *     category: 'category-name',
  *     action: 'action-name',
@@ -134,7 +134,7 @@ export default class ActionsConfig extends ActionsHandler {
 
     const deprioritize =
       lendingStatus.user_has_browsed || lendingStatus.available_to_browse;
-    const buttonStyle = deprioritize ? 'btn-dark' : 'btn-warning';
+    const buttonStyle = deprioritize ? 'dark' : 'warning';
     return {
       text: waitlistButtonText,
       callback: clickAction,

@@ -28,11 +28,10 @@ export default class ActionsHandler {
         action: 'browse_book',
         identifier: this.identifier,
         success: () => {
-          this.showActionButtonLoader();
+          console.log('Book is browsed successfully!');
           this.handleReadItNow();
         },
       });
-      console.log('Book is browsed successfully!');
     };
   }
 
@@ -42,12 +41,11 @@ export default class ActionsHandler {
         action: 'return_loan',
         identifier: this.identifier,
         success: () => {
-          this.showActionButtonLoader();
+          console.log('Book is returned successfully!');
           this.deleteLoanCookies();
           URLHelper.goToUrl(this.lendingStatus.bookUrl, true);
         },
       });
-      console.log('Book is returned successfully!');
     };
   }
 
@@ -57,11 +55,10 @@ export default class ActionsHandler {
         action: 'borrow_book',
         identifier: this.identifier,
         success: () => {
-          this.showActionButtonLoader();
+          console.log('Book is borrowed successfully!');
           this.handleReadItNow();
         },
       });
-      console.log('Book is borrowed successfully!');
     };
   }
 
@@ -71,10 +68,10 @@ export default class ActionsHandler {
         action: 'join_waitlist',
         identifier: this.identifier,
         success: () => {
+          console.log('Book added in waitlist!');
           URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
         },
       });
-      console.log('Book added in waitlist!');
     };
   }
 
@@ -84,10 +81,10 @@ export default class ActionsHandler {
         action: 'leave_waitlist',
         identifier: this.identifier,
         success: () => {
+          console.log('removed you from waitlist!!');
           URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
         },
       });
-      console.log('removed you from waitlist!!');
     };
   }
 
@@ -125,23 +122,6 @@ export default class ActionsHandler {
     setTimeout(() => {
       URLHelper.goToUrl(redirectTo, true);
     }, this.ajaxTimeout);
-  }
-
-  showActionButtonLoader() {
-    const collapsibleElement = document
-      .querySelector('ia-book-actions')
-      .shadowRoot.querySelector('collapsible-action-group');
-    collapsibleElement.setAttribute(
-      'style',
-      'opacity:0.8; pointer-events:none'
-    );
-
-    // const primaryActionsElement = collapsibleElement.shadowRoot.querySelector('.primary');
-
-    const actionLoader = collapsibleElement.shadowRoot.querySelector(
-      '.action-loader'
-    );
-    actionLoader.setAttribute('style', 'display: inline-block');
   }
 
   deleteLoanCookies() {
