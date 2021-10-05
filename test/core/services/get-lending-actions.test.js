@@ -21,7 +21,7 @@ describe('Get Lending Actions', () => {
     expect(actions.primaryActions.length).to.equal(2);
     expect(actions.primaryActions[0].text).to.equal('Borrow for 1 hour');
     expect(actions.primaryActions[1].text).to.equal('Borrow for 14 days');
-    expect(actions.secondaryActions[1].text).to.equal('Better World Books');
+    expect(actions.secondaryActions[1].text).to.equal('Purchase');
   });
 
   it('Borrowable without user', async () => {
@@ -120,7 +120,7 @@ describe('Get Lending Actions', () => {
       'Book available to patrons with print disabilities.'
     );
     expect(actions.primaryActions.length).to.equal(1);
-    expect(actions.primaryActions[0].text).to.equal('Borrow unavailable');
+    expect(actions.primaryActions[0].text).to.equal('Borrow Unavailable');
   });
 
   it('If user is on waitlist', async () => {
@@ -139,7 +139,7 @@ describe('Get Lending Actions', () => {
       'You are on the waitlist for this book.'
     );
     expect(actions.primaryActions.length).to.equal(1);
-    expect(actions.primaryActions[0].text).to.equal('Leave waitlist');
+    expect(actions.primaryActions[0].text).to.equal('Leave Waitlist');
   });
 
   it('If book borrow is not available', async () => {
@@ -150,6 +150,6 @@ describe('Get Lending Actions', () => {
       'This book is not available at this time.'
     );
     expect(actions.primaryActions.length).to.equal(1);
-    expect(actions.primaryActions[0].text).to.equal('Borrow unavailable');
+    expect(actions.primaryActions[0].text).to.equal('Borrow Unavailable');
   });
 });

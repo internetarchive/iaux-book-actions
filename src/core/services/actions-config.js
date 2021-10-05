@@ -95,7 +95,7 @@ export default class ActionsConfig extends ActionsHandler {
 
   leaveWaitlistConfig() {
     return {
-      text: 'Leave waitlist',
+      text: 'Leave Waitlist',
       callback: this.handleRemoveFromWaitingList(),
       className: 'dark',
       analyticsEvent: {
@@ -121,8 +121,8 @@ export default class ActionsConfig extends ActionsHandler {
       lendingStatus.available_to_waitlist && !lendingStatus.available_to_borrow;
 
     const waitlistButtonText = !isLoggedIn
-      ? 'Log In and Join waitlist'
-      : 'Join waitlist for 14 day borrow';
+      ? 'Log In and Join Waitlist'
+      : 'Join Waitlist';
 
     const analyticsCategory =
       isLoggedIn && lendingStatus.user_has_browsed ? 'browse' : 'preview';
@@ -150,8 +150,8 @@ export default class ActionsConfig extends ActionsHandler {
     if (!this.bwbPurchaseUrl || this.bwbPurchaseUrl === '') return null;
 
     return {
-      text: 'Better World Books',
-      title: 'Better World Books',
+      text: 'Purchase',
+      title: 'Purchase',
       url: this.bwbPurchaseUrl,
       target: '_blank',
       className: 'purchase dark',
@@ -168,6 +168,7 @@ export default class ActionsConfig extends ActionsHandler {
         text: 'Admin Access',
         title: 'You have administrative privileges to read this book',
         url: '?admin=1',
+        target: '_self',
         className: 'danger',
         analyticsEvent: {
           category: '',
@@ -187,7 +188,7 @@ export default class ActionsConfig extends ActionsHandler {
     return {
       text: message,
       url: URLHelper.getBackHref(),
-      target: '_blank',
+      target: '_self',
       className: 'ia-button',
       analyticsEvent: {
         category: this.analyticsCategories.purchase,
@@ -198,7 +199,7 @@ export default class ActionsConfig extends ActionsHandler {
 
   unavailableBookConfig() {
     return {
-      text: 'Borrow unavailable',
+      text: 'Borrow Unavailable',
       callback: '',
       className: 'primary',
       disabled: true,

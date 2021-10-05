@@ -18,7 +18,7 @@ const container = ({
     {
       analyticsEvent: { action: '', category: '' },
       className: 'ia-button dark',
-      text: 'Better world book purchase',
+      text: 'Purchase',
     },
   ],
 } = {}) =>

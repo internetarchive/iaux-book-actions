@@ -3,31 +3,10 @@ import { nothing } from 'lit-html';
 
 import buttonBaseStyle from '../assets/styles/ia-button.js';
 import { tabletContainerWidth } from '../core/config/constants.js';
-
-const arrowIcons = {
-  up: html`<svg
-    viewBox="0 0 1024 574"
-    aria-labelledby="grsi-ant-up-title"
-    id="si-ant-up"
-    fill="#fff"
-  >
-    <title id="grsi-ant-up-title">icon up</title>
-    <path
-      d="M1015 564q-10 10-23 10t-23-10L512 82 55 564q-10 10-23 10T9 564q-9-10-9-24t9-24L489 10q10-10 23-10t23 10l480 506q9 10 9 24t-9 24z"
-    ></path>
-  </svg> `,
-  down: html`<svg
-    viewBox="0 0 1024 574"
-    aria-labelledby="cmsi-ant-down-title"
-    id="si-ant-down"
-    fill="#fff"
-  >
-    <title id="cmsi-ant-down-title">icon down</title>
-    <path
-      d="M1015 10q-10-10-23-10t-23 10L512 492 55 10Q45 0 32 0T9 10Q0 20 0 34t9 24l480 506q10 10 23 10t23-10l480-506q9-10 9-24t-9-24z"
-    ></path>
-  </svg> `,
-};
+import {
+  dropdownOpened,
+  dropdownClosed,
+} from '../assets/data/dropdown-arrow.js';
 
 export class CollapsibleActionGroup extends LitElement {
   static get properties() {
@@ -53,7 +32,7 @@ export class CollapsibleActionGroup extends LitElement {
     this.hasAdminAccess = false;
     this.initialButton = false;
     this.loaderIcon = 'https://archive.org/upload/images/tree/loading.gif';
-    this.dropdownArrow = arrowIcons.down;
+    this.dropdownArrow = dropdownClosed;
   }
 
   updated(changed) {
@@ -72,6 +51,8 @@ export class CollapsibleActionGroup extends LitElement {
       if (this.hasAdminAccess) {
         this.changeActionButtonOrder();
       }
+
+      this.primaryColor = this.primaryActions[0].className;
 
       // remove secondaryActions
       this.secondaryActions = [];
@@ -173,15 +154,17 @@ export class CollapsibleActionGroup extends LitElement {
   }
 
   get getPrimaryItems() {
-    return this.primaryActions.map(
-      action =>
-        html`<li>
-          ${CollapsibleActionGroup.renderActionButton(
-            action,
-            this.initialButton
-          )}
-        </li>`
-    );
+    return this.primaryActions
+      .slice(1)
+      .map(
+        action =>
+          html`<li>
+            ${CollapsibleActionGroup.renderActionButton(
+              action,
+              this.initialButton
+            )}
+          </li>`
+      );
   }
 
   get getLoaderIcon() {
@@ -205,10 +188,10 @@ export class CollapsibleActionGroup extends LitElement {
 
     if (this.primaryColor === 'dark') {
       this.primaryColor = this.primaryActions[0].className;
-      this.dropdownArrow = arrowIcons.down;
+      this.dropdownArrow = dropdownClosed;
     } else {
       this.primaryColor = 'dark';
-      this.dropdownArrow = arrowIcons.up;
+      this.dropdownArrow = dropdownOpened;
     }
   }
 
@@ -220,6 +203,10 @@ export class CollapsibleActionGroup extends LitElement {
       }
       .action-buttons .ia-button {
         display: initial;
+        height: 3rem;
+      }
+      .primary {
+        position: relative;
       }
       .primary .initial {
         border-right: 0;
@@ -231,8 +218,9 @@ export class CollapsibleActionGroup extends LitElement {
       .dropdown-content {
         position: absolute;
         min-width: 14rem;
-        margin: 0 0 0 -12.6rem;
+        margin: 0;
         padding: 0;
+        left: 0;
         background: #2d2d2d;
         border-radius: 0.4rem;
         border: 1px solid var(--primaryCTABorder);
@@ -240,6 +228,7 @@ export class CollapsibleActionGroup extends LitElement {
       .dropdown-content li {
         color: var(--primaryBGColor);
         list-style: none;
+        height: 3rem;
       }
       .dropdown-content .ia-button {
         background: none;
