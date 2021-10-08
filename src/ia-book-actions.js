@@ -46,7 +46,11 @@ export default class IABookActions extends LitElement {
   }
 
   updated(changed) {
-    if (changed.has('lendingStatus')) {
+    if (
+      changed.has('lendingStatus') ||
+      changed.has('bwbPurchaseUrl') ||
+      changed.has('userid')
+    ) {
       this.setupLendingToolbarActions();
       this.update();
     }
@@ -77,6 +81,8 @@ export default class IABookActions extends LitElement {
     return html`
       <section class="lending-wrapper">
         <collapsible-action-group
+          .userid=${this.userid}
+          .identifier=${this.identifier}
           .primaryColor=${this.primaryColor}
           .primaryActions=${this.primaryActions}
           .secondaryActions=${this.secondaryActions}
@@ -85,6 +91,7 @@ export default class IABookActions extends LitElement {
         >
         </collapsible-action-group>
         ${this.textGroupTemplate} ${this.infoIconTemplate}
+        ${this.printDisabilityTemplate}
       </section>
     `;
   }
@@ -109,6 +116,12 @@ export default class IABookActions extends LitElement {
     </text-group>`;
   }
 
+  get printDisabilityTemplate() {
+    return html`<print-disability-text
+      texts=${this.printDisabilityLine}
+    ></print-disability-text>`;
+  }
+
   get hasAdminAccess() {
     return !this.lendingStatus.userHasBorrowed && this.lendingStatus.isAdmin;
   }
@@ -117,7 +130,7 @@ export default class IABookActions extends LitElement {
     return css`
       :host {
         display: block;
-        background: var(--primaryBGColor);
+        background: var(--secondaryBGColor);
         color: var(--primaryTextColor);
       }
       .lending-wrapper {

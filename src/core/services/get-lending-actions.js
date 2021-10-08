@@ -51,12 +51,24 @@ export default class GetLendingActions {
     );
   }
 
+  onlyAdminAction() {
+    return {
+      primaryTitle: 'You have administrative privileges to read this book.',
+      primaryActions: [],
+      primaryColor: 'primary',
+      secondaryActions: [
+        this.actionsConfig.adminAccessConfig(),
+        this.actionsConfig.purchaseConfig(),
+      ],
+    };
+  }
+
   // done
-  adminAccessOrPrintDisabledAction() {
+  adminOrPrintDisabledReadingAction() {
     return {
       primaryTitle: '',
       primaryActions: [],
-      secondaryActions: [this.actionsConfig.adminOrPrintDisabledConfig()],
+      secondaryActions: [this.actionsConfig.adminOrPrintDisabledExitConfig()],
     };
   }
 
@@ -73,10 +85,7 @@ export default class GetLendingActions {
       primaryTitle: daysLeftStr,
       primaryActions: [this.actionsConfig.returnBookConfig()],
       primaryColor: 'danger',
-      secondaryActions: [
-        this.actionsConfig.adminAccessConfig(),
-        this.actionsConfig.purchaseConfig(),
-      ],
+      secondaryActions: [this.actionsConfig.purchaseConfig()],
     };
   }
 
@@ -120,15 +129,18 @@ export default class GetLendingActions {
       ? this.actionsConfig.browseBookConfig()
       : null;
 
-    const dropdownOptions = browseBook ? [borrowBook, browseBook] : [];
+    const dropdownOptions = browseBook ? [browseBook, borrowBook] : [];
     const actions = !browseBook ? [borrowBook, leaveWaitlist] : [leaveWaitlist];
 
     return {
       primaryTitle: 'You are at the top of the waitlist for this book',
-      primaryActions: actions,
+      primaryActions: actions.concat(dropdownOptions),
       primaryColor: 'primary',
       footer: 'printDisabilityLine()',
-      prefixActions: dropdownOptions,
+      secondaryActions: [
+        this.actionsConfig.adminAccessConfig(),
+        this.actionsConfig.purchaseConfig(),
+      ],
     };
   }
 
@@ -343,6 +355,7 @@ export default class GetLendingActions {
     const disableBorrow = lendingStatus.loanCount >= lendingStatus.maxLoans;
     const cantBorrowNorWaitlist =
       !lendingStatus.available_to_borrow && !waitlist;
+
     if (cantBorrowNorWaitlist) {
       borrow = this.actionsConfig.unavailableBookConfig();
     } else if (lendingStatus.available_to_borrow) {
@@ -387,14 +400,17 @@ export default class GetLendingActions {
     let lendingActions;
     const lendingStatus = this.lendingStatus || [];
 
-    const isAdmin =
+    const isAdminReading =
       URLHelper.getQueryParam('admin') == '1' && lendingStatus.isAdmin;
-    const accessPrintDisabled =
+    const userIsPrintdisabledReading =
       URLHelper.getQueryParam('access') == '1' &&
       lendingStatus.user_is_printdisabled;
 
     const notBorrowed =
-      !lendingStatus.user_has_borrowed || !lendingStatus.user_has_browsed;
+      !lendingStatus.user_has_borrowed && !lendingStatus.user_has_browsed;
+    const notBorrowable =
+      !lendingStatus.available_to_borrow && !lendingStatus.available_to_browse;
+
     const userCanAccessPrintDisabled =
       lendingStatus.is_printdisabled && lendingStatus.user_is_printdisabled;
 
@@ -403,9 +419,12 @@ export default class GetLendingActions {
 
     // sequential order of hierarchal access
     // admin -> is browsing/borrowing -> is waitlist -> can borrow print disabled -> can borrow -> isOnWaitlist -> userCanAccessPrintDisabled-> restricted
-    if (isAdmin || accessPrintDisabled) {
-      lendingActions = this.adminAccessOrPrintDisabledAction();
-      currentToolbar = 'adminAccessOrPrintDisabledAction';
+    if (isAdminReading || userIsPrintdisabledReading) {
+      lendingActions = this.adminOrPrintDisabledReadingAction();
+      currentToolbar = 'adminOrPrintDisabledReadingAction';
+    } else if (lendingStatus.isAdmin && notBorrowed && notBorrowable) {
+      lendingActions = this.onlyAdminAction();
+      currentToolbar = 'onlyAdminAction';
     } else if (lendingStatus.user_has_borrowed) {
       lendingActions = this.borrowingAction();
       currentToolbar = 'borrowingAction';

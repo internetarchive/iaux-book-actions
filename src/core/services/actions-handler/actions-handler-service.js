@@ -25,7 +25,7 @@ export default function ActionsHandlerService(options) {
 
   const xhr = new XMLHttpRequest();
   xhr.open(option.type, baseHost, true);
-  xhr.timeout = 60000; // up to 60 seconds, because item creation takes time
+  xhr.timeout = 60000; // up to 6 seconds, because item creation takes time
 
   // callback binding for success reponse
   const callbackSuccess = function (data, textStatus, jqXHR) {

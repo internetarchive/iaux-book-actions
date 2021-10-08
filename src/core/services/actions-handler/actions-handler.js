@@ -1,5 +1,6 @@
 /* eslint class-methods-use-this: "off" */
 /* eslint no-console: "off" */
+import { LitElement } from 'lit-element';
 import { URLHelper } from '../../config/url-helper.js';
 import ActionsHandlerService from './actions-handler-service.js';
 
@@ -14,87 +15,119 @@ import ActionsHandlerService from './actions-handler-service.js';
  *    return reponse as a success.
  */
 
-export default class ActionsHandler {
-  constructor(identifier, lendingStatus) {
+export default class ActionsHandler extends LitElement {
+  constructor(identifier) {
+    super();
     this.identifier = identifier;
-    this.lendingStatus = lendingStatus;
-    this.userid = '@neeraj-archive';
     this.ajaxTimeout = 5000;
+    this.bindEvents();
+  }
+
+  bindEvents() {
+    this.addEventListener('browseBook', ({ detail }) => {
+      this.handleBrowseIt();
+      console.log(`Analytics click fired: ${detail.event}`);
+    });
+
+    this.addEventListener('returnNow', ({ detail }) => {
+      this.handleReturnIt(detail.bookUrl);
+      console.log(`Analytics click fired: ${detail.event}`);
+    });
+
+    this.addEventListener('borrowBook', ({ detail }) => {
+      this.handleBorrowIt();
+      console.log(`Analytics click fired: ${detail.event}`);
+    });
+
+    this.addEventListener('loginAndBorrow', ({ detail }) => {
+      this.handleLoginOk();
+      console.log(`Analytics click fired: ${detail.event}`);
+    });
+
+    this.addEventListener('leaveWaitlist', ({ detail }) => {
+      this.handleRemoveFromWaitingList();
+      console.log(`Analytics click fired: ${detail.event}`);
+    });
+
+    this.addEventListener('joinWaitlist', ({ detail }) => {
+      this.handleReserveIt();
+      console.log(`Analytics click fired: ${detail.event}`);
+    });
+
+    this.addEventListener('purchaseBook', ({ detail }) => {
+      console.log(`Analytics click fired: ${detail.event}`);
+    });
+
+    this.addEventListener('adminAccess', ({ detail }) => {
+      console.log(`Analytics click fired: ${detail.event}`);
+    });
+
+    this.addEventListener('exitAdminAccess', ({ detail }) => {
+      console.log(`Analytics click fired: ${detail.event}`);
+    });
   }
 
   handleBrowseIt() {
-    return () => {
-      ActionsHandlerService({
-        action: 'browse_book',
-        identifier: this.identifier,
-        success: () => {
-          console.log('Book is browsed successfully!');
-          this.handleReadItNow();
-        },
-      });
-    };
+    ActionsHandlerService({
+      action: 'browse_book',
+      identifier: this.identifier,
+      success: () => {
+        // console.log('Book is browsed successfully!');
+        this.handleReadItNow();
+      },
+    });
   }
 
   handleReturnIt() {
-    return () => {
-      ActionsHandlerService({
-        action: 'return_loan',
-        identifier: this.identifier,
-        success: () => {
-          console.log('Book is returned successfully!');
-          this.deleteLoanCookies();
-          URLHelper.goToUrl(this.lendingStatus.bookUrl, true);
-        },
-      });
-    };
+    ActionsHandlerService({
+      action: 'return_loan',
+      identifier: this.identifier,
+      success: () => {
+        // console.log('Book is returned successfully!');
+        this.deleteLoanCookies();
+        URLHelper.goToUrl(`/details/${this.identifier}`, true);
+      },
+    });
   }
 
   handleBorrowIt() {
-    return () => {
-      ActionsHandlerService({
-        action: 'borrow_book',
-        identifier: this.identifier,
-        success: () => {
-          console.log('Book is borrowed successfully!');
-          this.handleReadItNow();
-        },
-      });
-    };
+    ActionsHandlerService({
+      action: 'borrow_book',
+      identifier: this.identifier,
+      success: () => {
+        // console.log('Book is borrowed successfully!');
+        this.handleReadItNow();
+      },
+    });
   }
 
   handleReserveIt() {
-    return () => {
-      ActionsHandlerService({
-        action: 'join_waitlist',
-        identifier: this.identifier,
-        success: () => {
-          console.log('Book added in waitlist!');
-          URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
-        },
-      });
-    };
+    ActionsHandlerService({
+      action: 'join_waitlist',
+      identifier: this.identifier,
+      success: () => {
+        // console.log('Book added in waitlist!');
+        URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
+      },
+    });
   }
 
   handleRemoveFromWaitingList() {
-    return () => {
-      ActionsHandlerService({
-        action: 'leave_waitlist',
-        identifier: this.identifier,
-        success: () => {
-          console.log('removed you from waitlist!!');
-          URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
-        },
-      });
-    };
+    ActionsHandlerService({
+      action: 'leave_waitlist',
+      identifier: this.identifier,
+      success: () => {
+        // console.log('removed you from waitlist!!');
+        URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
+      },
+    });
   }
 
   handleLoginOk() {
-    return () => {
-      const target = `/account/login?referer=${encodeURIComponent(
-        URLHelper.getRedirectUrl()
-      )}`;
-      URLHelper.goToUrl(target, true);
-    };
+    const target = `/account/login?referer=${encodeURIComponent(
+      URLHelper.getRedirectUrl()
+    )}`;
+    URLHelper.goToUrl(target, true);
   }
 
   handleReadItNow(extraParam) {

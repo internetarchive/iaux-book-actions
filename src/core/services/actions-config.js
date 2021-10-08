@@ -1,4 +1,4 @@
-import ActionsHandler from './actions-handler/actions-handler.js';
+// import ActionsHandler from './actions-handler/actions-handler.js';
 import { URLHelper } from '../config/url-helper.js';
 import {
   analyticsCategories,
@@ -26,24 +26,21 @@ import {
  * 4. analyticsEvent: being used to apply event tracking with google analytics
  *    it contains category name and action name to different in tracking.
  */
-export default class ActionsConfig extends ActionsHandler {
+export default class ActionsConfig {
   constructor(userid, identifier, lendingStatus, bwbPurchaseUrl) {
-    super();
     this.userid = userid;
     this.identifier = identifier;
     this.lendingStatus = lendingStatus;
     this.bwbPurchaseUrl = bwbPurchaseUrl;
     this.analyticsCategories = analyticsCategories;
     this.analyticsActions = analyticsActions;
-
-    /* eslint-disable no-new */
-    new ActionsHandler(this.identifier, this.lendingStatus);
   }
 
   browseBookConfig() {
     return {
+      id: 'browseBook',
       text: 'Borrow for 1 hour',
-      callback: this.handleBrowseIt(),
+      // callback: this.handleBrowseIt(),
       className: 'primary',
       analyticsEvent: {
         category: this.analyticsCategories.preview,
@@ -54,8 +51,9 @@ export default class ActionsConfig extends ActionsHandler {
 
   returnBookConfig() {
     return {
+      id: 'returnNow',
       text: 'Return now',
-      callback: this.handleReturnIt(),
+      // callback: this.handleReturnIt(),
       className: 'danger',
       analyticsEvent: {
         category: this.analyticsCategories.browse,
@@ -65,7 +63,11 @@ export default class ActionsConfig extends ActionsHandler {
   }
 
   borrowBookConfig(disableBorrow = false, analyticsEvent) {
-    if (!this.lendingStatus.available_to_borrow) return null;
+    if (
+      !this.lendingStatus.available_to_borrow &&
+      !this.lendingStatus.user_is_printdisabled
+    )
+      return null;
 
     const borrowEvent = {
       category: this.analyticsCategories.borrow,
@@ -73,8 +75,9 @@ export default class ActionsConfig extends ActionsHandler {
     };
 
     return {
+      id: 'borrowBook',
       text: 'Borrow for 14 days',
-      callback: this.handleBorrowIt(),
+      // callback: this.handleBorrowIt(),
       className: 'primary',
       disabled: disableBorrow,
       analyticsEvent: analyticsEvent || borrowEvent,
@@ -83,8 +86,9 @@ export default class ActionsConfig extends ActionsHandler {
 
   loginAndBorrowBookConfig() {
     return {
+      id: 'loginAndBorrow',
       text: 'Log In and Borrow',
-      callback: this.handleLoginOk(),
+      // callback: this.handleLoginOk(),
       className: 'primary',
       analyticsEvent: {
         category: this.analyticsCategories.preview,
@@ -95,8 +99,9 @@ export default class ActionsConfig extends ActionsHandler {
 
   leaveWaitlistConfig() {
     return {
+      id: 'leaveWaitlist',
       text: 'Leave Waitlist',
-      callback: this.handleRemoveFromWaitingList(),
+      // callback: this.handleRemoveFromWaitingList(),
       className: 'dark',
       analyticsEvent: {
         category: this.analyticsCategories.preview,
@@ -111,7 +116,7 @@ export default class ActionsConfig extends ActionsHandler {
     const lendingStatus = this.lendingStatus || [];
     const bookHasWaitlist = lendingStatus.available_to_waitlist;
 
-    let clickAction = this.handleLoginOk();
+    let clickAction = 'this.handleLoginOk()';
 
     if (!bookHasWaitlist || lendingStatus.available_to_borrow) {
       return null;
@@ -129,13 +134,14 @@ export default class ActionsConfig extends ActionsHandler {
     const analyticsAction = isLoggedIn ? 'waitlistJoin' : 'login';
 
     if (isLoggedIn && !lendingStatus.user_on_waitlist && waitlistIsOpen) {
-      clickAction = this.handleReserveIt();
+      clickAction = 'this.handleReserveIt()';
     }
 
     const deprioritize =
       lendingStatus.user_has_browsed || lendingStatus.available_to_browse;
     const buttonStyle = deprioritize ? 'dark' : 'warning';
     return {
+      id: 'joinWaitlist',
       text: waitlistButtonText,
       callback: clickAction,
       className: buttonStyle,
@@ -150,6 +156,7 @@ export default class ActionsConfig extends ActionsHandler {
     if (!this.bwbPurchaseUrl || this.bwbPurchaseUrl === '') return null;
 
     return {
+      id: 'purchaseBook',
       text: 'Purchase',
       title: 'Purchase',
       url: this.bwbPurchaseUrl,
@@ -165,6 +172,7 @@ export default class ActionsConfig extends ActionsHandler {
   adminAccessConfig() {
     if (!this.lendingStatus.userHasBorrowed && this.lendingStatus.isAdmin) {
       return {
+        id: 'adminAccess',
         text: 'Admin Access',
         title: 'You have administrative privileges to read this book',
         url: '?admin=1',
@@ -180,12 +188,35 @@ export default class ActionsConfig extends ActionsHandler {
     return null;
   }
 
-  adminOrPrintDisabledConfig() {
+  adminAccessConfig1() {
+    if (
+      this.lendingStatus.is_printdisabled &&
+      this.lendingStatus.user_is_printdisabled
+    ) {
+      return {
+        id: 'adminAccess',
+        text: 'Admin Access',
+        title: 'You have administrative privileges to read this book',
+        url: '?admin=1',
+        target: '_self',
+        className: 'danger',
+        analyticsEvent: {
+          category: '',
+          action: '',
+        },
+      };
+    }
+
+    return null;
+  }
+
+  adminOrPrintDisabledExitConfig() {
     const mode =
       URLHelper.getQueryParam('admin') === '1' ? 'admin' : 'print-disabled';
     const message = `← Exit ${mode} access mode`;
 
     return {
+      id: 'exitAdminAccess',
       text: message,
       url: URLHelper.getBackHref(),
       target: '_self',
@@ -199,6 +230,7 @@ export default class ActionsConfig extends ActionsHandler {
 
   unavailableBookConfig() {
     return {
+      id: 'borrowUnavailable',
       text: 'Borrow Unavailable',
       callback: '',
       className: 'primary',
