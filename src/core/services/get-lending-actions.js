@@ -146,6 +146,17 @@ export default class GetLendingActions {
 
   // done
   borrowPrintDisabledAction() {
+    const lendingStatus = this.lendingStatus || [];
+
+    // if user isn't printDisabled, book is available to browse & borrow, then we
+    // redirect to canborrow
+    if (
+      lendingStatus.available_to_browse ||
+      lendingStatus.available_to_borrow
+    ) {
+      return this.borrowAction();
+    }
+
     return {
       primaryTitle: 'You are eligible for print-disabled access.',
       primaryActions: [this.actionsConfig.borrowBookConfig()],

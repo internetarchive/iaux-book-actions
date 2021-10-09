@@ -28,7 +28,7 @@ export class TextGroup extends LitElement {
       .variable-texts {
         margin-left: 10px;
         vertical-align: middle;
-        font-size: 1.6rem;
+        font-size: 1.8rem;
       }
       .hidden {
         display: none;

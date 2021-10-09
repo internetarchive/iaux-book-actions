@@ -14,7 +14,7 @@ export default css`
     font-size: 1.4rem;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     display: inline-block;
-    padding: 0.6rem 1.2rem;
+    padding: 0.85rem 1.2rem;
     border: 1px solid transparent;
     white-space: nowrap;
     -webkit-user-select: none;

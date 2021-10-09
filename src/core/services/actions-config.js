@@ -233,7 +233,7 @@ export default class ActionsConfig {
       id: 'borrowUnavailable',
       text: 'Borrow Unavailable',
       callback: '',
-      className: 'primary',
+      className: 'primary unavailable',
       disabled: true,
       analyticsEvent: {
         category: this.analyticsCategories.unavailable,

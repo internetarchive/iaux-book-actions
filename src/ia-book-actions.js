@@ -130,7 +130,7 @@ export default class IABookActions extends LitElement {
     return css`
       :host {
         display: block;
-        background: var(--secondaryBGColor);
+        background: var(--primaryBGColor);
         color: var(--primaryTextColor);
       }
       .lending-wrapper {

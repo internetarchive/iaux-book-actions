@@ -7,13 +7,14 @@ export default css`
   }
   .action-buttons .ia-button {
     display: initial;
+    height: 3.5rem;
   }
   .primary,
   .secondary {
     position: relative;
   }
   .primary .initial {
-    border-right: 0;
+    margin-right: -3px;
     border-radius: 0.4rem 0 0 0.4rem;
   }
   .secondary {
@@ -55,11 +56,10 @@ export default css`
     fill: black;
   }
   .down-arrow {
-    border-left: 0;
     border-radius: 0px 0.4rem 0.4rem 0px;
     width: 20px;
     padding: 0.6rem 0.3rem;
-    margin-left: -4px;
+    border-left: 0px;
   }
   .action-loader {
     vertical-align: middle;
@@ -96,5 +96,9 @@ export default css`
     position: absolute;
     left: 8px;
     top: 2px;
+  }
+  .unavailable {
+    opacity: 0.7;
+    pointer-events: none;
   }
 `;

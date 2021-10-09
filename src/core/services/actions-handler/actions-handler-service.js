@@ -27,11 +27,12 @@ export default function ActionsHandlerService(options) {
   xhr.open(option.type, baseHost, true);
   xhr.timeout = 60000; // up to 6 seconds, because item creation takes time
 
+  if (option.loader) {
+    showActionButtonLoader();
+  }
+
   // callback binding for success reponse
   const callbackSuccess = function (data, textStatus, jqXHR) {
-    if (option.loader) {
-      showActionButtonLoader();
-    }
     option.success.call(this, data, textStatus, jqXHR);
   }.bind(this);
 
