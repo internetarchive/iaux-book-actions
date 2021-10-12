@@ -1,8 +1,11 @@
 import { html, css, LitElement } from 'lit-element';
 
+import ResizeObserver from 'resize-observer-polyfill';
+
 import './components/collapsible-action-group.js';
 import './components/text-group.js';
 import './components/info-icon.js';
+import './components/footer-texts.js';
 
 import GetLendingActions from './core/services/get-lending-actions.js';
 import { mobileContainerWidth } from './core/config/constants.js';
@@ -30,14 +33,13 @@ export default class IABookActions extends LitElement {
     this.width = 0;
     this.bwbPurchaseUrl = '';
     this.lendingOptions = [];
+    this.printDisabilityLine = 'Get print disability access';
   }
 
   firstUpdated() {
     const resizeObserver = new ResizeObserver(entries => {
       for (const entry of entries) {
-        this.width = entry.contentBoxSize
-          ? entry.contentBoxSize[0].inlineSize
-          : entry.contentRect.width;
+        this.width = entry.contentRect ? entry.contentRect.width : '';
       }
     });
     resizeObserver.observe(this.shadowRoot.querySelector('.lending-wrapper'));
@@ -91,7 +93,7 @@ export default class IABookActions extends LitElement {
         >
         </collapsible-action-group>
         ${this.textGroupTemplate} ${this.infoIconTemplate}
-        ${this.printDisabilityTemplate}
+        ${this.footerTextsTemplate}
       </section>
     `;
   }
@@ -116,10 +118,11 @@ export default class IABookActions extends LitElement {
     </text-group>`;
   }
 
-  get printDisabilityTemplate() {
-    return html`<print-disability-text
+  get footerTextsTemplate() {
+    if (!this.printDisabilityLine) return '';
+    return html`<footer-texts
       texts=${this.printDisabilityLine}
-    ></print-disability-text>`;
+    ></footer-texts>`;
   }
 
   get hasAdminAccess() {

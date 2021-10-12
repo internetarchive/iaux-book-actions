@@ -84,8 +84,9 @@ export class CollapsibleActionGroup extends ActionsHandler {
 
   render() {
     return html`
+      ${this.getLoaderIcon}
       <section class="action-buttons primary">
-        ${this.getLoaderIcon} ${this.renderPrimaryActions}
+        ${this.renderPrimaryActions}
       </section>
       <section class="action-buttons secondary">
         ${this.renderSecondaryActions}
@@ -129,6 +130,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
 
   renderActionLink(action, initialButton = false) {
     return html`<a
+      data-id="${action.id}"
       class="ia-button ${action.className} ${initialButton ? 'initial' : ''}"
       href="${action.url}"
       target=${action.target}
@@ -144,7 +146,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
     if (action.url) return this.renderActionLink(action, initialButton);
 
     return html`<button
-      id="${action.id}"
+      data-id="${action.id}"
       class="ia-button ${action.className} ${initialButton ? 'initial' : ''}"
       data-event-click-tracking="${action.analyticsEvent.category}|${action
         .analyticsEvent.action}"
@@ -158,8 +160,9 @@ export class CollapsibleActionGroup extends ActionsHandler {
     this.dropdownState = 'close';
     this.dropdownArrow = dropdownClosed;
 
-    const eventName = e.path[0].id;
+    const eventName = e.currentTarget.dataset.id;
     const event = e.currentTarget.dataset.eventClickTracking;
+
     this.dispatchEvent(
       new CustomEvent(eventName, {
         detail: {
@@ -188,11 +191,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
   }
 
   get getLoaderIcon() {
-    return html`<img
-      class="action-loader close"
-      alt=""
-      src="${this.loaderIcon}"
-    />`;
+    return html`<img class="action-loader" alt="" src="${this.loaderIcon}" />`;
   }
 
   get isBelowTabletContainer() {

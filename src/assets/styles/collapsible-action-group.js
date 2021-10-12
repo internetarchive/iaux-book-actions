@@ -14,7 +14,7 @@ export default css`
     position: relative;
   }
   .primary .initial {
-    margin-right: -3px;
+    margin-right: -4px;
     border-radius: 0.4rem 0 0 0.4rem;
   }
   .secondary {
@@ -59,10 +59,10 @@ export default css`
     border-radius: 0px 0.4rem 0.4rem 0px;
     width: 20px;
     padding: 0.6rem 0.3rem;
-    border-left: 0px;
   }
   .action-loader {
     vertical-align: middle;
+    visibility: hidden;
   }
   .close {
     display: none;

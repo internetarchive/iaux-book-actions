@@ -55,5 +55,5 @@ function showActionButtonLoader() {
   const actionLoader = collapsibleElement.shadowRoot.querySelector(
     '.action-loader'
   );
-  actionLoader.setAttribute('style', 'display: inline-block');
+  actionLoader.setAttribute('style', 'visibility: visible');
 }
