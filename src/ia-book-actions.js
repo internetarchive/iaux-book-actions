@@ -5,7 +5,6 @@ import ResizeObserver from 'resize-observer-polyfill';
 import './components/collapsible-action-group.js';
 import './components/text-group.js';
 import './components/info-icon.js';
-import './components/footer-texts.js';
 
 import GetLendingActions from './core/services/get-lending-actions.js';
 import { mobileContainerWidth } from './core/config/constants.js';
@@ -33,7 +32,6 @@ export default class IABookActions extends LitElement {
     this.width = 0;
     this.bwbPurchaseUrl = '';
     this.lendingOptions = [];
-    this.printDisabilityLine = 'Get print disability access';
   }
 
   firstUpdated() {
@@ -48,11 +46,7 @@ export default class IABookActions extends LitElement {
   }
 
   updated(changed) {
-    if (
-      changed.has('lendingStatus') ||
-      changed.has('bwbPurchaseUrl') ||
-      changed.has('userid')
-    ) {
+    if (changed.has('lendingStatus') || changed.has('bwbPurchaseUrl')) {
       this.setupLendingToolbarActions();
       this.update();
     }
@@ -93,7 +87,6 @@ export default class IABookActions extends LitElement {
         >
         </collapsible-action-group>
         ${this.textGroupTemplate} ${this.infoIconTemplate}
-        ${this.footerTextsTemplate}
       </section>
     `;
   }
@@ -116,13 +109,6 @@ export default class IABookActions extends LitElement {
       texts="${this.primaryTitle}"
     >
     </text-group>`;
-  }
-
-  get footerTextsTemplate() {
-    if (!this.printDisabilityLine) return '';
-    return html`<footer-texts
-      texts=${this.printDisabilityLine}
-    ></footer-texts>`;
   }
 
   get hasAdminAccess() {

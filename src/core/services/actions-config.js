@@ -32,6 +32,7 @@ export default class ActionsConfig {
     this.identifier = identifier;
     this.lendingStatus = lendingStatus;
     this.bwbPurchaseUrl = bwbPurchaseUrl;
+    this.printDisabilityLink = '/details/printdisabled?tab=about';
     this.analyticsCategories = analyticsCategories;
     this.analyticsActions = analyticsActions;
   }
@@ -40,7 +41,6 @@ export default class ActionsConfig {
     return {
       id: 'browseBook',
       text: 'Borrow for 1 hour',
-      // callback: this.handleBrowseIt(),
       className: 'primary',
       analyticsEvent: {
         category: this.analyticsCategories.preview,
@@ -53,7 +53,6 @@ export default class ActionsConfig {
     return {
       id: 'returnNow',
       text: 'Return now',
-      // callback: this.handleReturnIt(),
       className: 'danger',
       analyticsEvent: {
         category: this.analyticsCategories.browse,
@@ -77,7 +76,6 @@ export default class ActionsConfig {
     return {
       id: 'borrowBook',
       text: 'Borrow for 14 days',
-      // callback: this.handleBorrowIt(),
       className: 'primary',
       disabled: disableBorrow,
       analyticsEvent: analyticsEvent || borrowEvent,
@@ -88,7 +86,6 @@ export default class ActionsConfig {
     return {
       id: 'loginAndBorrow',
       text: 'Log In and Borrow',
-      // callback: this.handleLoginOk(),
       className: 'primary',
       analyticsEvent: {
         category: this.analyticsCategories.preview,
@@ -101,7 +98,6 @@ export default class ActionsConfig {
     return {
       id: 'leaveWaitlist',
       text: 'Leave Waitlist',
-      // callback: this.handleRemoveFromWaitingList(),
       className: 'dark',
       analyticsEvent: {
         category: this.analyticsCategories.preview,
@@ -162,6 +158,21 @@ export default class ActionsConfig {
       url: this.bwbPurchaseUrl,
       target: '_blank',
       className: 'purchase dark',
+      analyticsEvent: {
+        category: this.analyticsCategories.purchase,
+        action: this.analyticsActions.purchase,
+      },
+    };
+  }
+
+  printDisabilityConfig() {
+    return {
+      id: 'printDisability',
+      text: 'Print Disability Access',
+      title: 'Print Disability Access',
+      url: this.printDisabilityLink,
+      target: '_self',
+      className: 'print-disability',
       analyticsEvent: {
         category: this.analyticsCategories.purchase,
         action: this.analyticsActions.purchase,
@@ -232,7 +243,6 @@ export default class ActionsConfig {
     return {
       id: 'borrowUnavailable',
       text: 'Borrow Unavailable',
-      callback: '',
       className: 'primary unavailable',
       disabled: true,
       analyticsEvent: {

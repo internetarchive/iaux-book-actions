@@ -82,7 +82,7 @@
 
     import '../src/ia-book-actions.js';
     import {
-      defaultLendingStatus1,
+      defaultLendingStatus,
       canBrowse,
       browsed,
       canBrowseAndBorrow,
@@ -97,7 +97,7 @@
 
     const iaBookActions = document.querySelector('ia-book-actions');
 
-    let defaultLendingStatus = defaultLendingStatus1
+    // set defaultLendingStatus for unavailable (without borrowables) book
     iaBookActions.userid = userid;
     iaBookActions.identifier = identifier;
     iaBookActions.lendingStatus = defaultLendingStatus;

@@ -83,7 +83,10 @@ export default class GetLendingActions {
 
     return {
       primaryTitle: daysLeftStr,
-      primaryActions: [this.actionsConfig.returnBookConfig()],
+      primaryActions: [
+        this.actionsConfig.returnBookConfig(),
+        this.actionsConfig.printDisabilityConfig(),
+      ],
       primaryColor: 'danger',
       secondaryActions: [this.actionsConfig.purchaseConfig()],
     };
@@ -110,6 +113,7 @@ export default class GetLendingActions {
           deprioritizedBorrowAnalytics
         ),
         this.actionsConfig.waitlistConfig(),
+        this.actionsConfig.printDisabilityConfig(),
       ],
       primaryColor: 'danger',
       secondaryActions: [
@@ -206,7 +210,6 @@ export default class GetLendingActions {
       primaryTitle: 'This book is not available at this time.',
       primaryActions: [this.actionsConfig.unavailableBookConfig()],
       primaryColor: 'primary',
-      footer: restrictedDescription,
       secondaryActions: [
         this.actionsConfig.adminAccessConfig(),
         this.actionsConfig.purchaseConfig(),
@@ -320,14 +323,15 @@ export default class GetLendingActions {
 
     const borrow = this.actionsConfig.borrowBookConfig();
     const waitlist = this.actionsConfig.waitlistConfig();
+    const printDisability = this.actionsConfig.printDisabilityConfig();
 
     const dropdownOptions = canBrowseAndBorrow
-      ? [oneHrBorrow, borrow]
+      ? [oneHrBorrow, borrow, printDisability]
       : canBrowseHasWaitlist
-      ? [oneHrBorrow, waitlist]
+      ? [oneHrBorrow, waitlist, printDisability]
       : [];
     const actions = canBrowseCantBorrowCantWaitlist
-      ? [oneHrBorrow]
+      ? [oneHrBorrow, printDisability]
       : dropdownOptions;
 
     return {
@@ -362,6 +366,7 @@ export default class GetLendingActions {
     let borrow = null;
 
     const waitlist = this.actionsConfig.waitlistConfig();
+    const printDisability = this.actionsConfig.printDisabilityConfig();
 
     const disableBorrow = lendingStatus.loanCount >= lendingStatus.maxLoans;
     const cantBorrowNorWaitlist =
@@ -373,7 +378,9 @@ export default class GetLendingActions {
       borrow = this.actionsConfig.borrowBookConfig(disableBorrow);
     }
 
-    const actions = [borrow, waitlist].filter(function (action) {
+    const actions = [borrow, waitlist, printDisability].filter(function (
+      action
+    ) {
       return action !== null;
     });
     const title = waitlist ? 'Another patron is using this book.' : '';
@@ -386,7 +393,6 @@ export default class GetLendingActions {
         this.actionsConfig.adminAccessConfig(),
         this.actionsConfig.purchaseConfig(),
       ],
-      foot: 'printDisabilityLine()',
     };
   }
 
@@ -470,7 +476,6 @@ export default class GetLendingActions {
     }
 
     console.log(currentToolbar);
-    // console.log(lendingActions)
     return lendingActions;
   }
 }

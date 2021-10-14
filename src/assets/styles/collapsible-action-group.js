@@ -1,13 +1,15 @@
 import { css } from 'lit-element';
 
 export default css`
-  .dropdown,
   .action-buttons {
     display: inline-block;
   }
   .action-buttons .ia-button {
     display: initial;
     height: 3.5rem;
+    transition: all 0.1s;
+    vertical-align: middle;
+    margin: 0px;
   }
   .primary,
   .secondary {
@@ -16,9 +18,6 @@ export default css`
   .primary .initial {
     margin-right: -4px;
     border-radius: 0.4rem 0 0 0.4rem;
-  }
-  .secondary {
-    padding: 8px 0;
   }
   .secondary .ia-button {
     margin: 0 3px;
@@ -32,6 +31,7 @@ export default css`
     background: #2d2d2d;
     border-radius: 0.4rem;
     border: 1px solid var(--primaryCTABorder);
+    top: 3.5rem;
   }
   .dropdown-content li {
     color: var(--primaryBGColor);
@@ -47,6 +47,7 @@ export default css`
     text-align: left;
     height: 3rem;
     position: relative;
+    padding: 0.6rem 1.2rem;
   }
   .dropdown-content li .ia-button:hover {
     background: var(--primaryTextColor);
@@ -56,9 +57,10 @@ export default css`
     fill: black;
   }
   .down-arrow {
-    border-radius: 0px 0.4rem 0.4rem 0px;
-    width: 20px;
-    padding: 0.6rem 0.3rem;
+    border-radius: 0 0.4rem 0.4rem 0;
+    padding: 0 0.6rem;
+    margin-left: 0;
+    vertical-align: bottom;
   }
   .action-loader {
     vertical-align: middle;
@@ -79,23 +81,22 @@ export default css`
   .dropdown:hover .btn {
     background-color: var(--primaryTextColor);
   }
-  .ia-button {
-    min-height: initial;
-  }
+
   a {
     text-decoration: none;
   }
   .primary svg {
     vertical-align: middle;
   }
+  .dropdown-content .purchase,
   .purchase {
     padding-left: 35px;
     position: relative;
   }
   .purchase svg {
     position: absolute;
-    left: 8px;
-    top: 2px;
+    left: 12px;
+    top: 20%;
   }
   .unavailable {
     opacity: 0.7;

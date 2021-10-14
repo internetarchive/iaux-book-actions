@@ -17,6 +17,8 @@ export default css`
     padding: 0.85rem 1.2rem;
     border: 1px solid transparent;
     white-space: nowrap;
+    appearance: auto;
+    box-sizing: border-box;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;

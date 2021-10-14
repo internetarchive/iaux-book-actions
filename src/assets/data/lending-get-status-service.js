@@ -1,4 +1,4 @@
-export const defaultLendingStatus1 = {
+export const defaultLendingStatus = {
   active_borrows: 0,
   active_browses: 0,
   available_borrowable_copies: 0,

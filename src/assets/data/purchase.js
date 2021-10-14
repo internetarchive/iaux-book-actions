@@ -1,9 +1,9 @@
 import { html } from 'lit-element';
 
 export const purchaseIcon = html`<svg
-  height="25"
+  height="20"
   viewBox="0 0 75 75"
-  width="25"
+  width="20"
   xmlns="http://www.w3.org/2000/svg"
 >
   <g fill="#fff" fill-rule="evenodd" transform="translate(0 13.736264)">
