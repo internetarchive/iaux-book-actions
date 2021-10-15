@@ -148,7 +148,7 @@ export default class ActionsConfig {
   }
 
   purchaseConfig() {
-    if (!this.bwbPurchaseUrl || this.bwbPurchaseUrl === '') return null;
+    if (!this.bwbPurchaseUrl) return null;
 
     return {
       id: 'purchaseBook',
