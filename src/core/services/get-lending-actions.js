@@ -199,7 +199,6 @@ export default class GetLendingActions {
 
   restrictedAction() {
     // Visit /details/activemeasuresse0000ridt
-
     const restrictedDescription =
       '<div class="BookReaderMessage">' +
       'Its access has been restricted.  ' +
