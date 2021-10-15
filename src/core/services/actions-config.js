@@ -1,4 +1,3 @@
-// import ActionsHandler from './actions-handler/actions-handler.js';
 import { URLHelper } from '../config/url-helper.js';
 import {
   analyticsCategories,
