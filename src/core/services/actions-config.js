@@ -9,7 +9,6 @@ import {
  * e.g. If you want to render borrow button, this class will return
  * {
  *   text: 'Borrow for 14 days',
- *   callback: 'callback function for onclick event',
  *   className: 'primary'
  *   analyticsEvent: {
  *     category: 'category-name',
@@ -19,14 +18,12 @@ import {
  *
  * More details of above object keys are as follow
  * 1. text: texts displayed on the button.
- * 2. callback: callback functions being extended from ActionsHandler class below
- *    which contains functions to perform [borrow, browse, return] api calls.
- * 3. className: name of the class for buttons.
- * 4. analyticsEvent: being used to apply event tracking with google analytics
+ * 2. className: name of the class for buttons.
+ * 3. analyticsEvent: being used to apply event tracking with google analytics
  *    it contains category name and action name to different in tracking.
  */
 export default class ActionsConfig {
-  constructor(userid, identifier, lendingStatus, bwbPurchaseUrl) {
+  constructor(userid, identifier, lendingStatus = {}, bwbPurchaseUrl) {
     this.userid = userid;
     this.identifier = identifier;
     this.lendingStatus = lendingStatus;
@@ -61,11 +58,10 @@ export default class ActionsConfig {
   }
 
   borrowBookConfig(disableBorrow = false, analyticsEvent) {
-    if (
+    const notBorrowableNorPrintDisabled =
       !this.lendingStatus.available_to_borrow &&
-      !this.lendingStatus.user_is_printdisabled
-    )
-      return null;
+      !this.lendingStatus.user_is_printdisabled;
+    if (notBorrowableNorPrintDisabled) return null;
 
     const borrowEvent = {
       category: this.analyticsCategories.borrow,
@@ -105,44 +101,48 @@ export default class ActionsConfig {
     };
   }
 
+  loginAndWaitlistConfig() {
+    return {
+      id: 'loginAndWaitlist',
+      text: 'Log In and Join Waitlist',
+      className: 'warning',
+      analyticsEvent: {
+        category: this.analyticsCategories.preview,
+        action: this.analyticsActions.login,
+      },
+    };
+  }
+
   waitlistConfig() {
     const isLoggedIn = !!this.userid;
-
     const lendingStatus = this.lendingStatus || [];
-    const bookHasWaitlist = lendingStatus.available_to_waitlist;
 
-    let clickAction = 'this.handleLoginOk()';
-
-    if (!bookHasWaitlist || lendingStatus.available_to_borrow) {
+    // early exit if not available for waitlist
+    if (!lendingStatus.available_to_waitlist) {
       return null;
     }
 
-    const waitlistIsOpen =
-      lendingStatus.available_to_waitlist && !lendingStatus.available_to_borrow;
+    // early exit to logged out config if user is absent
+    if (!isLoggedIn) {
+      return this.loginAndWaitlistConfig();
+    }
 
-    const waitlistButtonText = !isLoggedIn
-      ? 'Log In and Join Waitlist'
-      : 'Join Waitlist';
-
-    const analyticsCategory =
-      isLoggedIn && lendingStatus.user_has_browsed ? 'browse' : 'preview';
-    const analyticsAction = isLoggedIn ? 'waitlistJoin' : 'login';
-
-    if (isLoggedIn && !lendingStatus.user_on_waitlist && waitlistIsOpen) {
-      clickAction = 'this.handleReserveIt()';
+    const bookHasWaitlist = lendingStatus.available_to_waitlist;
+    if (!bookHasWaitlist || lendingStatus.available_to_borrow) {
+      return null;
     }
 
     const deprioritize =
       lendingStatus.user_has_browsed || lendingStatus.available_to_browse;
     const buttonStyle = deprioritize ? 'dark' : 'warning';
+
     return {
       id: 'joinWaitlist',
-      text: waitlistButtonText,
-      callback: clickAction,
+      text: 'Join Waitlist',
       className: buttonStyle,
       analyticsEvent: {
-        category: this.analyticsCategories[analyticsCategory],
-        action: this.analyticsActions[analyticsAction],
+        category: this.analyticsCategories.preview,
+        action: this.analyticsActions.waitlistJoin,
       },
     };
   }
@@ -181,28 +181,6 @@ export default class ActionsConfig {
 
   adminAccessConfig() {
     if (!this.lendingStatus.userHasBorrowed && this.lendingStatus.isAdmin) {
-      return {
-        id: 'adminAccess',
-        text: 'Admin Access',
-        title: 'You have administrative privileges to read this book',
-        url: '?admin=1',
-        target: '_self',
-        className: 'danger',
-        analyticsEvent: {
-          category: '',
-          action: '',
-        },
-      };
-    }
-
-    return null;
-  }
-
-  adminAccessConfig1() {
-    if (
-      this.lendingStatus.is_printdisabled &&
-      this.lendingStatus.user_is_printdisabled
-    ) {
       return {
         id: 'adminAccess',
         text: 'Admin Access',

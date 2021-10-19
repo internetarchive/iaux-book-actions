@@ -16,6 +16,10 @@ export default function ActionsHandlerService(options) {
     ...options,
   };
 
+  if (option.loader) {
+    showActionButtonLoader();
+  }
+
   let baseHost = '';
   if (window.location.pathname === '/demo/') {
     baseHost = `/demo/`;
@@ -23,27 +27,22 @@ export default function ActionsHandlerService(options) {
     baseHost = `/services/loans/loan`;
   }
 
-  const xhr = new XMLHttpRequest();
-  xhr.open(option.type, baseHost, true);
-  xhr.timeout = 60000; // up to 6 seconds, because item creation takes time
+  let formData = new FormData();
+  formData.append('action', option.action);
+  formData.append('identifier', option.identifier);
 
-  if (option.loader) {
-    showActionButtonLoader();
-  }
-
-  // callback binding for success reponse
-  const callbackSuccess = function (data, textStatus, jqXHR) {
-    option.success.call(this, data, textStatus, jqXHR);
-  }.bind(this);
-
-  xhr.onreadystatechange = () => {
-    if (xhr.readyState === 4 && xhr.status === 200) {
-      callbackSuccess();
-    }
-  };
-
-  xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-  xhr.send(`action=${option.action}&identifier=${option.identifier}`);
+  fetch(baseHost, {
+    method: 'POST',
+    body: formData,
+  })
+    .then(response => {
+      if (response.status === 200) {
+        option.success.call();
+      }
+    })
+    .catch(error => {
+      console.log(error);
+    });
 }
 
 function showActionButtonLoader() {

@@ -1,5 +1,3 @@
-/* eslint class-methods-use-this: "off" */
-/* eslint no-console: "off" */
 import { LitElement } from 'lit-element';
 import { URLHelper } from '../../config/url-helper.js';
 import ActionsHandlerService from './actions-handler-service.js';
@@ -72,7 +70,6 @@ export default class ActionsHandler extends LitElement {
       action: 'browse_book',
       identifier: this.identifier,
       success: () => {
-        // console.log('Book is browsed successfully!');
         this.handleReadItNow();
       },
     });
@@ -83,7 +80,6 @@ export default class ActionsHandler extends LitElement {
       action: 'return_loan',
       identifier: this.identifier,
       success: () => {
-        // console.log('Book is returned successfully!');
         this.deleteLoanCookies();
         URLHelper.goToUrl(`/details/${this.identifier}`, true);
       },
@@ -95,7 +91,6 @@ export default class ActionsHandler extends LitElement {
       action: 'borrow_book',
       identifier: this.identifier,
       success: () => {
-        // console.log('Book is borrowed successfully!');
         this.handleReadItNow();
       },
     });
@@ -106,7 +101,6 @@ export default class ActionsHandler extends LitElement {
       action: 'join_waitlist',
       identifier: this.identifier,
       success: () => {
-        // console.log('Book added in waitlist!');
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
       },
     });
@@ -117,13 +111,13 @@ export default class ActionsHandler extends LitElement {
       action: 'leave_waitlist',
       identifier: this.identifier,
       success: () => {
-        // console.log('removed you from waitlist!!');
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
       },
     });
   }
 
   handleLoginOk() {
+    /* eslint class-methods-use-this: "off" */
     const target = `/account/login?referer=${encodeURIComponent(
       URLHelper.getRedirectUrl()
     )}`;

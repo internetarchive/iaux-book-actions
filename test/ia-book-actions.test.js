@@ -17,6 +17,7 @@ describe('<ia-book-actions>', () => {
         },
       })
     );
+
     expect(el.userid).to.be.equal('@user1');
     expect(el.identifier).to.equal('foobar');
   });
@@ -26,8 +27,8 @@ describe('Primary Actions data', () => {
   it('Check data for single primary action', async () => {
     const el = await fixture(
       container({
-        userid: 'user1',
-        identifier: 'identifier1',
+        userid: 'foo',
+        identifier: 'foo',
         lendingStatus: {
           is_lendable: true,
           available_to_browse: false,
@@ -39,12 +40,15 @@ describe('Primary Actions data', () => {
     const expectedPrimaryActions = [
       {
         text: 'Borrow for 14 days',
-        callback: () => {},
         className: 'ia-button primary',
+      },
+      {
+        text: 'Print Disability Access',
+        className: 'print-disability',
       },
     ];
 
-    expect(el.primaryActions.length).to.equal(1);
+    expect(el.primaryActions.length).to.equal(2);
     expect(el.primaryActions.length).to.equal(expectedPrimaryActions.length);
 
     expect(el.primaryActions[0].text).to.equal('Borrow for 14 days');
@@ -75,9 +79,14 @@ describe('Primary Actions data', () => {
         className: 'ia-button primary',
         disabled: false,
       },
+      {
+        text: 'Print Disability Access',
+        url: '/details/printdisabled?tab=about',
+        className: 'print-disability',
+      },
     ];
 
-    expect(el.primaryActions.length).to.equal(2);
+    expect(el.primaryActions.length).to.equal(3);
     expect(el.primaryActions.length).to.equal(expectedPrimaryActions.length);
     expect(el.primaryActions[1].text).to.equal('Borrow for 14 days');
     expect(el.primaryActions[1].text).to.equal(expectedPrimaryActions[1].text);
@@ -126,13 +135,17 @@ describe('Borrow status actions', () => {
     const expectedPrimaryActions = [
       {
         text: 'Return now',
-        callback: () => {},
         className: 'ia-button danger',
+      },
+      {
+        text: 'Print Disability Access',
+        url: '/details/printdisabled?tab=about',
+        className: 'print-disability',
       },
     ];
 
-    expect(el.primaryActions.length).to.equal(2);
-    expect(el.primaryActions[0].text).to.equal('Return now');
+    expect(el.primaryActions.length).to.equal(3);
     expect(el.primaryActions[0].text).to.equal(expectedPrimaryActions[0].text);
+    expect(el.primaryActions[1].text).to.equal('Borrow for 14 days');
   });
 });

@@ -18,7 +18,7 @@ describe('Get Lending Actions', () => {
     expect(actions.primaryTitle).to.equal(
       'Renewable every hour, pending availability.'
     );
-    expect(actions.primaryActions.length).to.equal(2);
+    expect(actions.primaryActions.length).to.equal(3);
     expect(actions.primaryActions[0].text).to.equal('Borrow for 1 hour');
     expect(actions.primaryActions[1].text).to.equal('Borrow for 14 days');
     expect(actions.secondaryActions[1].text).to.equal('Purchase');
@@ -60,7 +60,7 @@ describe('Get Lending Actions', () => {
     expect(actions.primaryTitle).to.equal(
       'Your loan of this book has 4 days left.'
     );
-    expect(actions.primaryActions.length).to.equal(1);
+    expect(actions.primaryActions.length).to.equal(2);
     expect(actions.primaryActions[0].text).to.equal('Return now');
   });
 
@@ -98,10 +98,9 @@ describe('Get Lending Actions', () => {
     );
     const actions = lendingOptions.getCurrentLendingActions();
 
-    expect(actions.primaryTitle).to.equal(
-      'You are eligible for print-disabled access.'
-    );
-    expect(actions.primaryActions.length).to.equal(1);
+    // in-case of print-disabled, we show 14 days borrow
+    expect(actions.primaryTitle).to.equal('');
+    expect(actions.primaryActions.length).to.equal(2);
     expect(actions.primaryActions[0].text).to.equal('Borrow for 14 days');
   });
 

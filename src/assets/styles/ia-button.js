@@ -28,9 +28,9 @@ export default css`
   .ia-button:disabled,
   .ia-button.disabled {
     cursor: not-allowed;
-    background-color: var(--primaryDisableCTAFill);
-    border: 1px solid var(--secondaryCTABorder);
-    color: var(--primaryTextColor);
+    background-color: var(--primaryDisableCTAFill, #767676);
+    border: 1px solid var(--secondaryCTABorder, #999);
+    color: var(--primaryTextColor, #fff);
   }
   .ia-button.transparent {
     background-color: transparent;

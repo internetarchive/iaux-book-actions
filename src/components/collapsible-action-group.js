@@ -35,13 +35,13 @@ export class CollapsibleActionGroup extends ActionsHandler {
     this.primaryActions = [];
     this.secondaryActions = [];
     this.primaryColor = '';
-    this.title = '';
-    this.width = 0;
     this.dropdownState = 'close';
+    this.width = 0;
     this.hasAdminAccess = false;
-    this.initialButton = false;
-    this.loaderIcon = 'https://archive.org/upload/images/tree/loading.gif';
     this.dropdownArrow = dropdownClosed;
+    this.initialButton = false;
+    this.title = '';
+    this.loaderIcon = 'https://archive.org/upload/images/tree/loading.gif';
   }
 
   updated(changed) {
@@ -52,6 +52,9 @@ export class CollapsibleActionGroup extends ActionsHandler {
     }
   }
 
+  /**
+   * merge primaryActions and secondaryActions into dropdown
+   */
   resetActions() {
     // concat primaryActions and secondaryActions to draw in dropdown list
     if (this.primaryActions.length) {
@@ -68,6 +71,9 @@ export class CollapsibleActionGroup extends ActionsHandler {
     }
   }
 
+  /**
+   * re-sort primaryActions action list to show dropdown-only/mobile mode
+   */
   changeActionButtonOrder() {
     let fromIndex = 1;
     const toIndex = 0;
@@ -127,6 +133,12 @@ export class CollapsibleActionGroup extends ActionsHandler {
     return this.secondaryActions.map(action => this.renderActionLink(action));
   }
 
+  /**
+   * Render action as a link for secondary actions like admin, purchase, printdisability links.
+   * @param { Object } action
+   * @param { Boolean } initialButton
+   * @returns { HTMLElement }
+   */
   renderActionLink(action, initialButton = false) {
     return html`<a
       data-id="${action.id}"
@@ -141,6 +153,12 @@ export class CollapsibleActionGroup extends ActionsHandler {
     </a>`;
   }
 
+  /**
+   * Render action as a button for primary actions like browse, borrow, join waitlist etc...
+   * @param { Object } action
+   * @param { Boolean } initialButton
+   * @returns { HTMLElement }
+   */
   renderActionButton(action, initialButton = false) {
     if (action.url) return this.renderActionLink(action, initialButton);
 
@@ -155,12 +173,17 @@ export class CollapsibleActionGroup extends ActionsHandler {
     </button>`;
   }
 
+  /**
+   * Click handler to emit custom event on action click
+   */
   clickHandler(e) {
     this.dropdownState = 'close';
     this.dropdownArrow = dropdownClosed;
 
     const eventName = e.currentTarget.dataset.id;
     const event = e.currentTarget.dataset.eventClickTracking;
+
+    if (eventName === undefined || event === undefined) return;
 
     this.dispatchEvent(
       new CustomEvent(eventName, {
@@ -171,6 +194,10 @@ export class CollapsibleActionGroup extends ActionsHandler {
     );
   }
 
+  /**
+   * get first primary action to render just before dropdown button
+   * @returns { HTMLElement }
+   */
   get initialActionTemplate() {
     this.initialButton = false;
     if (this.primaryActions.length > 1) {
@@ -189,14 +216,25 @@ export class CollapsibleActionGroup extends ActionsHandler {
       );
   }
 
+  /**
+   * get loader icon when task is in-progress
+   * @returns { HTMLElement }
+   */
   get getLoaderIcon() {
     return html`<img class="action-loader" alt="" src="${this.loaderIcon}" />`;
   }
 
+  /**
+   * check if device is below tablet
+   * @returns { Boolean }
+   */
   get isBelowTabletContainer() {
     return this.width <= tabletContainerWidth;
   }
 
+  /**
+   * toggle dropdown and its icon state
+   */
   toggleDropdown() {
     if (this.dropdownState === 'open') {
       this.dropdownState = 'close';

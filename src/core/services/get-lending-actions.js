@@ -63,7 +63,6 @@ export default class GetLendingActions {
     };
   }
 
-  // done
   adminOrPrintDisabledReadingAction() {
     return {
       primaryTitle: '',
@@ -72,7 +71,6 @@ export default class GetLendingActions {
     };
   }
 
-  // done
   borrowingAction() {
     if (URLHelper.isOnStreamPage()) return nothing;
 
@@ -92,9 +90,8 @@ export default class GetLendingActions {
     };
   }
 
-  // done
   browsingAction() {
-    const lendingStatus = this.lendingStatus || [];
+    const lendingStatus = this.lendingStatus || {};
     const disableBorrow = lendingStatus.loanCount >= lendingStatus.maxLoans;
 
     const deprioritizedBorrowAnalytics = {
@@ -123,12 +120,11 @@ export default class GetLendingActions {
     };
   }
 
-  // done
   redeemBorrowAction() {
     const lendingStatus = this.lendingStatus || [];
 
-    const leaveWaitlist = this.actionsConfig.leaveWaitlistConfig(); // ok
-    const borrowBook = this.actionsConfig.borrowBookConfig(); // ok
+    const leaveWaitlist = this.actionsConfig.leaveWaitlistConfig();
+    const borrowBook = this.actionsConfig.borrowBookConfig();
     const browseBook = lendingStatus.available_to_browse
       ? this.actionsConfig.browseBookConfig()
       : null;
@@ -148,18 +144,16 @@ export default class GetLendingActions {
     };
   }
 
-  // done
   borrowPrintDisabledAction() {
     const lendingStatus = this.lendingStatus || [];
 
     // if user isn't printDisabled, book is available to browse & borrow, then we
     // redirect to canborrow
-    if (
-      lendingStatus.available_to_browse ||
-      lendingStatus.available_to_borrow
-    ) {
-      return this.borrowAction();
-    }
+    var notPrintDisabledButBorrowable =
+      !lendingStatus.user_is_printdisabled &&
+      (lendingStatus.available_to_browse || lendingStatus.available_to_borrow);
+
+    if (notPrintDisabledButBorrowable) return this.borrowAction();
 
     return {
       primaryTitle: 'You are eligible for print-disabled access.',
@@ -172,7 +166,6 @@ export default class GetLendingActions {
     };
   }
 
-  // done
   onlyPrintDisabledAction() {
     const unavailable = !this.lendingStatus.isAdmin
       ? this.actionsConfig.unavailableBookConfig()
@@ -184,7 +177,6 @@ export default class GetLendingActions {
     };
   }
 
-  // done
   onWaitlistAction() {
     return {
       primaryTitle: 'You are on the waitlist for this book.',
@@ -198,7 +190,8 @@ export default class GetLendingActions {
   }
 
   restrictedAction() {
-    // Visit /details/activemeasuresse0000ridt
+    // check restricted item behaviour here /activemeasuresse0000ridt
+
     const restrictedDescription =
       '<div class="BookReaderMessage">' +
       'Its access has been restricted.  ' +
@@ -216,7 +209,6 @@ export default class GetLendingActions {
     };
   }
 
-  // done
   loggedOutOptions() {
     const lendingStatus = this.lendingStatus || [];
 
@@ -258,7 +250,6 @@ export default class GetLendingActions {
     };
   }
 
-  // done
   borrow1HrAction() {
     const lendingStatus = this.lendingStatus || [];
 
@@ -345,7 +336,6 @@ export default class GetLendingActions {
     };
   }
 
-  // done
   borrowAction() {
     const lendingStatus = this.lendingStatus || [];
     const isLoggedIn = !!this.userid;

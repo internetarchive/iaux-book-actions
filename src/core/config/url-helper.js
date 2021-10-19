@@ -1,4 +1,3 @@
-/* eslint no-restricted-globals: ["error", "fdescribe"] */
 import { nothing } from 'lit-html';
 
 export class URLHelper {
@@ -22,7 +21,7 @@ export class URLHelper {
     let url;
     if (URLHelper.isInIframe()) {
       // are we in a frame?
-      url = top.window.location.href;
+      url = window.top.location.href;
     } else {
       url = window.location.href;
     }
@@ -37,7 +36,7 @@ export class URLHelper {
   static goToUrl(url, tryParent) {
     let ref;
     if (URLHelper.isInIframe() && tryParent) {
-      ref = top.window.location;
+      ref = window.top.location;
     } else {
       ref = window.location;
     }
