@@ -158,22 +158,22 @@
 
         if (e.target.value === 'available_to_borrow') {
           lendingStatus1.available_to_borrow = true;
-          lendingStatus1.user_can_claim_waitlist = false;
+          lendingStatus1.user_on_waitlist = false;
           lendingStatus1.available_to_waitlist = false;
           lendingStatus1.user_has_borrowed = false;
-        } else if (e.target.value === 'user_can_claim_waitlist') {
+        } else if (e.target.value === 'user_on_waitlist') {
           lendingStatus1.available_to_borrow = false;
-          lendingStatus1.user_can_claim_waitlist = true;
+          lendingStatus1.user_on_waitlist = true;
           lendingStatus1.available_to_waitlist = false;
           lendingStatus1.user_has_borrowed = false;
         } else if (e.target.value === 'available_to_waitlist') {
           lendingStatus1.available_to_borrow = false;
-          lendingStatus1.user_can_claim_waitlist = false;
+          lendingStatus1.user_on_waitlist = false;
           lendingStatus1.available_to_waitlist = true;
           lendingStatus1.user_has_borrowed = false;
         } else if (e.target.value === 'user_has_borrowed') {
           lendingStatus1.available_to_borrow = false;
-          lendingStatus1.user_can_claim_waitlist = false;
+          lendingStatus1.user_on_waitlist = false;
           lendingStatus1.available_to_waitlist = false;
           lendingStatus1.user_has_borrowed = true;
         }
@@ -182,7 +182,6 @@
       });
     });
 
-    // done
     document.querySelectorAll('.purchase input[type=checkbox]').forEach((item) => {
       item.addEventListener('click', (e) => {
         if (e.target.checked) {
@@ -214,7 +213,7 @@
             </td>
             <td class="availableToBorrow">
               <label><input type="radio" name="borrow" value="available_to_borrow" />available_to_borrow</label>
-              <label><input type="radio" name="borrow" value="user_can_claim_waitlist" />user_can_claim_waitlist</label>
+              <label><input type="radio" name="borrow" value="user_on_waitlist" />user_on_waitlist</label>
               <label><input type="radio" name="borrow" value="available_to_waitlist" />available_to_waitlist</label>
               <label><input type="radio" name="borrow" value="user_has_borrowed" />user_has_borrowed</label>
             </td>

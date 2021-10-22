@@ -63,7 +63,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
       this.primaryColor = this.primaryActions[0].className;
 
       if (this.hasAdminAccess) {
-        this.changeActionButtonOrder();
+        this.sortActionButtonOrder();
       }
 
       // remove secondaryActions
@@ -74,18 +74,22 @@ export class CollapsibleActionGroup extends ActionsHandler {
   /**
    * re-sort primaryActions action list to show dropdown-only/mobile mode
    */
-  changeActionButtonOrder() {
+  sortActionButtonOrder() {
     let fromIndex = 1;
     const toIndex = 0;
-
     if (this.secondaryActions.length === 2) {
       fromIndex = 2;
     }
 
     fromIndex = this.primaryActions.length - fromIndex;
+
     const element = this.primaryActions[fromIndex];
-    this.primaryActions.splice(fromIndex, 1);
-    this.primaryActions.splice(toIndex, 0, element);
+    const current = this.primaryActions;
+
+    current.splice(fromIndex, 1);
+    current.splice(toIndex, 0, element);
+
+    this.primaryActions = current;
   }
 
   render() {
@@ -114,21 +118,23 @@ export class CollapsibleActionGroup extends ActionsHandler {
 
     return html`
       ${this.initialActionTemplate}
-      <button
-        class="ia-button ${this.primaryColor} down-arrow"
-        @click=${this.toggleDropdown}
-      >
-        ${this.dropdownArrow}
-      </button>
+      <div class="dropdown-group">
+        <button
+          class="ia-button ${this.primaryColor} down-arrow"
+          @click=${this.toggleDropdown}
+        >
+          ${this.dropdownArrow}
+        </button>
 
-      <ul class="dropdown-content ${this.dropdownState}">
-        ${this.getPrimaryItems}
-      </ul>
+        <ul class="dropdown-content ${this.dropdownState}">
+          ${this.getPrimaryItems}
+        </ul>
+      </div>
     `;
   }
 
   get renderSecondaryActions() {
-    if (this.secondaryActions.length === 0) return nothing;
+    if (!this.secondaryActions.length) return nothing;
 
     return this.secondaryActions.map(action => this.renderActionLink(action));
   }
@@ -180,8 +186,8 @@ export class CollapsibleActionGroup extends ActionsHandler {
     this.dropdownState = 'close';
     this.dropdownArrow = dropdownClosed;
 
-    const eventName = e.currentTarget.dataset.id;
-    const event = e.currentTarget.dataset.eventClickTracking;
+    const eventName = e?.currentTarget?.dataset?.id;
+    const event = e?.currentTarget?.dataset?.eventClickTracking;
 
     if (eventName === undefined || event === undefined) return;
 

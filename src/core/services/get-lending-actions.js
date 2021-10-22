@@ -94,6 +94,7 @@ export default class GetLendingActions {
     const lendingStatus = this.lendingStatus || {};
     const disableBorrow = lendingStatus.loanCount >= lendingStatus.maxLoans;
 
+    // eventCategory for 14day borrow action will be "browse" because we are browsing book
     const deprioritizedBorrowAnalytics = {
       category: this.analyticsCategories.browse,
       action: this.analyticsActions.borrow,
@@ -121,7 +122,7 @@ export default class GetLendingActions {
   }
 
   redeemBorrowAction() {
-    const lendingStatus = this.lendingStatus || [];
+    const lendingStatus = this.lendingStatus || {};
 
     const leaveWaitlist = this.actionsConfig.leaveWaitlistConfig();
     const borrowBook = this.actionsConfig.borrowBookConfig();
@@ -145,16 +146,6 @@ export default class GetLendingActions {
   }
 
   borrowPrintDisabledAction() {
-    const lendingStatus = this.lendingStatus || [];
-
-    // if user isn't printDisabled, book is available to browse & borrow, then we
-    // redirect to canborrow
-    var notPrintDisabledButBorrowable =
-      !lendingStatus.user_is_printdisabled &&
-      (lendingStatus.available_to_browse || lendingStatus.available_to_borrow);
-
-    if (notPrintDisabledButBorrowable) return this.borrowAction();
-
     return {
       primaryTitle: 'You are eligible for print-disabled access.',
       primaryActions: [this.actionsConfig.borrowBookConfig()],
@@ -210,7 +201,7 @@ export default class GetLendingActions {
   }
 
   loggedOutOptions() {
-    const lendingStatus = this.lendingStatus || [];
+    const lendingStatus = this.lendingStatus || {};
 
     const showCantBorrowPlaceholder =
       !lendingStatus.available_to_waitlist &&
@@ -251,7 +242,7 @@ export default class GetLendingActions {
   }
 
   borrow1HrAction() {
-    const lendingStatus = this.lendingStatus || [];
+    const lendingStatus = this.lendingStatus || {};
 
     const possibleTitles = {
       one_hour: 'Renewable every hour, pending availability.',
@@ -337,7 +328,7 @@ export default class GetLendingActions {
   }
 
   borrowAction() {
-    const lendingStatus = this.lendingStatus || [];
+    const lendingStatus = this.lendingStatus || {};
     const isLoggedIn = !!this.userid;
 
     if (!isLoggedIn) {
@@ -372,10 +363,9 @@ export default class GetLendingActions {
     ) {
       return action !== null;
     });
-    const title = waitlist ? 'Another patron is using this book.' : '';
 
     return {
-      primaryTitle: title,
+      primaryTitle: waitlist ? 'Another patron is using this book.' : '',
       primaryActions: actions,
       primaryColor: 'primary',
       secondaryActions: [
@@ -404,7 +394,7 @@ export default class GetLendingActions {
 
   getCurrentLendingActions() {
     let lendingActions;
-    const lendingStatus = this.lendingStatus || [];
+    const lendingStatus = this.lendingStatus || {};
 
     const isAdminReading =
       URLHelper.getQueryParam('admin') == '1' && lendingStatus.isAdmin;

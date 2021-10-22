@@ -46,12 +46,15 @@ export default class ActionsConfig {
   }
 
   returnBookConfig() {
+    const eventCategory = this.lendingStatus.user_has_browsed
+      ? 'browse'
+      : 'borrow';
     return {
       id: 'returnNow',
       text: 'Return now',
       className: 'danger',
       analyticsEvent: {
-        category: this.analyticsCategories.browse,
+        category: eventCategory,
         action: this.analyticsActions.doneBorrowing,
       },
     };
@@ -61,8 +64,10 @@ export default class ActionsConfig {
     const notBorrowableNorPrintDisabled =
       !this.lendingStatus.available_to_borrow &&
       !this.lendingStatus.user_is_printdisabled;
+
     if (notBorrowableNorPrintDisabled) return null;
 
+    // default borrow event category and action is "borrow"
     const borrowEvent = {
       category: this.analyticsCategories.borrow,
       action: this.analyticsActions.borrow,
@@ -115,10 +120,15 @@ export default class ActionsConfig {
 
   waitlistConfig() {
     const isLoggedIn = !!this.userid;
-    const lendingStatus = this.lendingStatus || [];
+    const lendingStatus = this.lendingStatus || {};
 
-    // early exit if not available for waitlist
-    if (!lendingStatus.available_to_waitlist) {
+    // early exit if
+    // - not available for waitlist
+    // - book is available for borrow (14 days borrow)
+    if (
+      !lendingStatus.available_to_waitlist ||
+      lendingStatus.available_to_borrow
+    ) {
       return null;
     }
 
@@ -127,19 +137,10 @@ export default class ActionsConfig {
       return this.loginAndWaitlistConfig();
     }
 
-    const bookHasWaitlist = lendingStatus.available_to_waitlist;
-    if (!bookHasWaitlist || lendingStatus.available_to_borrow) {
-      return null;
-    }
-
-    const deprioritize =
-      lendingStatus.user_has_browsed || lendingStatus.available_to_browse;
-    const buttonStyle = deprioritize ? 'dark' : 'warning';
-
     return {
       id: 'joinWaitlist',
       text: 'Join Waitlist',
-      className: buttonStyle,
+      className: 'warning',
       analyticsEvent: {
         category: this.analyticsCategories.preview,
         action: this.analyticsActions.waitlistJoin,
@@ -165,6 +166,9 @@ export default class ActionsConfig {
   }
 
   printDisabilityConfig() {
+    // if user has PD access, let just not render PD access link
+    if (this.lendingStatus.user_is_printdisabled) return null;
+
     return {
       id: 'printDisability',
       text: 'Print Disability Access',
@@ -180,22 +184,22 @@ export default class ActionsConfig {
   }
 
   adminAccessConfig() {
-    if (!this.lendingStatus.userHasBorrowed && this.lendingStatus.isAdmin) {
-      return {
-        id: 'adminAccess',
-        text: 'Admin Access',
-        title: 'You have administrative privileges to read this book',
-        url: '?admin=1',
-        target: '_self',
-        className: 'danger',
-        analyticsEvent: {
-          category: '',
-          action: '',
-        },
-      };
-    }
+    // if book is borrowed, not showing Admin access he already have full book access
+    if (this.lendingStatus.user_has_borrowed || !this.lendingStatus.isAdmin)
+      return null;
 
-    return null;
+    return {
+      id: 'adminAccess',
+      text: 'Admin Access',
+      title: 'You have administrative privileges to read this book',
+      url: '?admin=1',
+      target: '_self',
+      className: 'danger',
+      analyticsEvent: {
+        category: '',
+        action: '',
+      },
+    };
   }
 
   adminOrPrintDisabledExitConfig() {

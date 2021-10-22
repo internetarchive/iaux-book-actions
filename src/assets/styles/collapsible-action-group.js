@@ -22,6 +22,9 @@ export default css`
   .secondary .ia-button {
     margin: 0 3px;
   }
+  .dropdown-group {
+    display: inline-block;
+  }
   .dropdown-content {
     position: absolute;
     min-width: 14rem;
