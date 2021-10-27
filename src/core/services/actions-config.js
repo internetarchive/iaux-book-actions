@@ -49,6 +49,7 @@ export default class ActionsConfig {
     const eventCategory = this.lendingStatus.user_has_browsed
       ? 'browse'
       : 'borrow';
+
     return {
       id: 'returnNow',
       text: 'Return now',
@@ -60,25 +61,25 @@ export default class ActionsConfig {
     };
   }
 
-  borrowBookConfig(disableBorrow = false, analyticsEvent) {
+  borrowBookConfig(disableBorrow = false) {
     const notBorrowableNorPrintDisabled =
-      !this.lendingStatus.available_to_borrow &&
-      !this.lendingStatus.user_is_printdisabled;
+      (!this.lendingStatus.available_to_borrow &&
+        !this.lendingStatus.user_is_printdisabled) ||
+      this.lendingStatus.user_has_borrowed;
 
     if (notBorrowableNorPrintDisabled) return null;
-
-    // default borrow event category and action is "borrow"
-    const borrowEvent = {
-      category: this.analyticsCategories.borrow,
-      action: this.analyticsActions.borrow,
-    };
 
     return {
       id: 'borrowBook',
       text: 'Borrow for 14 days',
       className: 'primary',
       disabled: disableBorrow,
-      analyticsEvent: analyticsEvent || borrowEvent,
+      analyticsEvent: {
+        category: this.lendingStatus.user_has_browsed
+          ? this.analyticsCategories.browse
+          : this.analyticsCategories.borrow,
+        action: this.analyticsActions.borrow,
+      },
     };
   }
 

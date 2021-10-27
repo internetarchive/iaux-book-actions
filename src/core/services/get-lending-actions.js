@@ -71,45 +71,22 @@ export default class GetLendingActions {
     };
   }
 
-  borrowingAction() {
-    if (URLHelper.isOnStreamPage()) return nothing;
-
-    const daysLeftStr =
-      this.lendingStatus.daysLeftOnLoan > 1
-        ? `Your loan of this book has ${this.lendingStatus.daysLeftOnLoan} days left.`
-        : 'This is the last day of this loan.';
-
-    return {
-      primaryTitle: daysLeftStr,
-      primaryActions: [
-        this.actionsConfig.returnBookConfig(),
-        this.actionsConfig.printDisabilityConfig(),
-      ],
-      primaryColor: 'danger',
-      secondaryActions: [this.actionsConfig.purchaseConfig()],
-    };
-  }
-
-  browsingAction() {
+  patronIsReadingAction() {
     const lendingStatus = this.lendingStatus || {};
     const disableBorrow = lendingStatus.loanCount >= lendingStatus.maxLoans;
 
-    // eventCategory for 14day borrow action will be "browse" because we are browsing book
-    const deprioritizedBorrowAnalytics = {
-      category: this.analyticsCategories.browse,
-      action: this.analyticsActions.borrow,
-    };
+    let primaryTitleText = '';
+    if (lendingStatus.user_has_browsed) {
+      primaryTitleText = this.getBrowseCountdownTitle();
+    } else {
+      primaryTitleText = `Your loan of this book has ${lendingStatus.daysLeftOnLoan} days left.`;
+    }
 
     return {
-      primaryTitle: this.getBrowseCountdownTitle(
-        lendingStatus.secondsLeftOnLoan
-      ),
+      primaryTitle: primaryTitleText,
       primaryActions: [
         this.actionsConfig.returnBookConfig(),
-        this.actionsConfig.borrowBookConfig(
-          disableBorrow,
-          deprioritizedBorrowAnalytics
-        ),
+        this.actionsConfig.borrowBookConfig(disableBorrow),
         this.actionsConfig.waitlistConfig(),
         this.actionsConfig.printDisabilityConfig(),
       ],
@@ -121,7 +98,7 @@ export default class GetLendingActions {
     };
   }
 
-  redeemBorrowAction() {
+  leaveWaitlistAction() {
     const lendingStatus = this.lendingStatus || {};
 
     const leaveWaitlist = this.actionsConfig.leaveWaitlistConfig();
@@ -171,7 +148,10 @@ export default class GetLendingActions {
   onWaitlistAction() {
     return {
       primaryTitle: 'You are on the waitlist for this book.',
-      primaryActions: [this.actionsConfig.leaveWaitlistConfig()],
+      primaryActions: [
+        this.actionsConfig.leaveWaitlistConfig(),
+        this.actionsConfig.browseBookConfig(),
+      ],
       primaryColor: 'primary',
       secondaryActions: [
         this.actionsConfig.adminAccessConfig(),
@@ -378,10 +358,11 @@ export default class GetLendingActions {
   /**
    * Builds the countdown toolbar title.
    *
-   * @param integer secondsRemaining
    * @return string innerHTML for the dialogOpts title attribute
    */
-  getBrowseCountdownTitle(secondsRemaining) {
+  getBrowseCountdownTitle() {
+    const secondsRemaining = this.lendingStatus.secondsLeftOnLoan;
+
     var borrowEndTime = new Date(+new Date() + secondsRemaining * 1000);
     var hour = borrowEndTime.getHours() % 12;
     var minute = ('' + borrowEndTime.getMinutes()).replace(/^(\d{1})$/, '0$1');
@@ -389,6 +370,7 @@ export default class GetLendingActions {
     if (hour === 0) {
       hour = 12;
     }
+
     return 'Borrow ends at ' + hour + ':' + minute + ampm;
   }
 
@@ -410,51 +392,47 @@ export default class GetLendingActions {
     const userCanAccessPrintDisabled =
       lendingStatus.is_printdisabled && lendingStatus.user_is_printdisabled;
 
-    // tests variable
-    let currentToolbar = '';
+    const canBorrow =
+      lendingStatus.is_lendable &&
+      notBorrowed &&
+      !lendingStatus.user_on_waitlist;
 
-    // sequential order of hierarchal access
-    // admin -> is browsing/borrowing -> is waitlist -> can borrow print disabled -> can borrow -> isOnWaitlist -> userCanAccessPrintDisabled-> restricted
+    // sequential order of hierarchal access from lendingStatus
+    // - admin or print-disabled reading
+    // - partron reading (browsing/borrowing)
+    // - leave waitlist
+    // - can borrow print-disabled
+    // - can borrow
+    // - only print-disabled access
+    // - is on waitlist
+    // - restricted items
+
     if (isAdminReading || userIsPrintdisabledReading) {
       lendingActions = this.adminOrPrintDisabledReadingAction();
-      currentToolbar = 'adminOrPrintDisabledReadingAction';
     } else if (lendingStatus.isAdmin && notBorrowed && notBorrowable) {
       lendingActions = this.onlyAdminAction();
-      currentToolbar = 'onlyAdminAction';
-    } else if (lendingStatus.user_has_borrowed) {
-      lendingActions = this.borrowingAction();
-      currentToolbar = 'borrowingAction';
-    } else if (lendingStatus.user_has_browsed) {
-      lendingActions = this.browsingAction();
-      currentToolbar = 'browsingAction';
+    } else if (
+      lendingStatus.user_has_borrowed ||
+      lendingStatus.user_has_browsed
+    ) {
+      lendingActions = this.patronIsReadingAction();
     } else if (lendingStatus.user_can_claim_waitlist) {
-      lendingActions = this.redeemBorrowAction();
-      currentToolbar = 'redeemBorrowAction';
+      lendingActions = this.leaveWaitlistAction();
     } else if (userCanAccessPrintDisabled) {
       lendingActions = this.borrowPrintDisabledAction();
-      currentToolbar = 'borrowPrintDisabledAction';
-    } else if (
-      notBorrowed &&
-      lendingStatus.is_lendable &&
-      !lendingStatus.user_on_waitlist
-    ) {
+    } else if (canBorrow) {
       lendingActions = this.borrowAction();
-      currentToolbar = 'borrowAction';
     } else if (lendingStatus.isPrintDisabledOnly) {
+      // this will be change to snake_case styling at petabox
       lendingActions = this.onlyPrintDisabledAction();
-      currentToolbar = 'onlyPrintDisabledAction';
-    } else if (
-      lendingStatus.user_on_waitlist &&
-      !lendingStatus.user_can_claim_waitlist
-    ) {
+    } else if (lendingStatus.user_on_waitlist) {
       lendingActions = this.onWaitlistAction();
-      currentToolbar = 'onWaitlistAction';
     } else {
       lendingActions = this.restrictedAction();
-      currentToolbar = 'restrictedAction';
     }
 
-    console.log(currentToolbar);
+    // debugging console
+    console.log(lendingActions.primaryTitle);
     return lendingActions;
   }
 }

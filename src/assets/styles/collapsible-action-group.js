@@ -5,7 +5,7 @@ export default css`
     display: inline-block;
   }
   .action-buttons .ia-button {
-    display: initial;
+    display: inline-table;
     height: 3.5rem;
     transition: all 0.1s;
     vertical-align: middle;
