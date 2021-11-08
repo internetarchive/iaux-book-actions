@@ -162,13 +162,6 @@ export default class GetLendingActions {
 
   restrictedAction() {
     // check restricted item behaviour here /activemeasuresse0000ridt
-
-    const restrictedDescription =
-      '<div class="BookReaderMessage">' +
-      'Its access has been restricted.  ' +
-      '<a href="/details/inlibrary">Browse our lendable books</a>.' +
-      '</div>';
-
     return {
       primaryTitle: 'This book is not available at this time.',
       primaryActions: [this.actionsConfig.unavailableBookConfig()],
@@ -384,8 +377,11 @@ export default class GetLendingActions {
       URLHelper.getQueryParam('access') == '1' &&
       lendingStatus.user_is_printdisabled;
 
+    const patronIsReading =
+      lendingStatus.user_has_borrowed || lendingStatus.user_has_browsed;
+
     const notBorrowed =
-      !lendingStatus.user_has_borrowed && !lendingStatus.user_has_browsed;
+      !lendingStatus.user_has_borrowed || !lendingStatus.user_has_browsed;
     const notBorrowable =
       !lendingStatus.available_to_borrow && !lendingStatus.available_to_browse;
 
@@ -393,7 +389,8 @@ export default class GetLendingActions {
       lendingStatus.is_printdisabled && lendingStatus.user_is_printdisabled;
 
     const canBorrow =
-      lendingStatus.is_lendable &&
+      (lendingStatus.available_to_browse ||
+        lendingStatus.available_to_borrow) &&
       notBorrowed &&
       !lendingStatus.user_on_waitlist;
 
@@ -411,10 +408,7 @@ export default class GetLendingActions {
       lendingActions = this.adminOrPrintDisabledReadingAction();
     } else if (lendingStatus.isAdmin && notBorrowed && notBorrowable) {
       lendingActions = this.onlyAdminAction();
-    } else if (
-      lendingStatus.user_has_borrowed ||
-      lendingStatus.user_has_browsed
-    ) {
+    } else if (patronIsReading) {
       lendingActions = this.patronIsReadingAction();
     } else if (lendingStatus.user_can_claim_waitlist) {
       lendingActions = this.leaveWaitlistAction();
@@ -423,7 +417,6 @@ export default class GetLendingActions {
     } else if (canBorrow) {
       lendingActions = this.borrowAction();
     } else if (lendingStatus.isPrintDisabledOnly) {
-      // this will be change to snake_case styling at petabox
       lendingActions = this.onlyPrintDisabledAction();
     } else if (lendingStatus.user_on_waitlist) {
       lendingActions = this.onWaitlistAction();
