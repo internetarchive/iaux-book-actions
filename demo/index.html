@@ -14,6 +14,9 @@
       text-align: center;
       font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     }
+    #demo {
+      height: 50px;
+    }
     ia-book-actions {
       --white: #fff;
       --black: #000;
@@ -25,34 +28,232 @@
       --primaryCTABorder: #c5d1df;
       --secondaryCTAFill: #333;
       --secondaryCTABorder: #999;
+      --secondaryCTAFillRGB: 51, 51, 51;
       --primaryErrorCTAFill: #e51c26;
       --primaryErrorCTABorder: #f8c6c8;
+      --primaryCTAFillRGB: 25, 72, 128;
+      --primaryErrorCTAFillRGB: 229, 28, 38;
+      --primaryDisableCTAFill: #767676;
+    }
+
+    fieldset {
+      width: fit-content;
+      margin-top: 50px;
+    }
+    fieldset legend {
+      text-align: left;
+      font-size: 12px;
+    }
+    td {
+      color: white;
+      font-size: 14px;
+      border-radius: 5%;
+      display: table-cell;
+      text-align: initial;
+      margin: 5px 0;
+      width: max-content;
+      display: block;
+    }
+    label {
+      padding: 10px;
+      display: block;
+      cursor: pointer;
+      margin: 2px;
+      background: #4e545a;
+      border-radius: 10px;
+    }
+    input[type="radio"], input[type="checkbox"] {
+      margin-top: 0;
+      vertical-align: middle;
+    }
+
+    .initial td {
+      float: left;
+      margin: 2px;
     }
   </style>
 </head>
 
 <body>
-  <div id="demo"></div>
+  <ia-book-actions></ia-book-actions>
+
   <script type="module">
-    import { html, render } from 'lit-html';
-    import { lendingStatus } from '../src/core/services/lending-get-status-service.js';
+    /* eslint-disable */
+
     import '../src/ia-book-actions.js';
+    import {
+      defaultLendingStatus,
+      canBrowse,
+      browsed,
+      canBrowseAndBorrow,
+      browsedAndBorrow,
+      canBrowseAndBorrowod,
+      canBrowseAndJoinWaitlistForBorrow,
+    } from '../src/assets/data/lending-get-status-service.js';
 
     const userid = '@neeraj-archive';
-    const identifier = 'goody';
+    const identifier = 'naturalhistoryof00unse_4111';
+    let bwbPurchaseUrl = 'https://www.betterworldbooks.com/product/detail/cambridge-ancient-hist-v04-0521044863';
 
-    render(
-      html`
-        <ia-book-actions
-          .userid=${userid}
-          .identifier=${identifier}
-          .lendingStatus=${lendingStatus}          
-        >
-        </ia-book-actions>
-      `,
-      document.querySelector('#demo')
-    );
-  </script>
+    let iaBookActions = document.querySelector('ia-book-actions');
+
+    // set defaultLendingStatus for unavailable (without borrowables) book
+    iaBookActions.userid = '';
+    iaBookActions.identifier = identifier;
+    iaBookActions.lendingStatus = defaultLendingStatus;
+    iaBookActions.bwbPurchaseUrl = '';
+
+    document.querySelectorAll('.userState input[type=checkbox]').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        let lendingStatus1 = defaultLendingStatus;
+        if (e.target.checked) {
+          if (e.target.value === 'isAdmin') lendingStatus1.isAdmin = true;
+          if (e.target.value === 'isLoggedIn') iaBookActions.userid = '@neeraj';
+        }
+        if (e.target.checked === false) {
+          if (e.target.value === 'isAdmin') lendingStatus1.isAdmin = false;
+          if (e.target.value === 'isLoggedIn') iaBookActions.userid = '';
+        }
+          iaBookActions.lendingStatus = lendingStatus1;
+      });
+    });
+
+
+    document.querySelectorAll('.printDisabled input[type=checkbox]').forEach((item) => {
+      const is_printdisabled = false;
+      const user_is_printdisabled = false;
+      item.addEventListener('click', (e) => {
+        let lendingStatus1 = defaultLendingStatus;
+        if (e.target.value === 'is_printdisabled') {
+          lendingStatus1.is_printdisabled = true;
+        }
+        if (e.target.value === 'user_is_printdisabled') {
+          lendingStatus1.user_is_printdisabled = true;
+        }
+
+        if (lendingStatus1.user_is_printdisabled && lendingStatus1.is_printdisabled) {
+          iaBookActions.lendingStatus = lendingStatus1;
+        }
+      });
+    });
+
+    document.querySelectorAll('.availableToBrowse input[type=radio]').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        let lendingStatus1 = defaultLendingStatus;
+
+        if (e.target.value === 'user_has_browsed') {
+          lendingStatus1.user_has_browsed = true;
+          lendingStatus1.available_to_browse = false;
+        } else if (e.target.value === 'available_to_browse') {
+          lendingStatus1.available_to_browse = true;
+          lendingStatus1.user_has_browsed = false;
+        }
+        iaBookActions.lendingStatus = lendingStatus1;
+      });
+    });
+
+    document.querySelectorAll('.availableToBorrow input[type=radio]').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        let lendingStatus1 = defaultLendingStatus;
+
+        if (e.target.value === 'available_to_borrow') {
+          lendingStatus1.available_to_borrow = true;
+          lendingStatus1.user_on_waitlist = false;
+          lendingStatus1.available_to_waitlist = false;
+          lendingStatus1.user_has_borrowed = false;
+        } else if (e.target.value === 'user_on_waitlist') {
+          lendingStatus1.available_to_borrow = false;
+          lendingStatus1.user_on_waitlist = true;
+          lendingStatus1.available_to_waitlist = false;
+          lendingStatus1.user_has_borrowed = false;
+        } else if (e.target.value === 'available_to_waitlist') {
+          lendingStatus1.available_to_borrow = false;
+          lendingStatus1.user_on_waitlist = false;
+          lendingStatus1.available_to_waitlist = true;
+          lendingStatus1.user_has_borrowed = false;
+        } else if (e.target.value === 'user_has_borrowed') {
+          lendingStatus1.available_to_borrow = false;
+          lendingStatus1.user_on_waitlist = false;
+          lendingStatus1.available_to_waitlist = false;
+          lendingStatus1.user_has_borrowed = true;
+        }
+
+        iaBookActions.lendingStatus = lendingStatus1;
+      });
+    });
+
+    document.querySelectorAll('.purchase input[type=checkbox]').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        if (e.target.checked) {
+          bwbPurchaseUrl = 'https://www.google.com';
+        } else {
+          bwbPurchaseUrl = ''
+        }
+        iaBookActions.bwbPurchaseUrl = bwbPurchaseUrl;
+      })
+    });
+</script>
+
+  <div>
+    <fieldset>
+      <legend>Dev try for lending banner</legend>
+        <table class="initial">
+          <tr>
+            <td class="userState">
+              <label><input type="checkbox" name="user" value="isAdmin" />isAdmin</label>
+              <label><input type="checkbox" name="user" value="isLoggedIn" />isLoggedIn</label>
+            </td>
+            <td class="printDisabled">
+              <label><input type="checkbox" name="is_printdisabled" value="is_printdisabled" />is_printdisabled</label>
+              <label><input type="checkbox" name="user_is_printdisabled" value="user_is_printdisabled" />user_is_printdisabled</label>
+            </td>
+            <td class="availableToBrowse">
+              <label><input type="radio" name="browse" value="available_to_browse" />available_to_browse</label>
+              <label><input type="radio" name="browse" value="user_has_browsed" />user_has_browsed</label>
+            </td>
+            <td class="availableToBorrow">
+              <label><input type="radio" name="borrow" value="available_to_borrow" />available_to_borrow</label>
+              <label><input type="radio" name="borrow" value="user_on_waitlist" />user_on_waitlist</label>
+              <label><input type="radio" name="borrow" value="available_to_waitlist" />available_to_waitlist</label>
+              <label><input type="radio" name="borrow" value="user_has_borrowed" />user_has_borrowed</label>
+            </td>
+            <td class="purchase">
+              <label><input type="checkbox" name="purchase" value="purchase" />purchase (Click to reflect selection)</label>
+            </td>
+
+            <td class="reflect">
+              <input type="button" style="padding: 10px;
+              background: #194880;
+              color: white;
+              font-weight: bold; display: none" name="purchase" value="Reflect" />
+            </td>
+          </tr>
+        </table>
+
+        <table class="mode" style="display: none;">
+        <tr>
+          <td>
+            <label><input type="radio" name="contact" value="canBrowse" />CanBrowse</label>
+          </td>
+          <td>
+            <label><input type="radio" name="contact" value="browsed" />browsed</label>
+          </td>
+          <td>
+            <label><input type="radio" name="contact" value="canBrowseAndBorrow" />canBrowseAndBorrow</label>
+          </td>
+          <td>
+            <label><input type="radio" name="contact" value="browsedAndBorrow" />browsedAndBorrow</label>
+          </td>
+          <td>
+            <label><input type="radio" name="contact" value="canBrowseAndBorrowod" />canBrowseAndBorrowod</label>
+          </td>
+          <td>
+            <label><input type="radio" name="contact"
+              id="canBrowseAndJoinWaitlistForBorrow" value="canBrowseAndJoinWaitlistForBorrow" />canBrowseAndJoinWaitlistForBorrow</label>
+          </td>
+        </tr>
+        </table>
+    </fieldset>
+  </div>
 </body>
-
 </html>

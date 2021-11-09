@@ -1,100 +1,94 @@
 import { html, css, LitElement } from 'lit-element';
 
+import ResizeObserver from 'resize-observer-polyfill';
+
 import './components/collapsible-action-group.js';
 import './components/text-group.js';
 import './components/info-icon.js';
 
-import {
-  analyticsCategories,
-  analyticsActions,
-} from './core/config/analytics-event-and-category.js';
+import GetLendingActions from './core/services/get-lending-actions.js';
 import { mobileContainerWidth } from './core/config/constants.js';
 
-export class IABookActions extends LitElement {
+export default class IABookActions extends LitElement {
   static get properties() {
     return {
       userid: { type: String },
       identifier: { type: String },
       lendingStatus: { type: Object },
       width: { type: Number },
-      BWBPurchaseInfo: { type: String },
+      bwbPurchaseUrl: { type: String },
     };
   }
 
   constructor() {
     super();
-    this.userid = '@neeraj-archive';
+    this.userid = '';
     this.identifier = '';
     this.lendingStatus = {};
-    this.width = 800;
-    this.BWBPurchaseInfo = '';
-    this.actions = {};
-    this.lendingOptions = {};
-    this.analyticsCategories = analyticsCategories;
-    this.analyticsActions = analyticsActions;
-    this.primaryTitle = 'Join waitlist for 14 day borrow';
-    this.primaryColor = 'danger';
-
-    this.primaryActions = [
-      {
-        text: 'Return now',
-        callback: 'self.handleReturnIt',
-        className: 'ia-button danger 12',
-        analyticsEvent: {
-          category: this.analyticsCategories.borrow,
-          action: this.analyticsActions.doneBorrowing,
-        },
-      },
-      {
-        text: 'Borrow for 14 days',
-        callback: 'self.handleReturnIt',
-        className: 'ia-button primary 13',
-        analyticsEvent: {
-          category: this.analyticsCategories.borrow,
-          action: this.analyticsActions.doneBorrowing,
-        },
-      },
-    ];
-
-    // this.primaryActions = []; // reset for testing
-    this.secondaryActions = [
-      {
-        text: 'Purchase',
-        title: 'Purchase',
-        url:
-          'https://www.betterworldbooks.com/product/detail/cambridge-ancient-hist-v04-0521044863',
-        target: '_blank',
-        className: 'ia-button purchase dark',
-        analyticsEvent: {
-          category: this.analyticsCategories.purchase,
-          action: this.analyticsActions.purchase,
-        },
-      },
-      {
-        text: 'Admin Access',
-        title: 'Admin Access',
-        url:
-          'https://www.betterworldbooks.com/product/detail/cambridge-ancient-hist-v04-0521044863',
-        target: '_blank',
-        className: 'ia-button danger dark',
-        analyticsEvent: {
-          category: this.analyticsCategories.purchase,
-          action: this.analyticsActions.purchase,
-        },
-      },
-    ];
-    // this.secondaryActions = []; // reset for testing
+    this.primaryActions = [];
+    this.primaryTitle = '';
+    this.primaryColor = 'primary';
+    this.secondaryActions = [];
+    this.width = 0;
+    this.bwbPurchaseUrl = '';
+    this.lendingOptions = [];
   }
 
   firstUpdated() {
     const resizeObserver = new ResizeObserver(entries => {
       for (const entry of entries) {
-        this.width = entry.contentBoxSize
-          ? entry.contentBoxSize[0].inlineSize
-          : entry.contentRect.width;
+        this.width = entry.contentRect ? entry.contentRect.width : '';
       }
     });
     resizeObserver.observe(this.shadowRoot.querySelector('.lending-wrapper'));
+
+    this.setupLendingToolbarActions();
+  }
+
+  updated(changed) {
+    if (changed.has('lendingStatus') || changed.has('bwbPurchaseUrl')) {
+      this.setupLendingToolbarActions();
+      this.update();
+    }
+  }
+
+  async setupLendingToolbarActions() {
+    this.lendingOptions = new GetLendingActions(
+      this.userid,
+      this.identifier,
+      this.lendingStatus,
+      this.bwbPurchaseUrl
+    );
+    const actions = this.lendingOptions.getCurrentLendingActions();
+
+    if (!actions) return;
+
+    this.primaryTitle = actions.primaryTitle;
+    this.primaryActions = actions.primaryActions.filter(action => {
+      return action != null;
+    });
+    this.primaryColor = actions.primaryColor;
+    this.secondaryActions = actions.secondaryActions.filter(action => {
+      return action != null;
+    });
+  }
+
+  render() {
+    return html`
+      <section class="lending-wrapper">
+        <collapsible-action-group
+          .userid=${this.userid}
+          .identifier=${this.identifier}
+          .primaryColor=${this.primaryColor}
+          .primaryActions=${this.primaryActions}
+          .secondaryActions=${this.secondaryActions}
+          .width=${this.width}
+          .hasAdminAccess=${this.hasAdminAccess}
+        >
+        </collapsible-action-group>
+        ${this.textGroupTemplate} ${this.infoIconTemplate}
+      </section>
+    `;
   }
 
   get iconClass() {
@@ -110,24 +104,15 @@ export class IABookActions extends LitElement {
   }
 
   get textGroupTemplate() {
-    return html`<text-group textClass=${this.textClass} texts="${this.primaryTitle}">
+    return html`<text-group
+      textClass=${this.textClass}
+      texts="${this.primaryTitle}"
+    >
     </text-group>`;
   }
 
-  render() {
-    return html`
-      <section class="lending-wrapper">
-        <collapsible-action-group
-          .primaryColor=${this.primaryColor}
-          .primaryActions=${this.primaryActions}
-          .secondaryActions=${this.secondaryActions}
-          .width=${this.width}
-        >
-        </collapsible-action-group>
-        ${this.textGroupTemplate}
-        ${this.infoIconTemplate}
-      </section>
-    `;
+  get hasAdminAccess() {
+    return !this.lendingStatus.userHasBorrowed && this.lendingStatus.isAdmin;
   }
 
   static get styles() {

@@ -7,6 +7,7 @@ export const analyticsCategories = {
   preview: 'BookReader-Preview',
   satisfactionMetric: 'DetailsPage-Book',
   purchase: 'BookReaderHeader',
+  unavailable: 'BookReader-Preview',
 };
 
 export const analyticsActions = {
@@ -18,4 +19,5 @@ export const analyticsActions = {
   doneBorrowing: 'ReturnBook',
   login: 'LogIn',
   purchase: 'BWBPurchase',
+  unavailable: 'Book-Unavailable',
 };

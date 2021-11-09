@@ -1,28 +1,47 @@
-import { html, css, LitElement } from 'lit-element';
+import { html } from 'lit-element';
 import { nothing } from 'lit-html';
 
-import buttonBaseStyle from '../assets/styles/ia-button.js';
-import { tabletContainerWidth } from '../core/config/constants.js';
+import ActionsHandler from '../core/services/actions-handler/actions-handler.js';
 
-export class CollapsibleActionGroup extends LitElement {
+import buttonBaseStyle from '../assets/styles/ia-button.js';
+import CollapsibleActionGroupStyle from '../assets/styles/collapsible-action-group.js';
+
+import { tabletContainerWidth } from '../core/config/constants.js';
+import { purchaseIcon } from '../assets/data/purchase.js';
+import {
+  dropdownOpened,
+  dropdownClosed,
+} from '../assets/data/dropdown-arrow.js';
+
+export class CollapsibleActionGroup extends ActionsHandler {
   static get properties() {
     return {
+      userid: { type: String },
+      identifier: { type: String },
       primaryActions: { type: Array },
       secondaryActions: { type: Array },
       primaryColor: { type: String },
-      open: { type: Boolean },
+      dropdownState: { type: String },
       width: { type: Number },
+      hasAdminAccess: { type: Boolean },
+      dropdownArrow: { type: String },
     };
   }
 
   constructor() {
     super();
+    this.userid = '';
+    this.identifier = '';
     this.primaryActions = [];
     this.secondaryActions = [];
     this.primaryColor = '';
-    this.title = '';
+    this.dropdownState = 'close';
     this.width = 0;
-    this.open = false;
+    this.hasAdminAccess = false;
+    this.dropdownArrow = dropdownClosed;
+    this.initialButton = false;
+    this.title = '';
+    this.loaderIcon = 'https://archive.org/upload/images/tree/loading.gif';
   }
 
   updated(changed) {
@@ -33,18 +52,49 @@ export class CollapsibleActionGroup extends LitElement {
     }
   }
 
+  /**
+   * merge primaryActions and secondaryActions into dropdown
+   */
   resetActions() {
     // concat primaryActions and secondaryActions to draw in dropdown list
-    if (this.primaryActions.length !== 0) {
+    if (this.primaryActions.length) {
       this.primaryActions = this.primaryActions.concat(this.secondaryActions);
+
+      this.primaryColor = this.primaryActions[0].className;
+
+      if (this.hasAdminAccess) {
+        this.sortActionButtonOrder();
+      }
 
       // remove secondaryActions
       this.secondaryActions = [];
     }
   }
 
+  /**
+   * re-sort primaryActions action list to show dropdown-only/mobile mode
+   */
+  sortActionButtonOrder() {
+    let fromIndex = 1;
+    const toIndex = 0;
+    if (this.secondaryActions.length === 2) {
+      fromIndex = 2;
+    }
+
+    fromIndex = this.primaryActions.length - fromIndex;
+
+    const element = this.primaryActions[fromIndex];
+    const current = this.primaryActions;
+
+    current.splice(fromIndex, 1);
+    current.splice(toIndex, 0, element);
+
+    this.primaryActions = current;
+  }
+
   render() {
     return html`
+      ${this.getLoaderIcon}
       <section class="action-buttons primary">
         ${this.renderPrimaryActions}
       </section>
@@ -57,22 +107,26 @@ export class CollapsibleActionGroup extends LitElement {
   get renderPrimaryActions() {
     if (this.primaryActions.length === 0) return nothing;
 
+    if (this.dropdownState === 'close') {
+      this.primaryColor = this.primaryActions[0].className;
+    }
+
     // If its single action, let just not show dropdown list
     if (this.primaryActions.length === 1) {
       return this.initialActionTemplate;
     }
 
-    // TODO - wrap dropdown button with ia-icons
     return html`
       ${this.initialActionTemplate}
-      <div class="dropdown">
+      <div class="dropdown-group">
         <button
           class="ia-button ${this.primaryColor} down-arrow"
           @click=${this.toggleDropdown}
         >
-          + <i class="fa fa-caret-down"></i>
+          ${this.dropdownArrow}
         </button>
-        <ul class="dropdown-content ${this.menuClass}">
+
+        <ul class="dropdown-content ${this.dropdownState}">
           ${this.getPrimaryItems}
         </ul>
       </div>
@@ -80,114 +134,126 @@ export class CollapsibleActionGroup extends LitElement {
   }
 
   get renderSecondaryActions() {
-    if (this.secondaryActions.length === 0) return nothing;
+    if (!this.secondaryActions.length) return nothing;
 
-    return this.secondaryActions.map(
-      action => html`<a
-        class=${action.className}
-        href="${action.url}"
-        target=${action.target}
-        data-event-click-tracking="${action.analyticsEvent.category}|${action
-          .analyticsEvent.action}"
-      >
-        ${action.text}
-      </a>`
-    );
+    return this.secondaryActions.map(action => this.renderActionLink(action));
   }
 
-  static renderActionButton(action) {
-    return html`<button
-      class="ia-button ${action.className}"
+  /**
+   * Render action as a link for secondary actions like admin, purchase, printdisability links.
+   * @param { Object } action
+   * @param { Boolean } initialButton
+   * @returns { HTMLElement }
+   */
+  renderActionLink(action, initialButton = false) {
+    return html`<a
+      data-id="${action.id}"
+      class="ia-button ${action.className} ${initialButton ? 'initial' : ''}"
+      href="${action.url}"
+      target=${action.target}
+      @click=${this.clickHandler}
       data-event-click-tracking="${action.analyticsEvent.category}|${action
         .analyticsEvent.action}"
-      @click=${action.callback}
+    >
+      ${action.id === 'purchaseBook' ? purchaseIcon : ''} ${action.text}
+    </a>`;
+  }
+
+  /**
+   * Render action as a button for primary actions like browse, borrow, join waitlist etc...
+   * @param { Object } action
+   * @param { Boolean } initialButton
+   * @returns { HTMLElement }
+   */
+  renderActionButton(action, initialButton = false) {
+    if (action.url) return this.renderActionLink(action, initialButton);
+
+    return html`<button
+      data-id="${action.id}"
+      class="ia-button ${action.className} ${initialButton ? 'initial' : ''}"
+      data-event-click-tracking="${action.analyticsEvent.category}|${action
+        .analyticsEvent.action}"
+      @click=${this.clickHandler}
     >
       ${action.text}
     </button>`;
   }
 
-  get initialActionTemplate() {
-    return CollapsibleActionGroup.renderActionButton(this.primaryActions[0]);
-  }
+  /**
+   * Click handler to emit custom event on action click
+   */
+  clickHandler(e) {
+    this.dropdownState = 'close';
+    this.dropdownArrow = dropdownClosed;
 
-  get getPrimaryItems() {
-    return this.primaryActions.map(
-      action =>
-        html`<li>${CollapsibleActionGroup.renderActionButton(action)}</li>`
+    const eventName = e?.currentTarget?.dataset?.id;
+    const event = e?.currentTarget?.dataset?.eventClickTracking;
+
+    if (eventName === undefined || event === undefined) return;
+
+    this.dispatchEvent(
+      new CustomEvent(eventName, {
+        detail: {
+          event,
+        },
+      })
     );
   }
 
-  get menuClass() {
-    return this.open ? 'open' : 'close';
+  /**
+   * get first primary action to render just before dropdown button
+   * @returns { HTMLElement }
+   */
+  get initialActionTemplate() {
+    this.initialButton = false;
+    if (this.primaryActions.length > 1) {
+      this.initialButton = true;
+    }
+
+    return this.renderActionButton(this.primaryActions[0], this.initialButton);
   }
 
+  get getPrimaryItems() {
+    return this.primaryActions
+      .slice(1)
+      .map(
+        action =>
+          html`<li>${this.renderActionButton(action, this.initialButton)}</li>`
+      );
+  }
+
+  /**
+   * get loader icon when task is in-progress
+   * @returns { HTMLElement }
+   */
+  get getLoaderIcon() {
+    return html`<img class="action-loader" alt="" src="${this.loaderIcon}" />`;
+  }
+
+  /**
+   * check if device is below tablet
+   * @returns { Boolean }
+   */
   get isBelowTabletContainer() {
     return this.width <= tabletContainerWidth;
   }
 
+  /**
+   * toggle dropdown and its icon state
+   */
   toggleDropdown() {
-    this.open = this.open !== true;
+    if (this.dropdownState === 'open') {
+      this.dropdownState = 'close';
+      this.dropdownArrow = dropdownClosed;
+      this.primaryColor = this.primaryActions[0].className;
+    } else {
+      this.dropdownState = 'open';
+      this.dropdownArrow = dropdownOpened;
+      this.primaryColor = 'dark';
+    }
   }
 
   static get styles() {
-    const CollapsibleActionGroupStyle = css`
-      .dropdown,
-      .action-buttons {
-        display: inline-block;
-      }
-      .secondary .ia-button {
-        margin-left: 5px;
-      }
-      .dropdown-content {
-        position: absolute;
-        min-width: 14rem;
-        margin: 0 0 0 -13rem;
-        padding: 0;
-        background: #2d2d2d;
-        border-radius: 0.4rem;
-        border: 1px solid var(--primaryCTABorder);
-      }
-      .dropdown-content li {
-        color: var(--primaryBGColor);
-        list-style: none;
-      }
-      .dropdown-content .ia-button {
-        background: none;
-        border: none;
-        box-sizing: border-box;
-        display: block;
-        width: 100%;
-        text-align: left;
-      }
-      .dropdown-content li .ia-button:hover {
-        background: var(--primaryTextColor);
-        color: rgb(45, 45, 45);
-      }
-      .down-arrow {
-        margin-left: -0.9rem;
-        padding: 0.6rem;
-        border-radius: 0 0.4rem 0.4rem 0;
-      }
-      .close {
-        display: none;
-      }
-      .open {
-        display: block;
-      }
-      .visible {
-        display: inline-block;
-      }
-      .btn:hover,
-      .dropdown:hover .btn {
-        background-color: var(--primaryTextColor);
-      }
-      .ia-button {
-        min-height: initial;
-      }
-      a {
-        text-decoration: none;
-      }
-    `;
     return [buttonBaseStyle, CollapsibleActionGroupStyle];
   }
 }

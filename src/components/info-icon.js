@@ -1,4 +1,6 @@
-import { html, css, LitElement } from 'lit-element';
+import { html, css, LitElement, svg } from 'lit-element';
+import { unsafeHTML } from 'lit-html/directives/unsafe-html';
+import '@internetarchive/icon-info/icon-info.js';
 
 export class InfoIcon extends LitElement {
   static get properties() {
@@ -10,33 +12,42 @@ export class InfoIcon extends LitElement {
   constructor() {
     super();
     this.iconClass = '';
+    this.helpURL =
+      'https://help.archive.org/hc/en-us/articles/360016554912-Borrowing-From-The-Lending-Library-A-Basic-Guide';
   }
 
-  // TODO- fetch info-icon using ia-icon 
   render() {
     return html`
       <a
         class="more-info-icon ${this.iconClass}"
-        href="https://help.archive.org/hc/en-us/articles/360016554912-Borrowing-From-The-Lending-Library-A-Basic-Guide"
+        href=${this.helpURL}
         target="_blank"
-        title="Get more info on borrowing from The Lending Library."
+        title="Get more info on borrowing from The Lending Library"
         data-event-click-tracking="BookReader|BrowsableMoreInfo"
       >
-        <img src="./info-icon1.jpg" alt="Information Icon" />
+        <ia-icon-info></ia-icon-info>
       </a>
     `;
+  }
+
+  get getInfoIcon() {
+    return svg`${unsafeHTML(this.icon)}`;
   }
 
   static get styles() {
     return css`
       :host {
         display: inline-block;
-        margin-left: 10px;
         vertical-align: middle;
-        font-size: 1.6rem;
+      }
+      ia-icon-info {
+        display: inline-block;
+        width: 18px;
+        vertical-align: middle;
+        --iconFillColor: white;
       }
       .more-info-icon {
-        display: inline-block;
+        margin-left: 10px;
         vertical-align: middle;
       }
       .more-info-icon img {
@@ -47,8 +58,9 @@ export class InfoIcon extends LitElement {
       }
       .more-info-icon.mobile {
         position: absolute;
+        top: 2px;
         right: 10px;
-        margin-top: -12px;
+        margin-top: 14px;
       }
       .hidden {
         display: none;

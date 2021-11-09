@@ -14,9 +14,11 @@ export default css`
     font-size: 1.4rem;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     display: inline-block;
-    padding: 0.6rem 1.2rem;
+    padding: 0.85rem 1.2rem;
     border: 1px solid transparent;
     white-space: nowrap;
+    appearance: auto;
+    box-sizing: border-box;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -26,7 +28,9 @@ export default css`
   .ia-button:disabled,
   .ia-button.disabled {
     cursor: not-allowed;
-    opacity: 0.5;
+    background-color: var(--primaryDisableCTAFill, #767676);
+    border: 1px solid var(--secondaryCTABorder, #999);
+    color: var(--primaryTextColor, #fff);
   }
   .ia-button.transparent {
     background-color: transparent;
@@ -48,6 +52,11 @@ export default css`
     color: #fff;
     background-color: #d9534f;
     border-color: #d43f3a;
+  }
+  .ia-button.warning {
+    color: #fff;
+    background-color: #ee8950;
+    border-color: #ec7939;
   }
   .ia-button.cancel {
     background-color: #e51c26;
