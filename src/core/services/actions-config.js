@@ -154,7 +154,8 @@ export default class ActionsConfig {
 
     return {
       id: 'purchaseBook',
-      text: 'Purchase',
+      text: 'Purchase at',
+      subText: 'Better World Books',
       title: 'Purchase',
       url: this.bwbPurchaseUrl,
       target: '_blank',

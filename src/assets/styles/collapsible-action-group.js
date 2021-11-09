@@ -21,6 +21,7 @@ export default css`
   }
   .secondary .ia-button {
     margin: 0 3px;
+    text-align: initial;
   }
   .dropdown-group {
     display: inline-block;
@@ -91,16 +92,28 @@ export default css`
   .primary svg {
     vertical-align: middle;
   }
-  .dropdown-content .purchase,
   .purchase {
-    padding-left: 35px;
+    padding: 2px 10px 2px 35px;
     position: relative;
+  }
+  .purchase small {
+    display: block;
+    font-size: 1rem;
+    margin-top: 2px;
   }
   .purchase svg {
     position: absolute;
-    left: 12px;
+    left: 10px;
     top: 20%;
   }
+  .dropdown-content .purchase {
+    padding-left: 35px;
+  }
+  .dropdown-content .purchase small {
+    display: initial;
+    font-size: 1.4rem;
+  }
+
   .unavailable {
     opacity: 0.7;
     pointer-events: none;
