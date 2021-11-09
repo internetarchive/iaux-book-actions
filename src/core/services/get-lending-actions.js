@@ -381,7 +381,7 @@ export default class GetLendingActions {
       lendingStatus.user_has_borrowed || lendingStatus.user_has_browsed;
 
     const notBorrowed =
-      !lendingStatus.user_has_borrowed || !lendingStatus.user_has_browsed;
+      !lendingStatus.user_has_borrowed && !lendingStatus.user_has_browsed;
     const notBorrowable =
       !lendingStatus.available_to_borrow && !lendingStatus.available_to_browse;
 

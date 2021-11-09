@@ -24,44 +24,44 @@ export default class ActionsHandler extends LitElement {
   bindEvents() {
     this.addEventListener('browseBook', ({ detail }) => {
       this.handleBrowseIt();
-      console.log(`Analytics click fired: ${detail.event}`);
+      console?.log(`Analytics click fired: ${detail.event}`);
     });
 
     this.addEventListener('returnNow', ({ detail }) => {
       this.handleReturnIt(detail.bookUrl);
-      console.log(`Analytics click fired: ${detail.event}`);
+      console?.log(`Analytics click fired: ${detail.event}`);
     });
 
     this.addEventListener('borrowBook', ({ detail }) => {
       this.handleBorrowIt();
-      console.log(`Analytics click fired: ${detail.event}`);
+      console?.log(`Analytics click fired: ${detail.event}`);
     });
 
     this.addEventListener('loginAndBorrow', ({ detail }) => {
       this.handleLoginOk();
-      console.log(`Analytics click fired: ${detail.event}`);
+      console?.log(`Analytics click fired: ${detail.event}`);
     });
 
     this.addEventListener('leaveWaitlist', ({ detail }) => {
       this.handleRemoveFromWaitingList();
-      console.log(`Analytics click fired: ${detail.event}`);
+      console?.log(`Analytics click fired: ${detail.event}`);
     });
 
     this.addEventListener('joinWaitlist', ({ detail }) => {
       this.handleReserveIt();
-      console.log(`Analytics click fired: ${detail.event}`);
+      console?.log(`Analytics click fired: ${detail.event}`);
     });
 
     this.addEventListener('purchaseBook', ({ detail }) => {
-      console.log(`Analytics click fired: ${detail.event}`);
+      console?.log(`Analytics click fired: ${detail.event}`);
     });
 
     this.addEventListener('adminAccess', ({ detail }) => {
-      console.log(`Analytics click fired: ${detail.event}`);
+      console?.log(`Analytics click fired: ${detail.event}`);
     });
 
     this.addEventListener('exitAdminAccess', ({ detail }) => {
-      console.log(`Analytics click fired: ${detail.event}`);
+      console?.log(`Analytics click fired: ${detail.event}`);
     });
   }
 
