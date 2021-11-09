@@ -156,6 +156,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
         .analyticsEvent.action}"
     >
       ${action.id === 'purchaseBook' ? purchaseIcon : ''} ${action.text}
+      <small>${action.subText}</small>
     </a>`;
   }
 
