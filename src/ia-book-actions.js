@@ -1,6 +1,6 @@
 import { html, css, LitElement } from 'lit-element';
 
-import ResizeObserver from 'resize-observer-polyfill';
+import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
 
 import './components/collapsible-action-group.js';
 import './components/text-group.js';
@@ -17,6 +17,7 @@ export default class IABookActions extends LitElement {
       lendingStatus: { type: Object },
       width: { type: Number },
       bwbPurchaseUrl: { type: String },
+      sharedObserver: { attribute: false },
     };
   }
 
@@ -32,16 +33,18 @@ export default class IABookActions extends LitElement {
     this.width = 0;
     this.bwbPurchaseUrl = '';
     this.lendingOptions = [];
+    this.sharedObserver = undefined;
+  }
+
+  disconnectedCallback() {
+    this.disconnectResizeObserver();
   }
 
   firstUpdated() {
-    const resizeObserver = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        this.width = entry.contentRect ? entry.contentRect.width : '';
-      }
-    });
-    resizeObserver.observe(this.shadowRoot.querySelector('.lending-wrapper'));
-
+    if (!this.sharedObserver) {
+      this.sharedObserver = new SharedResizeObserver();
+      this.setupResizeObserver();
+    }
     this.setupLendingToolbarActions();
   }
 
@@ -50,7 +53,44 @@ export default class IABookActions extends LitElement {
       this.setupLendingToolbarActions();
       this.update();
     }
+
+    if (changed.has('sharedObserver')) {
+      this.disconnectResizeObserver();
+      this.setupResizeObserver();
+    }
   }
+
+  /** SharedObserver resize handler */
+  handleResize(entry) {
+    // if you are observing multiple targets,
+    // you can distinguish them through `entry.target`
+    const { target } = entry;
+    if (target !== this.shadowRoot.host) return;
+
+    const { contentRect } = entry;
+    // configure your view, ie:
+
+    this.width = Math.round(contentRect.width);
+  }
+
+  /** Removes observer */
+  disconnectResizeObserver() {
+    this.sharedObserver?.removeObserver({
+      handler: this,
+      target: this.shadowRoot.host,
+    });
+  }
+
+  // observe the shadowRoot's viewport and
+  // make this component the handler of changes
+  setupResizeObserver() {
+    if (!this.shadowRoot) return;
+    this.sharedObserver?.addObserver({
+      handler: this,
+      target: this.shadowRoot.host,
+    });
+  }
+  /** End SharedObserver resize handler */
 
   async setupLendingToolbarActions() {
     this.lendingOptions = new GetLendingActions(

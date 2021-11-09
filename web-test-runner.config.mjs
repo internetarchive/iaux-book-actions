@@ -6,7 +6,7 @@ export default /** @type {import("@web/test-runner").TestRunnerConfig} */ ({
   watch: true,
 
   /** Compile JS for older browsers. Requires @web/dev-server-esbuild plugin */
-  // esbuildTarget: 'auto',
+  esbuildTarget: 'auto',
 
   /** Confgure bare import resolve plugin */
   // nodeResolve: {
