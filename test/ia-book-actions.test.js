@@ -1,8 +1,19 @@
 import { html, fixture, expect } from '@open-wc/testing';
 import '../src/ia-book-actions.js';
+import Sinon from 'sinon';
+
+import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
+
+afterEach(() => {
+  Sinon.restore();
+});
 
 const container = ({ userid, identifier, lendingStatus = {} } = {}) =>
-  html`<ia-book-actions .userid=${userid} .identifier=${identifier} .lendingStatus=${lendingStatus}></ia-topnav>`;
+  html`<ia-book-actions
+    .userid=${userid}
+    .identifier=${identifier}
+    .lendingStatus=${lendingStatus}
+  ></ia-book-actions>`;
 
 describe('<ia-book-actions>', () => {
   it('Check assigned property value', async () => {
@@ -147,5 +158,41 @@ describe('Borrow status actions', () => {
     expect(el.primaryActions.length).to.equal(3);
     expect(el.primaryActions[0].text).to.equal(expectedPrimaryActions[0].text);
     expect(el.primaryActions[1].text).to.equal('Borrow for 14 days');
+  });
+
+  describe('Shared Resize Observer', () => {
+    it('can receive a Shared Resize Observer', async () => {
+      const sharedObserverStub = new SharedResizeObserver();
+      const addObserverSpy = Sinon.spy(sharedObserverStub, 'addObserver');
+      const component = await fixture(html` <ia-book-actions
+        .userid=${'@userid'}
+        .identifier=${'foo'}
+        .lendingStatus=${{
+          is_lendable: true,
+          user_has_browsed: true,
+          available_to_browse: true,
+          available_to_borrow: true,
+        }}
+        .sharedObserver=${sharedObserverStub}
+      ></ia-book-actions>`);
+      await component.updateComplete;
+
+      expect(addObserverSpy.callCount).to.equal(1);
+    });
+    it('loads its own resize observer if it is not received', async () => {
+      const component = await fixture(html` <ia-book-actions
+        .userid=${'@userid'}
+        .identifier=${'foo'}
+        .lendingStatus=${{
+          is_lendable: true,
+          user_has_browsed: true,
+          available_to_browse: true,
+          available_to_borrow: true,
+        }}
+      ></ia-book-actions>`);
+
+      await component.updateComplete;
+      expect(component.sharedObserver).to.not.be.undefined;
+    });
   });
 });
