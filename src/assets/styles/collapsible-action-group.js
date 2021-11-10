@@ -8,7 +8,7 @@ export default css`
     display: inline-table;
     height: 3.5rem;
     transition: all 0.1s;
-    vertical-align: middle;
+    vertical-align: inherit;
     margin: 0px;
   }
   .primary,
@@ -99,7 +99,6 @@ export default css`
   .purchase small {
     display: block;
     font-size: 1rem;
-    margin-top: 2px;
   }
   .purchase svg {
     position: absolute;
@@ -114,6 +113,9 @@ export default css`
     font-size: 1.4rem;
   }
 
+  .link-button {
+    display: initial;
+  }
   .unavailable {
     opacity: 0.7;
     pointer-events: none;
