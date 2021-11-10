@@ -50,8 +50,6 @@ describe('<collapsible-action-group>', () => {
     expect(primaryActionContainer.classList.contains('action-buttons')).to.be
       .true;
 
-    // const primaryButton = primaryActionContainer.querySelector('.ia-button');
-
     expect(el.sendEvent).to.exist;
 
     let eName;
