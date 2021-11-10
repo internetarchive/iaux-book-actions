@@ -1,10 +1,5 @@
 import { html, fixture, expect } from '@open-wc/testing';
 import '../../src/components/collapsible-action-group.js';
-import Sinon from 'sinon';
-
-afterEach(() => {
-  Sinon.restore();
-});
 
 const container = ({
   primaryActions = [
