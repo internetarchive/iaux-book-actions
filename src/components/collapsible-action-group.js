@@ -147,13 +147,12 @@ export class CollapsibleActionGroup extends ActionsHandler {
    */
   renderActionLink(action, initialButton = false) {
     return html`<a
-      data-id="${action.id}"
       class="ia-button ${action.className} ${initialButton ? 'initial' : ''}"
       href="${action.url}"
       target=${action.target}
-      @click=${this.clickHandler}
-      data-event-click-tracking="${action.analyticsEvent.category}|${action
-        .analyticsEvent.action}"
+      @click=${() => {
+        this.clickHandler(action.id, action.analyticsEvent);
+      }}
     >
       ${action.id === 'purchaseBook' ? purchaseIcon : ''} ${action.text}
       <small>${action.subText}</small>

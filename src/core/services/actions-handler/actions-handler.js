@@ -1,4 +1,3 @@
-/* global archive_analytics */
 import { LitElement } from 'lit-element';
 import { URLHelper } from '../../config/url-helper.js';
 import ActionsHandlerService from './actions-handler-service.js';
@@ -25,7 +24,7 @@ export default class ActionsHandler extends LitElement {
   sendEvent(eventCategory, eventAction) {
     // eslint-disable-next-line no-console
     console?.log('Book action: ', { eventCategory, eventAction });
-    archive_analytics?.send_event(
+    window?.archive_analytics?.send_event(
       eventCategory,
       eventAction,
       window.location.pathname
