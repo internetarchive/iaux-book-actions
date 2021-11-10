@@ -168,13 +168,12 @@ export class CollapsibleActionGroup extends ActionsHandler {
    */
   renderActionButton(action, initialButton = false) {
     if (action.url) return this.renderActionLink(action, initialButton);
-
+    const { analyticsEvent } = action;
     return html`<button
-      data-id="${action.id}"
       class="ia-button ${action.className} ${initialButton ? 'initial' : ''}"
-      data-event-click-tracking="${action.analyticsEvent.category}|${action
-        .analyticsEvent.action}"
-      @click=${this.clickHandler}
+      @click=${() => {
+        this.clickHandler(action.id, analyticsEvent);
+      }}
     >
       ${action.text}
     </button>`;
@@ -182,20 +181,21 @@ export class CollapsibleActionGroup extends ActionsHandler {
 
   /**
    * Click handler to emit custom event on action click
+   * @param { string } eventName
+   * @param { object } gaEvent
+   *   @param { string } gaEvent.category
+   *   @param { string } gaEvent.action
    */
-  clickHandler(e) {
+  clickHandler(eventName, gaEvent) {
     this.dropdownState = 'close';
     this.dropdownArrow = dropdownClosed;
 
-    const eventName = e?.currentTarget?.dataset?.id;
-    const event = e?.currentTarget?.dataset?.eventClickTracking;
-
-    if (eventName === undefined || event === undefined) return;
-
+    if (!gaEvent || !eventName) return;
+    const { category, action } = gaEvent;
     this.dispatchEvent(
       new CustomEvent(eventName, {
         detail: {
-          event,
+          event: { category, action },
         },
       })
     );
