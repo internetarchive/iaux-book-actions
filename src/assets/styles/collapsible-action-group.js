@@ -4,12 +4,14 @@ export default css`
   .action-buttons {
     display: inline-block;
   }
+  .action-link {
+    display: initial;
+  }
   .action-buttons .ia-button {
-    display: inline-table;
+    display: inline-block;
     height: 3.5rem;
     transition: all 0.1s;
     vertical-align: middle;
-    margin: 0px;
   }
   .primary,
   .secondary {
@@ -24,7 +26,7 @@ export default css`
     text-align: initial;
   }
   .dropdown-group {
-    display: inline-block;
+    display: initial;
   }
   .dropdown-content {
     position: absolute;
@@ -52,6 +54,7 @@ export default css`
     height: 3rem;
     position: relative;
     padding: 0.6rem 1.2rem;
+    margin: 0px;
   }
   .dropdown-content li .ia-button:hover {
     background: var(--primaryTextColor);
