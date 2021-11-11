@@ -2,13 +2,17 @@ import { css } from 'lit-element';
 
 export default css`
   .action-buttons {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
   }
   .action-buttons .ia-button {
-    display: inline-table;
-    height: 3.5rem;
-    transition: all 0.1s;
+    display: inline-flex;
+    align-items: center;
     vertical-align: middle;
+    height: 3.5rem;
+    transition: all 0.1s ease 0s;
+    vertical-align: middle;
+    padding: 0 1rem;
     margin: 0px;
   }
   .primary,
@@ -25,6 +29,12 @@ export default css`
   }
   .dropdown-group {
     display: inline-block;
+  }
+  .dropdown-group .dropdown-content {
+    position: absolute;
+    left: 50%;
+    -webkit-transform: translateX(-50%);
+    transform: translateX(-50%);
   }
   .dropdown-content {
     position: absolute;
@@ -60,11 +70,9 @@ export default css`
   .dropdown-content .purchase:hover svg g {
     fill: black;
   }
-  .down-arrow {
+  .ia-button.down-arrow {
     border-radius: 0 0.4rem 0.4rem 0;
     padding: 0 0.6rem;
-    margin-left: 0;
-    vertical-align: bottom;
   }
   .action-loader {
     vertical-align: middle;
@@ -92,14 +100,15 @@ export default css`
   .primary svg {
     vertical-align: middle;
   }
-  .purchase {
+  .secondary .ia-button.purchase {
     padding: 2px 10px 2px 35px;
     position: relative;
+    display: inline-block;
+    vertical-align: middle;
   }
   .purchase small {
     display: block;
     font-size: 1rem;
-    margin-top: 2px;
   }
   .purchase svg {
     position: absolute;
@@ -108,6 +117,7 @@ export default css`
   }
   .dropdown-content .purchase {
     padding-left: 35px;
+    margin: 0;
   }
   .dropdown-content .purchase small {
     display: initial;
