@@ -20,32 +20,24 @@ export default css`
     position: relative;
   }
   .primary .initial {
-    margin-right: -4px;
     border-radius: 0.4rem 0 0 0.4rem;
   }
   .secondary .ia-button {
     margin: 0 3px;
     text-align: initial;
   }
-  .dropdown-group {
-    display: inline-block;
-  }
-  .dropdown-group .dropdown-content {
-    position: absolute;
-    left: 50%;
-    -webkit-transform: translateX(-50%);
-    transform: translateX(-50%);
-  }
   .dropdown-content {
     position: absolute;
     min-width: 14rem;
     margin: 0;
     padding: 0;
-    left: 0;
     background: #2d2d2d;
     border-radius: 0.4rem;
     border: 1px solid var(--primaryCTABorder);
     top: 3.5rem;
+    left: 50%;
+    -webkit-transform: translateX(-50%);
+    transform: translateX(-50%);
   }
   .dropdown-content li {
     color: var(--primaryBGColor);
