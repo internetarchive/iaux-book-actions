@@ -21,47 +21,66 @@ export default class ActionsHandler extends LitElement {
     this.bindEvents();
   }
 
+  sendEvent(eventCategory, eventAction) {
+    // eslint-disable-next-line no-console
+    console?.log('Book action: ', { eventCategory, eventAction });
+    window?.archive_analytics?.send_event(
+      eventCategory,
+      eventAction,
+      window.location.pathname
+    );
+  }
+
   bindEvents() {
     this.addEventListener('browseBook', ({ detail }) => {
       this.handleBrowseIt();
-      console?.log(`Analytics click fired: ${detail.event}`);
+      const { category, action } = detail.event;
+      this.sendEvent(category, action);
     });
 
     this.addEventListener('returnNow', ({ detail }) => {
-      this.handleReturnIt(detail.bookUrl);
-      console?.log(`Analytics click fired: ${detail.event}`);
+      this.handleReturnIt();
+      const { category, action } = detail.event;
+      this.sendEvent(category, action);
     });
 
     this.addEventListener('borrowBook', ({ detail }) => {
       this.handleBorrowIt();
-      console?.log(`Analytics click fired: ${detail.event}`);
+      const { category, action } = detail.event;
+      this.sendEvent(category, action);
     });
 
     this.addEventListener('loginAndBorrow', ({ detail }) => {
       this.handleLoginOk();
-      console?.log(`Analytics click fired: ${detail.event}`);
+      const { category, action } = detail.event;
+      this.sendEvent(category, action);
     });
 
     this.addEventListener('leaveWaitlist', ({ detail }) => {
       this.handleRemoveFromWaitingList();
-      console?.log(`Analytics click fired: ${detail.event}`);
+      const { category, action } = detail.event;
+      this.sendEvent(category, action);
     });
 
     this.addEventListener('joinWaitlist', ({ detail }) => {
       this.handleReserveIt();
-      console?.log(`Analytics click fired: ${detail.event}`);
+      const { category, action } = detail.event;
+      this.sendEvent(category, action);
     });
 
     this.addEventListener('purchaseBook', ({ detail }) => {
-      console?.log(`Analytics click fired: ${detail.event}`);
+      const { category, action } = detail.event;
+      this.sendEvent(category, action);
     });
 
     this.addEventListener('adminAccess', ({ detail }) => {
-      console?.log(`Analytics click fired: ${detail.event}`);
+      const { category, action } = detail.event;
+      this.sendEvent(category, action);
     });
 
     this.addEventListener('exitAdminAccess', ({ detail }) => {
-      console?.log(`Analytics click fired: ${detail.event}`);
+      const { category, action } = detail.event;
+      this.sendEvent(category, action);
     });
   }
 

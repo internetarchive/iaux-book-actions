@@ -8,6 +8,7 @@ export const analyticsCategories = {
   satisfactionMetric: 'DetailsPage-Book',
   purchase: 'BookReaderHeader',
   unavailable: 'BookReader-Preview',
+  admin: 'Admin',
 };
 
 export const analyticsActions = {
