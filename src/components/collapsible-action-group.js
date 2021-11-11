@@ -146,19 +146,17 @@ export class CollapsibleActionGroup extends ActionsHandler {
    * @returns { HTMLElement }
    */
   renderActionLink(action, initialButton = false) {
-    return html`<div class="link-button">
-      <a
-        class="ia-button ${action.className} ${initialButton ? 'initial' : ''}"
-        href="${action.url}"
-        target=${action.target}
-        @click=${() => {
-          this.clickHandler(action.id, action.analyticsEvent);
-        }}
-      >
-        ${action.id === 'purchaseBook' ? purchaseIcon : ''} ${action.text}
-        <small>${action.subText}</small>
-      </a>
-    </div>`;
+    return html`<a
+      class="ia-button ${action.className} ${initialButton ? 'initial' : ''}"
+      href="${action.url}"
+      target=${action.target}
+      @click=${() => {
+        this.clickHandler(action.id, action.analyticsEvent);
+      }}
+    >
+      ${action.id === 'purchaseBook' ? purchaseIcon : ''} ${action.text}
+      <small>${action.subText}</small>
+    </a>`;
   }
 
   /**
@@ -169,10 +167,11 @@ export class CollapsibleActionGroup extends ActionsHandler {
    */
   renderActionButton(action, initialButton = false) {
     if (action.url) return this.renderActionLink(action, initialButton);
+    const { analyticsEvent } = action;
     return html`<button
       class="ia-button ${action.className} ${initialButton ? 'initial' : ''}"
       @click=${() => {
-        this.clickHandler(action.id, action.analyticsEvent);
+        this.clickHandler(action.id, analyticsEvent);
       }}
     >
       ${action.text}
