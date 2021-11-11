@@ -7,11 +7,13 @@ const container = ({
       analyticsEvent: { action: 'Browse', category: 'Lending' },
       className: 'ia-button primary',
       text: 'Borrow for 1 hour',
+      id: 'browseBook',
     },
     {
       analyticsEvent: { action: 'Borrow', category: 'Lending' },
       className: 'ia-button primary',
       text: 'Borrow for 14 days',
+      id: 'borrowBook',
     },
   ],
   secondaryActions = [
@@ -36,8 +38,31 @@ describe('<collapsible-action-group>', () => {
 
     const primaryButton = primaryActionContainer.querySelector('.ia-button');
     expect(primaryButton.innerText).to.equal('Borrow for 1 hour');
-    expect(primaryButton.getAttribute('data-event-click-tracking')).to.equal(
-      'Lending|Browse'
-    );
+  });
+  it('fires analytics events', async () => {
+    const el = await fixture(container());
+    const primaryActionContainer = el.shadowRoot.querySelector('.primary');
+    expect(primaryActionContainer.classList.contains('action-buttons')).to.be
+      .true;
+
+    expect(el.sendEvent).to.exist;
+
+    let eName;
+    let eAnalytics;
+    const manualClickStub = (eventName, gaEvent) => {
+      eName = eventName;
+      eAnalytics = gaEvent;
+    };
+
+    el.clickHandler = manualClickStub;
+    await el.updateComplete;
+
+    const primaryButton = primaryActionContainer.querySelector('.ia-button');
+    primaryButton.dispatchEvent(new Event('click'));
+    await el.updateComplete;
+
+    expect(eName).to.equal('browseBook');
+    expect(eAnalytics.category).to.equal('Lending');
+    expect(eAnalytics.action).to.equal('Browse');
   });
 });

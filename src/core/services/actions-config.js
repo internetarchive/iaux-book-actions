@@ -198,8 +198,8 @@ export default class ActionsConfig {
       target: '_self',
       className: 'danger',
       analyticsEvent: {
-        category: '',
-        action: '',
+        category: this.analyticsCategories.admin,
+        action: this.analyticsActions.borrow,
       },
     };
   }
@@ -216,8 +216,8 @@ export default class ActionsConfig {
       target: '_self',
       className: 'ia-button',
       analyticsEvent: {
-        category: this.analyticsCategories.purchase,
-        action: this.analyticsActions.purchase,
+        category: this.analyticsCategories.admin,
+        action: this.analyticsActions.doneBorrowing,
       },
     };
   }
