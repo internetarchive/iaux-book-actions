@@ -36,19 +36,15 @@ export class InfoIcon extends LitElement {
 
   static get styles() {
     return css`
-      :host {
-        display: inline-block;
-        vertical-align: middle;
-      }
       ia-icon-info {
         display: inline-block;
         width: 18px;
+        height: 20px;
         vertical-align: middle;
         --iconFillColor: white;
       }
       .more-info-icon {
         margin-left: 10px;
-        vertical-align: middle;
       }
       .more-info-icon img {
         width: 24px;
@@ -58,9 +54,9 @@ export class InfoIcon extends LitElement {
       }
       .more-info-icon.mobile {
         position: absolute;
-        top: 2px;
+        top: 4px;
         right: 10px;
-        margin-top: 14px;
+        margin-top: 15px;
       }
       .hidden {
         display: none;

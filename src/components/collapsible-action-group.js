@@ -118,18 +118,16 @@ export class CollapsibleActionGroup extends ActionsHandler {
 
     return html`
       ${this.initialActionTemplate}
-      <div class="dropdown-group">
-        <button
-          class="ia-button ${this.primaryColor} down-arrow"
-          @click=${this.toggleDropdown}
-        >
-          ${this.dropdownArrow}
-        </button>
+      <button
+        class="ia-button ${this.primaryColor} down-arrow"
+        @click=${this.toggleDropdown}
+      >
+        ${this.dropdownArrow}
+      </button>
 
-        <ul class="dropdown-content ${this.dropdownState}">
-          ${this.getPrimaryItems}
-        </ul>
-      </div>
+      <ul class="dropdown-content ${this.dropdownState}">
+        ${this.getPrimaryItems}
+      </ul>
     `;
   }
 

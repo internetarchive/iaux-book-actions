@@ -159,13 +159,17 @@ export default class IABookActions extends LitElement {
     return css`
       :host {
         display: block;
-        background: var(--primaryBGColor);
+        background: var(--secondaryBGColor);
         color: var(--primaryTextColor);
       }
       .lending-wrapper {
         width: 100%;
         margin: 0 auto;
         padding: 10px 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
       }
     `;
   }
