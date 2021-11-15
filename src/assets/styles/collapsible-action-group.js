@@ -1,6 +1,9 @@
 import { css } from 'lit-element';
 
 export default css`
+  :host {
+    display: inline-flex;
+  }
   .action-buttons {
     display: inline-flex;
     align-items: center;
