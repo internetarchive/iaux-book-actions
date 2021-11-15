@@ -1,6 +1,6 @@
 {
   "name": "@internetarchive/ia-book-actions",
-  "version": "0.0.3-alpha-03",
+  "version": "0.0.5-alpha-02",
   "description": "Bookreader actions for borrowable book",
   "author": "Internet Archive",
   "license": "AGPL-3.0-only",

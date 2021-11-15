@@ -13,7 +13,7 @@ export default css`
     transition: all 0.1s ease 0s;
     vertical-align: middle;
     padding: 0 1rem;
-    margin: 0px;
+    margin: 0 3px;
   }
   .primary,
   .secondary {
@@ -21,10 +21,7 @@ export default css`
   }
   .primary .initial {
     border-radius: 0.4rem 0 0 0.4rem;
-  }
-  .secondary .ia-button {
-    margin: 0 3px;
-    text-align: initial;
+    margin-right: 0;
   }
   .dropdown-content {
     position: absolute;
@@ -34,7 +31,7 @@ export default css`
     background: #2d2d2d;
     border-radius: 0.4rem;
     border: 1px solid var(--primaryCTABorder);
-    top: 3.5rem;
+    top: 3.4rem;
     left: 50%;
     -webkit-transform: translateX(-50%);
     transform: translateX(-50%);
@@ -54,6 +51,7 @@ export default css`
     height: 3rem;
     position: relative;
     padding: 0.6rem 1.2rem;
+    margin: 0;
   }
   .dropdown-content li .ia-button:hover {
     background: var(--primaryTextColor);
@@ -65,10 +63,12 @@ export default css`
   .ia-button.down-arrow {
     border-radius: 0 0.4rem 0.4rem 0;
     padding: 0 0.6rem;
+    margin-left: 0;
   }
   .action-loader {
     vertical-align: middle;
     visibility: hidden;
+    padding: 0.9rem 0.2rem;
   }
   .close {
     display: none;
@@ -76,7 +76,6 @@ export default css`
   .open {
     display: block;
     z-index: 2;
-    border-top: 0;
   }
   .visible {
     display: inline-block;
