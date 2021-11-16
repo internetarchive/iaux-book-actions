@@ -103,7 +103,7 @@
     iaBookActions.lendingStatus = defaultLendingStatus;
     iaBookActions.bwbPurchaseUrl = '';
 
-    let lendingStatus1 = defaultLendingStatus;
+    let lendingStatus1 = iaBookActions.lendingStatus;
 
     document.querySelectorAll('.userState input[type=checkbox]').forEach((item) => {
       item.addEventListener('click', (e) => {
@@ -226,30 +226,6 @@
               font-weight: bold; display: none" name="purchase" value="Reflect" />
             </td>
           </tr>
-        </table>
-
-        <table class="mode" style="display: none;">
-        <tr>
-          <td>
-            <label><input type="radio" name="contact" value="canBrowse" />CanBrowse</label>
-          </td>
-          <td>
-            <label><input type="radio" name="contact" value="browsed" />browsed</label>
-          </td>
-          <td>
-            <label><input type="radio" name="contact" value="canBrowseAndBorrow" />canBrowseAndBorrow</label>
-          </td>
-          <td>
-            <label><input type="radio" name="contact" value="browsedAndBorrow" />browsedAndBorrow</label>
-          </td>
-          <td>
-            <label><input type="radio" name="contact" value="canBrowseAndBorrowod" />canBrowseAndBorrowod</label>
-          </td>
-          <td>
-            <label><input type="radio" name="contact"
-              id="canBrowseAndJoinWaitlistForBorrow" value="canBrowseAndJoinWaitlistForBorrow" />canBrowseAndJoinWaitlistForBorrow</label>
-          </td>
-        </tr>
         </table>
     </fieldset>
   </div>
