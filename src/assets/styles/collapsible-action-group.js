@@ -56,9 +56,19 @@ export default css`
     padding: 0.6rem 1.2rem;
     margin: 0;
   }
+  .dropdown-content li .ia-button {
+    border-radius: 0;
+  }
   .dropdown-content li .ia-button:hover {
     background: var(--primaryTextColor);
     color: rgb(45, 45, 45);
+  }
+  .dropdown-content li:first-child .ia-button {
+    border-radius: 0.3rem 0.3rem 0 0;
+  }
+  .dropdown-content li:last-child .ia-button {
+    border-radius: 0;
+    border-radius: 0 0 0.3rem 0.3rem;
   }
   .dropdown-content .purchase:hover svg g {
     fill: black;
