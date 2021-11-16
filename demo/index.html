@@ -110,8 +110,7 @@
         if (e.target.checked) {
           if (e.target.value === 'isAdmin') lendingStatus1.isAdmin = true;
           if (e.target.value === 'isLoggedIn') iaBookActions.userid = '@neeraj';
-        }
-        if (e.target.checked === false) {
+        } else {
           if (e.target.value === 'isAdmin') lendingStatus1.isAdmin = false;
           if (e.target.value === 'isLoggedIn') iaBookActions.userid = '';
         }
@@ -125,8 +124,7 @@
         if (e.target.checked) {
           if (e.target.value === 'is_printdisabled') lendingStatus1.is_printdisabled = true;
           if (e.target.value === 'user_is_printdisabled') lendingStatus1.user_is_printdisabled = true;
-        }
-        if (e.target.checked === false) {
+        } else {
           if (e.target.value === 'is_printdisabled') lendingStatus1.is_printdisabled = false;
           if (e.target.value === 'user_is_printdisabled') lendingStatus1.user_is_printdisabled = false;
         }
