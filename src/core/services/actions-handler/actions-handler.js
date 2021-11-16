@@ -17,7 +17,7 @@ export default class ActionsHandler extends LitElement {
   constructor(identifier) {
     super();
     this.identifier = identifier;
-    this.ajaxTimeout = 5000;
+    this.ajaxTimeout = 6000;
     this.bindEvents();
   }
 
