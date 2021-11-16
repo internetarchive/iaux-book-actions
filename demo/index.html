@@ -100,47 +100,42 @@
     // set defaultLendingStatus for unavailable (without borrowables) book
     iaBookActions.userid = '';
     iaBookActions.identifier = identifier;
-    iaBookActions.lendingStatus = canBrowseAndBorrow;
-    iaBookActions.bwbPurchaseUrl = 'sdf';
+    iaBookActions.lendingStatus = defaultLendingStatus;
+    iaBookActions.bwbPurchaseUrl = '';
+
+    let lendingStatus1 = iaBookActions.lendingStatus;
 
     document.querySelectorAll('.userState input[type=checkbox]').forEach((item) => {
       item.addEventListener('click', (e) => {
-        let lendingStatus1 = defaultLendingStatus;
         if (e.target.checked) {
           if (e.target.value === 'isAdmin') lendingStatus1.isAdmin = true;
           if (e.target.value === 'isLoggedIn') iaBookActions.userid = '@neeraj';
-        }
-        if (e.target.checked === false) {
+        } else {
           if (e.target.value === 'isAdmin') lendingStatus1.isAdmin = false;
           if (e.target.value === 'isLoggedIn') iaBookActions.userid = '';
         }
-          iaBookActions.lendingStatus = lendingStatus1;
+        let lending = {...defaultLendingStatus, ...lendingStatus1};
+        iaBookActions.lendingStatus = lending;
       });
     });
 
-
     document.querySelectorAll('.printDisabled input[type=checkbox]').forEach((item) => {
-      const is_printdisabled = false;
-      const user_is_printdisabled = false;
       item.addEventListener('click', (e) => {
-        let lendingStatus1 = defaultLendingStatus;
-        if (e.target.value === 'is_printdisabled') {
-          lendingStatus1.is_printdisabled = true;
-        }
-        if (e.target.value === 'user_is_printdisabled') {
-          lendingStatus1.user_is_printdisabled = true;
+        if (e.target.checked) {
+          if (e.target.value === 'is_printdisabled') lendingStatus1.is_printdisabled = true;
+          if (e.target.value === 'user_is_printdisabled') lendingStatus1.user_is_printdisabled = true;
+        } else {
+          if (e.target.value === 'is_printdisabled') lendingStatus1.is_printdisabled = false;
+          if (e.target.value === 'user_is_printdisabled') lendingStatus1.user_is_printdisabled = false;
         }
 
-        if (lendingStatus1.user_is_printdisabled && lendingStatus1.is_printdisabled) {
-          iaBookActions.lendingStatus = lendingStatus1;
-        }
+        let lending = {...defaultLendingStatus, ...lendingStatus1};
+        iaBookActions.lendingStatus = lending;
       });
     });
 
     document.querySelectorAll('.availableToBrowse input[type=radio]').forEach((item) => {
       item.addEventListener('click', (e) => {
-        let lendingStatus1 = defaultLendingStatus;
-
         if (e.target.value === 'user_has_browsed') {
           lendingStatus1.user_has_browsed = true;
           lendingStatus1.available_to_browse = false;
@@ -148,14 +143,14 @@
           lendingStatus1.available_to_browse = true;
           lendingStatus1.user_has_browsed = false;
         }
-        iaBookActions.lendingStatus = lendingStatus1;
+
+        let lending = {...defaultLendingStatus, ...lendingStatus1};
+        iaBookActions.lendingStatus = lending;
       });
     });
 
     document.querySelectorAll('.availableToBorrow input[type=radio]').forEach((item) => {
       item.addEventListener('click', (e) => {
-        let lendingStatus1 = defaultLendingStatus;
-
         if (e.target.value === 'available_to_borrow') {
           lendingStatus1.available_to_borrow = true;
           lendingStatus1.user_on_waitlist = false;
@@ -178,7 +173,8 @@
           lendingStatus1.user_has_borrowed = true;
         }
 
-        iaBookActions.lendingStatus = lendingStatus1;
+        let lending = {...defaultLendingStatus, ...lendingStatus1};
+        iaBookActions.lendingStatus = lending;
       });
     });
 
@@ -218,7 +214,7 @@
               <label><input type="radio" name="borrow" value="user_has_borrowed" />user_has_borrowed</label>
             </td>
             <td class="purchase">
-              <label><input type="checkbox" name="purchase" value="purchase" />purchase (Click to reflect selection)</label>
+              <label><input type="checkbox" name="purchase" value="purchase" />purchase</label>
             </td>
 
             <td class="reflect">
@@ -228,30 +224,6 @@
               font-weight: bold; display: none" name="purchase" value="Reflect" />
             </td>
           </tr>
-        </table>
-
-        <table class="mode" style="display: none;">
-        <tr>
-          <td>
-            <label><input type="radio" name="contact" value="canBrowse" />CanBrowse</label>
-          </td>
-          <td>
-            <label><input type="radio" name="contact" value="browsed" />browsed</label>
-          </td>
-          <td>
-            <label><input type="radio" name="contact" value="canBrowseAndBorrow" />canBrowseAndBorrow</label>
-          </td>
-          <td>
-            <label><input type="radio" name="contact" value="browsedAndBorrow" />browsedAndBorrow</label>
-          </td>
-          <td>
-            <label><input type="radio" name="contact" value="canBrowseAndBorrowod" />canBrowseAndBorrowod</label>
-          </td>
-          <td>
-            <label><input type="radio" name="contact"
-              id="canBrowseAndJoinWaitlistForBorrow" value="canBrowseAndJoinWaitlistForBorrow" />canBrowseAndJoinWaitlistForBorrow</label>
-          </td>
-        </tr>
         </table>
     </fieldset>
   </div>
