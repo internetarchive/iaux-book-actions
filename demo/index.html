@@ -83,12 +83,6 @@
     import '../src/ia-book-actions.js';
     import {
       defaultLendingStatus,
-      canBrowse,
-      browsed,
-      canBrowseAndBorrow,
-      browsedAndBorrow,
-      canBrowseAndBorrowod,
-      canBrowseAndJoinWaitlistForBorrow,
     } from '../src/assets/data/lending-get-status-service.js';
 
     const userid = '@neeraj-archive';
@@ -139,6 +133,13 @@
         if (e.target.value === 'user_has_browsed') {
           lendingStatus1.user_has_browsed = true;
           lendingStatus1.available_to_browse = false;
+          lendingStatus1.secondsLeftOnLoan = 60;
+          lendingStatus1.browsingExpired = false;
+        } else if(e.target.value === 'browsingExpired') {
+          lendingStatus1.user_has_browsed = true;
+          lendingStatus1.available_to_browse = false;
+          lendingStatus1.secondsLeftOnLoan = 0;
+          lendingStatus1.browsingExpired = true;
         } else if (e.target.value === 'available_to_browse') {
           lendingStatus1.available_to_browse = true;
           lendingStatus1.user_has_browsed = false;
@@ -206,6 +207,7 @@
             <td class="availableToBrowse">
               <label><input type="radio" name="browse" value="available_to_browse" />available_to_browse</label>
               <label><input type="radio" name="browse" value="user_has_browsed" />user_has_browsed</label>
+              <label><input type="radio" name="browse" value="browsingExpired" />browsingExpired</label>
             </td>
             <td class="availableToBorrow">
               <label><input type="radio" name="borrow" value="available_to_borrow" />available_to_borrow</label>

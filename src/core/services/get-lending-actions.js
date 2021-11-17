@@ -316,10 +316,7 @@ export default class GetLendingActions {
       return this.loggedOutOptions();
     }
 
-    const canBrowse =
-      lendingStatus.available_to_browse ||
-      (!lendingStatus.available_to_browse && lendingStatus.browsingExpired);
-    if (canBrowse) {
+    if (lendingStatus.available_to_browse || lendingStatus.browsingExpired) {
       return this.borrow1HrAction();
     }
 
@@ -386,7 +383,8 @@ export default class GetLendingActions {
       lendingStatus.user_is_printdisabled;
 
     const patronIsReading =
-      lendingStatus.user_has_borrowed || lendingStatus.user_has_browsed;
+      lendingStatus.user_has_borrowed ||
+      (lendingStatus.user_has_browsed && !lendingStatus.browsingExpired);
 
     const notBorrowed =
       !lendingStatus.user_has_borrowed && !lendingStatus.user_has_browsed;
@@ -422,7 +420,7 @@ export default class GetLendingActions {
       lendingActions = this.leaveWaitlistAction();
     } else if (userCanAccessPrintDisabled) {
       lendingActions = this.borrowPrintDisabledAction();
-    } else if (canBorrow) {
+    } else if (canBorrow || lendingStatus.browsingExpired) {
       lendingActions = this.borrowAction();
     } else if (lendingStatus.isPrintDisabledOnly) {
       lendingActions = this.onlyPrintDisabledAction();
