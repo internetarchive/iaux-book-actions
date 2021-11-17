@@ -179,8 +179,8 @@ export default class ActionsConfig {
       target: '_self',
       className: 'print-disability',
       analyticsEvent: {
-        category: this.analyticsCategories.purchase,
-        action: this.analyticsActions.purchase,
+        category: this.analyticsCategories.pdMessage,
+        action: this.analyticsActions.pdMessage,
       },
     };
   }

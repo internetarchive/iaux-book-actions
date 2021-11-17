@@ -7,6 +7,7 @@ export const analyticsCategories = {
   preview: 'BookReader-Preview',
   satisfactionMetric: 'DetailsPage-Book',
   purchase: 'BookReaderHeader',
+  pdMessage: 'BookReaderHeader',
   unavailable: 'BookReader-Preview',
   admin: 'Admin',
 };
@@ -21,4 +22,5 @@ export const analyticsActions = {
   login: 'LogIn',
   purchase: 'BWBPurchase',
   unavailable: 'Book-Unavailable',
+  pdMessage: 'PDMessage',
 };
