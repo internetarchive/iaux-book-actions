@@ -160,10 +160,18 @@ export default class GetLendingActions {
     };
   }
 
+  // check restricted item behaviour here /activemeasuresse0000ridt
   restrictedAction() {
-    // check restricted item behaviour here /activemeasuresse0000ridt
+    const lendingStatus = this.lendingStatus || {};
+    const anotherPatronUsing =
+      lendingStatus.max_browsable_copies &&
+      !lendingStatus.available_lendable_copies;
+    const title = anotherPatronUsing
+      ? 'Another patron is using this book. Please check back later.'
+      : 'This book is not available at this time.';
+
     return {
-      primaryTitle: 'This book is not available at this time.',
+      primaryTitle: title,
       primaryActions: [this.actionsConfig.unavailableBookConfig()],
       primaryColor: 'primary',
       secondaryActions: [
