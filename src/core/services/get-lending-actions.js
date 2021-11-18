@@ -264,7 +264,7 @@ export default class GetLendingActions {
 
     // one hour borrow config
     const oneHrBorrowText = browsingHasExpired
-      ? 'Borrow again'
+      ? 'Browse again'
       : 'Borrow for 1 hour';
     const browseAgainEvent = {
       category: this.analyticsCategories.browse,
