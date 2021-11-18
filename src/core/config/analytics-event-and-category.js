@@ -6,10 +6,7 @@ export const analyticsCategories = {
   browse: 'BookReader-ReadingBrowse',
   preview: 'BookReader-Preview',
   satisfactionMetric: 'DetailsPage-Book',
-  purchase: 'BookReaderHeader',
-  pdMessage: 'BookReaderHeader',
-  unavailable: 'BookReader-Preview',
-  admin: 'Admin',
+  bookReaderHeader: 'BookReader-Header',
 };
 
 export const analyticsActions = {
@@ -22,5 +19,5 @@ export const analyticsActions = {
   login: 'LogIn',
   purchase: 'BWBPurchase',
   unavailable: 'Book-Unavailable',
-  pdMessage: 'PDMessage',
+  printDisability: 'Print-Disability',
 };
