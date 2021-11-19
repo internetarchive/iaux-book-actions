@@ -7,7 +7,7 @@ export const analyticsCategories = {
   preview: 'BookReader-Preview',
   satisfactionMetric: 'DetailsPage-Book',
   bookReaderHeader: 'BookReader-Header',
-  AdminAccess: 'Admin-Access',
+  adminAccess: 'Admin-Access',
 };
 
 export const analyticsActions = {
