@@ -6,9 +6,8 @@ export const analyticsCategories = {
   browse: 'BookReader-ReadingBrowse',
   preview: 'BookReader-Preview',
   satisfactionMetric: 'DetailsPage-Book',
-  purchase: 'BookReaderHeader',
-  unavailable: 'BookReader-Preview',
-  admin: 'Admin',
+  bookReaderHeader: 'BookReader-Header',
+  adminAccess: 'Admin-Access',
 };
 
 export const analyticsActions = {
@@ -21,4 +20,5 @@ export const analyticsActions = {
   login: 'LogIn',
   purchase: 'BWBPurchase',
   unavailable: 'Book-Unavailable',
+  printDisability: 'Print-Disability',
 };

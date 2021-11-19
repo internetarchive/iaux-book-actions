@@ -200,7 +200,9 @@ export default class GetLendingActions {
       borrow = this.actionsConfig.unavailableBookConfig();
     }
 
-    const actions = [borrow, waitlist].filter(action => {
+    const printDisability = this.actionsConfig.printDisabilityConfig();
+
+    const actions = [borrow, waitlist, printDisability].filter(action => {
       return action !== null;
     });
 

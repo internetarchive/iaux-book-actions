@@ -47,8 +47,8 @@ export default class ActionsConfig {
 
   returnBookConfig() {
     const eventCategory = this.lendingStatus.user_has_browsed
-      ? 'browse'
-      : 'borrow';
+      ? this.analyticsCategories.browse
+      : this.analyticsCategories.borrow;
 
     return {
       id: 'returnNow',
@@ -77,7 +77,7 @@ export default class ActionsConfig {
       analyticsEvent: {
         category: this.lendingStatus.user_has_browsed
           ? this.analyticsCategories.browse
-          : this.analyticsCategories.borrow,
+          : this.analyticsCategories.preview,
         action: this.analyticsActions.borrow,
       },
     };
@@ -161,7 +161,7 @@ export default class ActionsConfig {
       target: '_blank',
       className: 'purchase dark',
       analyticsEvent: {
-        category: this.analyticsCategories.purchase,
+        category: this.analyticsCategories.bookReaderHeader,
         action: this.analyticsActions.purchase,
       },
     };
@@ -179,8 +179,8 @@ export default class ActionsConfig {
       target: '_self',
       className: 'print-disability',
       analyticsEvent: {
-        category: this.analyticsCategories.purchase,
-        action: this.analyticsActions.purchase,
+        category: this.analyticsCategories.bookReaderHeader,
+        action: this.analyticsActions.printDisability,
       },
     };
   }
@@ -198,7 +198,7 @@ export default class ActionsConfig {
       target: '_self',
       className: 'danger',
       analyticsEvent: {
-        category: this.analyticsCategories.admin,
+        category: this.analyticsCategories.adminAccess,
         action: this.analyticsActions.borrow,
       },
     };
@@ -216,7 +216,7 @@ export default class ActionsConfig {
       target: '_self',
       className: 'ia-button',
       analyticsEvent: {
-        category: this.analyticsCategories.admin,
+        category: this.analyticsCategories.adminAccess,
         action: this.analyticsActions.doneBorrowing,
       },
     };
@@ -229,7 +229,7 @@ export default class ActionsConfig {
       className: 'primary unavailable',
       disabled: true,
       analyticsEvent: {
-        category: this.analyticsCategories.unavailable,
+        category: this.analyticsCategories.preview,
         action: this.analyticsActions.unavailable,
       },
     };
