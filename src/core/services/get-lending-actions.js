@@ -104,7 +104,7 @@ export default class GetLendingActions {
     const leaveWaitlist = this.actionsConfig.leaveWaitlistConfig();
     const borrowBook = this.actionsConfig.borrowBookConfig();
     const browseBook = lendingStatus.available_to_browse
-      ? this.actionsConfig.browseBookConfig()
+      ? this.actionsConfig.firstBrowseConfig()
       : null;
 
     const dropdownOptions = browseBook ? [browseBook, borrowBook] : [];
@@ -150,7 +150,7 @@ export default class GetLendingActions {
       primaryTitle: 'You are on the waitlist for this book.',
       primaryActions: [
         this.actionsConfig.leaveWaitlistConfig(),
-        this.actionsConfig.browseBookConfig(),
+        this.actionsConfig.firstBrowseConfig(),
       ],
       primaryColor: 'primary',
       secondaryActions: [
@@ -263,25 +263,9 @@ export default class GetLendingActions {
       : possibleTitles.one_hour;
 
     // one hour borrow config
-    const oneHrBorrowText = browsingHasExpired
-      ? 'Browse again'
-      : 'Borrow for 1 hour';
-    const browseAgainEvent = {
-      category: this.analyticsCategories.browse,
-      action: this.analyticsActions.browseAgain,
-    };
-    const firstBrowseEvent = {
-      category: this.analyticsCategories.preview,
-      action: this.analyticsActions.browse,
-    };
-    const oneHrBorrowEvent = browsingHasExpired
-      ? browseAgainEvent
-      : firstBrowseEvent;
-
-    const oneHrBorrow = this.actionsConfig.browseBookConfig(
-      oneHrBorrowText,
-      oneHrBorrowEvent
-    );
+    const oneHrBorrow = browsingHasExpired
+      ? this.actionsConfig.browseAgainConfig()
+      : this.actionsConfig.firstBrowseConfig();
 
     const borrow = this.actionsConfig.borrowBookConfig();
     const waitlist = this.actionsConfig.waitlistConfig();

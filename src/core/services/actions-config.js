@@ -33,17 +33,27 @@ export default class ActionsConfig {
     this.analyticsActions = analyticsActions;
   }
 
-  browseBookConfig(oneHrBorrowText = '', oneHrBorrowEvent = {}) {
-    const defaultAnalytics = {
-      category: this.analyticsCategories.preview,
-      action: this.analyticsActions.browse,
-    };
-
+  firstBrowseConfig() {
     return {
       id: 'browseBook',
-      text: oneHrBorrowText || 'Borrow for 1 hour',
+      text: 'Borrow for 1 hour',
       className: 'primary',
-      analyticsEvent: oneHrBorrowEvent || defaultAnalytics,
+      analyticsEvent: {
+        category: this.analyticsCategories.preview,
+        action: this.analyticsActions.browse,
+      },
+    };
+  }
+
+  browseAgainConfig() {
+    return {
+      id: 'browseBookAgain',
+      text: 'Borrow again',
+      className: 'primary',
+      analyticsEvent: {
+        category: this.analyticsCategories.browse,
+        action: this.analyticsActions.browseAgain,
+      },
     };
   }
 

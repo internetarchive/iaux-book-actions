@@ -196,7 +196,7 @@ describe('Browsing expired status', () => {
     el.updateComplete;
 
     expect(el.primaryTitle).contains('Your loan has expired.');
-    expect(el.primaryActions[0].text).to.equal('Browse again');
+    expect(el.primaryActions[0].text).to.equal('Borrow again');
   });
 });
 
