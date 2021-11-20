@@ -82,6 +82,11 @@ export default class ActionsHandler extends LitElement {
       const { category, action } = detail.event;
       this.sendEvent(category, action);
     });
+
+    this.addEventListener('embedLink', ({ detail }) => {
+      const { category, action } = detail.event;
+      this.sendEvent(category, action);
+    });
   }
 
   handleBrowseIt() {

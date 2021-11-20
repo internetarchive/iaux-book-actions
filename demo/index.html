@@ -100,10 +100,22 @@
     // set defaultLendingStatus for unavailable (without borrowables) book
     iaBookActions.userid = '';
     iaBookActions.identifier = identifier;
+    iaBookActions.bookTitle = 'Contemporary Black biography. Volume 39 : profiles from the international Black community';
     iaBookActions.lendingStatus = defaultLendingStatus;
     iaBookActions.bwbPurchaseUrl = '';
+    iaBookActions.isEmbed = false;
 
     let lendingStatus1 = iaBookActions.lendingStatus;
+
+    document.querySelectorAll('.embedState input[type=checkbox]').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        if (e.target.checked) {
+          iaBookActions.isEmbed = true;
+        } else {
+          iaBookActions.isEmbed = false;
+        }
+      });
+    });
 
     document.querySelectorAll('.userState input[type=checkbox]').forEach((item) => {
       item.addEventListener('click', (e) => {
@@ -195,6 +207,9 @@
       <legend>Dev try for lending banner</legend>
         <table class="initial">
           <tr>
+            <td class="embedState">
+              <label><input type="checkbox" name="embed" value="embed" />Embed</label>
+            </td>
             <td class="userState">
               <label><input type="checkbox" name="user" value="isAdmin" />isAdmin</label>
               <label><input type="checkbox" name="user" value="isLoggedIn" />isLoggedIn</label>

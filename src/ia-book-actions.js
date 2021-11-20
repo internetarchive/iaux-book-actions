@@ -3,6 +3,7 @@ import { html, css, LitElement } from 'lit-element';
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
 
 import './components/collapsible-action-group.js';
+import './components/embed-view.js';
 import './components/text-group.js';
 import './components/info-icon.js';
 
@@ -14,9 +15,11 @@ export default class IABookActions extends LitElement {
     return {
       userid: { type: String },
       identifier: { type: String },
+      bookTitle: { type: String },
       lendingStatus: { type: Object },
       width: { type: Number },
       bwbPurchaseUrl: { type: String },
+      isEmbed: { type: Boolean },
       sharedObserver: { attribute: false },
     };
   }
@@ -25,15 +28,17 @@ export default class IABookActions extends LitElement {
     super();
     this.userid = '';
     this.identifier = '';
+    this.bookTitle = '';
     this.lendingStatus = {};
+    this.width = 0;
+    this.bwbPurchaseUrl = '';
+    this.isEmbed = false;
+    this.sharedObserver = undefined;
     this.primaryActions = [];
     this.primaryTitle = '';
     this.primaryColor = 'primary';
     this.secondaryActions = [];
-    this.width = 0;
-    this.bwbPurchaseUrl = '';
     this.lendingOptions = [];
-    this.sharedObserver = undefined;
   }
 
   disconnectedCallback() {
@@ -116,18 +121,31 @@ export default class IABookActions extends LitElement {
   render() {
     return html`
       <section class="lending-wrapper">
-        <collapsible-action-group
-          .userid=${this.userid}
-          .identifier=${this.identifier}
-          .primaryColor=${this.primaryColor}
-          .primaryActions=${this.primaryActions}
-          .secondaryActions=${this.secondaryActions}
-          .width=${this.width}
-          .hasAdminAccess=${this.hasAdminAccess}
-        >
-        </collapsible-action-group>
-        ${this.textGroupTemplate} ${this.infoIconTemplate}
+        ${this.isEmbed ? this.embedViewTemplate : this.lendingBarTemplate}
       </section>
+    `;
+  }
+
+  get embedViewTemplate() {
+    return html`<embed-view-link
+      .identifier=${this.identifier}
+      .bookTitle=${this.bookTitle}
+    ></embed-view-link>`;
+  }
+
+  get lendingBarTemplate() {
+    return html`
+      <collapsible-action-group
+        .userid=${this.userid}
+        .identifier=${this.identifier}
+        .primaryColor=${this.primaryColor}
+        .primaryActions=${this.primaryActions}
+        .secondaryActions=${this.secondaryActions}
+        .width=${this.width}
+        .hasAdminAccess=${this.hasAdminAccess}
+      >
+      </collapsible-action-group>
+      ${this.textGroupTemplate} ${this.infoIconTemplate}
     `;
   }
 

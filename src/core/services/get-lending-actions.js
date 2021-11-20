@@ -2,7 +2,6 @@
 /* eslint no-console: "off" */
 /* eslint no-nested-ternary: "off" */
 /* eslint-disable */
-import { nothing } from 'lit-html';
 import { URLHelper } from '../config/url-helper.js';
 import {
   analyticsCategories,
