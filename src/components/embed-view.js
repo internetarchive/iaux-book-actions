@@ -59,7 +59,7 @@ export class EmbedView extends ActionsHandler {
         display: inline-flex;
         align-items: center;
         text-decoration: none;
-        color: white;
+        color: var(--primaryTextColor, #fff);
         font-size: 1.4rem;
         height: 3.5rem;
       }
