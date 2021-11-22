@@ -4,9 +4,8 @@ export default css`
   .ia-button {
     min-height: 3rem;
     border: none;
-    outline: none;
     cursor: pointer;
-    color: #fff;
+    color: var(--primaryTextColor, #fff);
     line-height: normal;
     border-radius: 0.4rem;
     text-align: center;
@@ -32,13 +31,15 @@ export default css`
     transition: all 0.1s ease 0s;
     vertical-align: middle;
     padding: 0 1rem;
+
+    outline-color: #fff;
+    outline-offset: -5px;
   }
   .ia-button:disabled,
   .ia-button.disabled {
     cursor: not-allowed;
     background-color: var(--primaryDisableCTAFill, #767676);
     border: 1px solid var(--secondaryCTABorder, #999);
-    color: var(--primaryTextColor, #fff);
   }
   .ia-button.transparent {
     background-color: transparent;
@@ -48,26 +49,44 @@ export default css`
     padding: 0;
   }
   .ia-button.primary {
-    background-color: #194880;
+    background-color: var(--primaryCTAFill, #194880);
     border-color: #c5d1df;
   }
   .ia-button.dark {
-    color: #fff;
-    background-color: #333;
+    background-color: var(--secondaryCTAFill, #333);
     border-color: #979797;
   }
   .ia-button.danger {
-    color: #fff;
-    background-color: #d9534f;
+    background-color: var(--primaryErrorCTAFill, #e51c26);
     border-color: #d43f3a;
   }
   .ia-button.warning {
-    color: #fff;
     background-color: #ee8950;
     border-color: #ec7939;
   }
-  .ia-button.cancel {
-    background-color: #e51c26;
-    border-color: #f8c6c8;
+
+  .ia-button:is(:focus-visible) {
+    outline-style: double;
+  }
+
+  .ia-button.primary:is(:focus-visible, :hover) {
+    background-color: rgba(27, 72, 128, 0.9);
+  }
+  .ia-button.primary:is(:active) {
+    background-color: rgba(27, 72, 128, 0.8);
+  }
+
+  .ia-button.danger:is(:focus-visible, :hover) {
+    background-color: rgba(229, 28, 38, 0.9);
+  }
+  .ia-button.danger:is(:active) {
+    background-color: rgba(229, 28, 38, 0.8);
+  }
+
+  .ia-button.dark:is(:focus-visible, :hover) {
+    background-color: rgba(51, 51, 51, 0.9);
+  }
+  .ia-button.dark:is(:active) {
+    background-color: rgba(51, 51, 51, 0.8);
   }
 `;

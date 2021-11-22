@@ -39,9 +39,9 @@ export default css`
   }
   .dropdown-content .ia-button {
     background: none;
+    color: var(--primaryTextColor, #fff);
     border: none;
     box-sizing: border-box;
-    display: block;
     width: 100%;
     text-align: left;
     height: 3rem;
