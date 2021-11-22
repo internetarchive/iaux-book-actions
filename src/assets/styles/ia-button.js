@@ -24,6 +24,14 @@ export default css`
     -ms-user-select: none;
     -o-user-select: none;
     user-select: none;
+
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    height: 3.5rem;
+    transition: all 0.1s ease 0s;
+    vertical-align: middle;
+    padding: 0 1rem;
   }
   .ia-button:disabled,
   .ia-button.disabled {

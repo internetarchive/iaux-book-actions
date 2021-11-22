@@ -9,13 +9,6 @@ export default css`
     align-items: center;
   }
   .action-buttons .ia-button {
-    display: inline-flex;
-    align-items: center;
-    vertical-align: middle;
-    height: 3.5rem;
-    transition: all 0.1s ease 0s;
-    vertical-align: middle;
-    padding: 0 1rem;
     margin: 0 3px;
   }
   .primary,
