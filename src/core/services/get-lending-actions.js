@@ -104,7 +104,7 @@ export default class GetLendingActions {
     const leaveWaitlist = this.actionsConfig.leaveWaitlistConfig();
     const borrowBook = this.actionsConfig.borrowBookConfig();
     const browseBook = lendingStatus.available_to_browse
-      ? this.actionsConfig.browseBookConfig()
+      ? this.actionsConfig.firstBrowseConfig()
       : null;
 
     const dropdownOptions = browseBook ? [browseBook, borrowBook] : [];
@@ -150,7 +150,7 @@ export default class GetLendingActions {
       primaryTitle: 'You are on the waitlist for this book.',
       primaryActions: [
         this.actionsConfig.leaveWaitlistConfig(),
-        this.actionsConfig.browseBookConfig(),
+        this.actionsConfig.firstBrowseConfig(),
       ],
       primaryColor: 'primary',
       secondaryActions: [
@@ -265,25 +265,9 @@ export default class GetLendingActions {
       : possibleTitles.one_hour;
 
     // one hour borrow config
-    const oneHrBorrowText = browsingHasExpired
-      ? 'Borrow again'
-      : 'Borrow for 1 hour';
-    const browseAgainEvent = {
-      category: this.analyticsCategories.browse,
-      action: this.analyticsActions.browseAgain,
-    };
-    const firstBrowseEvent = {
-      category: this.analyticsCategories.preview,
-      action: this.analyticsActions.browse,
-    };
-    const oneHrBorrowEvent = browsingHasExpired
-      ? browseAgainEvent
-      : firstBrowseEvent;
-
-    const oneHrBorrow = this.actionsConfig.browseBookConfig(
-      oneHrBorrowText,
-      oneHrBorrowEvent
-    );
+    const oneHrBorrow = browsingHasExpired
+      ? this.actionsConfig.browseAgainConfig()
+      : this.actionsConfig.firstBrowseConfig();
 
     const borrow = this.actionsConfig.borrowBookConfig();
     const waitlist = this.actionsConfig.waitlistConfig();
@@ -318,10 +302,7 @@ export default class GetLendingActions {
       return this.loggedOutOptions();
     }
 
-    const canBrowse =
-      lendingStatus.available_to_browse ||
-      (!lendingStatus.available_to_browse && lendingStatus.browsingExpired);
-    if (canBrowse) {
+    if (lendingStatus.available_to_browse || lendingStatus.browsingExpired) {
       return this.borrow1HrAction();
     }
 
@@ -388,7 +369,8 @@ export default class GetLendingActions {
       lendingStatus.user_is_printdisabled;
 
     const patronIsReading =
-      lendingStatus.user_has_borrowed || lendingStatus.user_has_browsed;
+      lendingStatus.user_has_borrowed ||
+      (lendingStatus.user_has_browsed && !lendingStatus.browsingExpired);
 
     const notBorrowed =
       !lendingStatus.user_has_borrowed && !lendingStatus.user_has_browsed;
@@ -424,7 +406,7 @@ export default class GetLendingActions {
       lendingActions = this.leaveWaitlistAction();
     } else if (userCanAccessPrintDisabled) {
       lendingActions = this.borrowPrintDisabledAction();
-    } else if (canBorrow) {
+    } else if (canBorrow || lendingStatus.browsingExpired) {
       lendingActions = this.borrowAction();
     } else if (lendingStatus.isPrintDisabledOnly) {
       lendingActions = this.onlyPrintDisabledAction();
