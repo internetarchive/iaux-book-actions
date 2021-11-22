@@ -63,6 +63,9 @@ export class EmbedView extends ActionsHandler {
         font-size: 1.4rem;
         height: 3.5rem;
       }
+      .embed-link:hover {
+        text-decoration: underline;
+      }
       .embed-link img {
         margin-right: 0.5rem;
       }
