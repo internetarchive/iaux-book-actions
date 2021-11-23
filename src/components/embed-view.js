@@ -44,9 +44,9 @@ export class EmbedView extends ActionsHandler {
     return html`
       <a class='embed-link' @click=${() => {
         this.clickHandler();
-      }} href=/details/${this.identifier}><img src=${this.archiveLogo} alt=''>${
-      this.bookTitle
-    }</a>
+      }} href=/details/${this.identifier}><img src=${this.archiveLogo} alt=''>
+      <span>${this.bookTitle}</span>
+    </a>
     `;
   }
 
@@ -61,7 +61,7 @@ export class EmbedView extends ActionsHandler {
         text-decoration: none;
         color: var(--primaryTextColor, #fff);
         font-size: 1.4rem;
-        height: 3.5rem;
+        height: 3.4rem;
       }
       .embed-link:hover {
         text-decoration: underline;

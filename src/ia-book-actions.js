@@ -183,7 +183,6 @@ export default class IABookActions extends LitElement {
       .lending-wrapper {
         width: 100%;
         margin: 0 auto;
-        padding: 10px 0;
         display: inline-flex;
         align-items: center;
         justify-content: center;

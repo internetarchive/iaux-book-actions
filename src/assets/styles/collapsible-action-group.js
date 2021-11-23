@@ -3,6 +3,8 @@ import { css } from 'lit-element';
 export default css`
   :host {
     display: inline-flex;
+    height: 3.5rem;
+    padding: 1rem 0;
   }
   .action-buttons {
     display: inline-flex;
