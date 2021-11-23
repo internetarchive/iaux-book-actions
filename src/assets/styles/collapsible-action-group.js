@@ -10,6 +10,7 @@ export default css`
   }
   .action-buttons .ia-button {
     margin: 0 3px;
+    height: 3.5rem;
   }
   .primary,
   .secondary {

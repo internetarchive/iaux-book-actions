@@ -3,37 +3,28 @@ import { css } from 'lit-element';
 export default css`
   .ia-button {
     min-height: 3rem;
-    border: none;
     cursor: pointer;
     color: var(--primaryTextColor, #fff);
     line-height: normal;
     border-radius: 0.4rem;
-    text-align: center;
-    vertical-align: middle;
     font-size: 1.4rem;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    display: inline-block;
-    padding: 0.85rem 1.2rem;
     border: 1px solid transparent;
     white-space: nowrap;
     appearance: auto;
     box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    transition: all 0.1s ease 0s;
+    vertical-align: middle;
+    padding: 0 1rem;
+    outline-color: #fff;
+    outline-offset: -5px;
+    user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     -o-user-select: none;
-    user-select: none;
-
-    display: inline-flex;
-    align-items: center;
-    vertical-align: middle;
-    height: 3.5rem;
-    transition: all 0.1s ease 0s;
-    vertical-align: middle;
-    padding: 0 1rem;
-
-    outline-color: #fff;
-    outline-offset: -5px;
   }
   .ia-button:disabled,
   .ia-button.disabled {
