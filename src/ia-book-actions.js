@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 import { html, css, LitElement } from 'lit-element';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
@@ -38,7 +39,7 @@ export default class IABookActions extends LitElement {
     this.primaryTitle = '';
     this.primaryColor = 'primary';
     this.secondaryActions = [];
-    this.lendingOptions = [];
+    this.lendingOptions = {};
   }
 
   disconnectedCallback() {
@@ -63,6 +64,28 @@ export default class IABookActions extends LitElement {
       this.disconnectResizeObserver();
       this.setupResizeObserver();
     }
+  }
+
+  browseHasExpired() {
+    const browsingExpired = true;
+    const currStatus = { ...this.lendingStatus, browsingExpired };
+    this.lendingStatus = currStatus;
+  }
+
+  startBrowseTimer() {
+    const {
+      browsingExpired,
+      user_has_browsed,
+      secondsLeftOnLoan,
+    } = this.lendingStatus;
+    if (!user_has_browsed || browsingExpired) {
+      return;
+    }
+
+    const timeLeft = secondsLeftOnLoan * 1000;
+    setTimeout(() => {
+      this.browseHasExpired();
+    }, timeLeft);
   }
 
   /** SharedObserver resize handler */
@@ -116,6 +139,13 @@ export default class IABookActions extends LitElement {
     this.secondaryActions = actions.secondaryActions.filter(action => {
       return action != null;
     });
+
+    if (
+      this.lendingStatus.user_has_browsed &&
+      !this.lendingStatus.browseHasExpired
+    ) {
+      this.startBrowseTimer();
+    }
   }
 
   render() {

@@ -33,7 +33,7 @@ export default class ActionsConfig {
     this.analyticsActions = analyticsActions;
   }
 
-  browseBookConfig() {
+  firstBrowseConfig() {
     return {
       id: 'browseBook',
       text: 'Borrow for 1 hour',
@@ -41,6 +41,18 @@ export default class ActionsConfig {
       analyticsEvent: {
         category: this.analyticsCategories.preview,
         action: this.analyticsActions.browse,
+      },
+    };
+  }
+
+  browseAgainConfig() {
+    return {
+      id: 'browseBookAgain',
+      text: 'Borrow again',
+      className: 'primary',
+      analyticsEvent: {
+        category: this.analyticsCategories.browse,
+        action: this.analyticsActions.browseAgain,
       },
     };
   }
