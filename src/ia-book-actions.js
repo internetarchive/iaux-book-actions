@@ -3,7 +3,7 @@ import { html, css, LitElement } from 'lit-element';
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
 
 import './components/collapsible-action-group.js';
-import './components/embed-view.js';
+import './components/book-title-bar.js';
 import './components/text-group.js';
 import './components/info-icon.js';
 
@@ -19,7 +19,7 @@ export default class IABookActions extends LitElement {
       lendingStatus: { type: Object },
       width: { type: Number },
       bwbPurchaseUrl: { type: String },
-      isEmbed: { type: Boolean },
+      barType: { type: String },
       sharedObserver: { attribute: false },
     };
   }
@@ -32,7 +32,7 @@ export default class IABookActions extends LitElement {
     this.lendingStatus = {};
     this.width = 0;
     this.bwbPurchaseUrl = '';
-    this.isEmbed = false;
+    this.barType = 'action';
     this.sharedObserver = undefined;
     this.primaryActions = [];
     this.primaryTitle = '';
@@ -121,19 +121,19 @@ export default class IABookActions extends LitElement {
   render() {
     return html`
       <section class="lending-wrapper">
-        ${this.isEmbed ? this.embedViewTemplate : this.lendingBarTemplate}
+        ${this.barType === 'title' ? this.bookTitleBar : this.bookActionBar}
       </section>
     `;
   }
 
-  get embedViewTemplate() {
-    return html`<embed-view-link
+  get bookTitleBar() {
+    return html`<book-title-bar
       .identifier=${this.identifier}
       .bookTitle=${this.bookTitle}
-    ></embed-view-link>`;
+    ></book-title-bar>`;
   }
 
-  get lendingBarTemplate() {
+  get bookActionBar() {
     return html`
       <collapsible-action-group
         .userid=${this.userid}
@@ -164,7 +164,7 @@ export default class IABookActions extends LitElement {
   get textGroupTemplate() {
     return html`<text-group
       textClass=${this.textClass}
-      texts="${this.primaryTitle}"
+      texts=${this.primaryTitle}
     >
     </text-group>`;
   }

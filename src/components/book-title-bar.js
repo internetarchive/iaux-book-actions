@@ -1,11 +1,14 @@
 import { html, css } from 'lit-element';
+
 import {
   analyticsCategories,
   analyticsActions,
 } from '../core/config/analytics-event-and-category.js';
 import ActionsHandler from '../core/services/actions-handler/actions-handler.js';
 
-export class EmbedView extends ActionsHandler {
+import { archiveLogo } from '../assets/data/archive-logo.js';
+
+export class BookTitleBar extends ActionsHandler {
   static get properties() {
     return {
       identifier: { type: String },
@@ -19,7 +22,6 @@ export class EmbedView extends ActionsHandler {
     this.bookTitle = '';
     this.analyticsCategories = analyticsCategories;
     this.analyticsActions = analyticsActions;
-    this.archiveLogo = 'https://archive.org/images/glogo-jw.png';
   }
 
   /**
@@ -28,11 +30,11 @@ export class EmbedView extends ActionsHandler {
   clickHandler() {
     const { category, action } = {
       category: this.analyticsCategories.bookReaderHeader,
-      action: this.analyticsActions.embed,
+      action: this.analyticsActions.titleBar,
     };
 
     this.dispatchEvent(
-      new CustomEvent('embedLink', {
+      new CustomEvent('bookTitleBar', {
         detail: {
           event: { category, action },
         },
@@ -42,11 +44,16 @@ export class EmbedView extends ActionsHandler {
 
   render() {
     return html`
-      <a class='embed-link' @click=${() => {
-        this.clickHandler();
-      }} href=/details/${this.identifier}><img src=${this.archiveLogo} alt=''>
-      <span>${this.bookTitle}</span>
-    </a>
+      <a
+        class="embed-link"
+        @click=${() => {
+          this.clickHandler();
+        }}
+        href="/details/${this.identifier}"
+      >
+        <span>${archiveLogo}</span>
+        <span class="title">${this.bookTitle}</span>
+      </a>
     `;
   }
 
@@ -63,14 +70,21 @@ export class EmbedView extends ActionsHandler {
         font-size: 1.4rem;
         height: 3.4rem;
       }
+      .embed-link .title {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        text-align: left;
+      }
+      .embed-link svg {
+        margin-right: 0.5rem;
+      }
       .embed-link:hover {
         text-decoration: underline;
-      }
-      .embed-link img {
-        margin-right: 0.5rem;
       }
     `;
   }
 }
 
-window.customElements.define('embed-view-link', EmbedView);
+window.customElements.define('book-title-bar', BookTitleBar);

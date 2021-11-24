@@ -21,5 +21,5 @@ export const analyticsActions = {
   purchase: 'BWBPurchase',
   unavailable: 'Book-Unavailable',
   printDisability: 'Print-Disability',
-  embed: 'Embed-View-Link',
+  titleBar: 'Book-Title-Bar',
 };

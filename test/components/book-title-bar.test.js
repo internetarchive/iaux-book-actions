@@ -1,11 +1,14 @@
 import { html, fixture, expect } from '@open-wc/testing';
-import '../../src/components/embed-view.js';
+import '../../src/components/book-title-bar.js';
 
 const container = ({ identifier, bookTitle } = {}) =>
-  html`<embed-view-link .identifier=${identifier} .bookTitle=${bookTitle}></embed-view>`;
+  html`<book-title-bar
+    .identifier=${identifier}
+    .bookTitle=${bookTitle}
+  ></book-title-bar>`;
 
-describe('<embed-view-link>', () => {
-  it('check inner texts of embed view', async () => {
+describe('<book-title-bar>', () => {
+  it('check inner texts of title bar', async () => {
     const el = await fixture(
       container({
         identifier: 'goody',
