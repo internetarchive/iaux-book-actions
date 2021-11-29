@@ -18,8 +18,8 @@ export default css`
     transition: all 0.1s ease 0s;
     vertical-align: middle;
     padding: 0 1rem;
-    outline-color: #fff;
-    outline-offset: -5px;
+    outline-color: var(--primaryTextColor, #fff);
+    outline-offset: -4px;
     user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
