@@ -50,6 +50,9 @@ export default css`
     padding: 0.6rem 1.2rem;
     margin: 0;
   }
+  .dropdown-content .ia-button:is(:focus-visible, :hover) {
+    background: unset;
+  }
   .dropdown-content li .ia-button {
     border-radius: 0;
   }
