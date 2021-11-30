@@ -61,6 +61,8 @@ export class BookTitleBar extends ActionsHandler {
     return css`
       :host {
         padding: 0 10px;
+        height: 3.4rem;
+        display: flex;
       }
       .embed-link {
         display: inline-flex;
@@ -68,7 +70,6 @@ export class BookTitleBar extends ActionsHandler {
         text-decoration: none;
         color: var(--primaryTextColor, #fff);
         font-size: 1.4rem;
-        height: 3.4rem;
       }
       .embed-link .title {
         display: -webkit-box;
@@ -76,9 +77,11 @@ export class BookTitleBar extends ActionsHandler {
         -webkit-line-clamp: 2;
         overflow: hidden;
         text-align: left;
+        line-height: initial;
       }
       .embed-link svg {
         margin-right: 0.5rem;
+        display: block;
       }
       .embed-link:hover {
         text-decoration: underline;

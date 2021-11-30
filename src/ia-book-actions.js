@@ -33,7 +33,7 @@ export default class IABookActions extends LitElement {
     this.lendingStatus = {};
     this.width = 0;
     this.bwbPurchaseUrl = '';
-    this.barType = 'action';
+    this.barType = 'action'; // 'title'|'action'
     this.sharedObserver = undefined;
     this.primaryActions = [];
     this.primaryTitle = '';
