@@ -127,7 +127,7 @@ describe('Borrow status actions', () => {
     expect(el.primaryTitle).to.equal(
       'Renewable every hour, pending availability.'
     );
-    expect(el.primaryActions.length).to.equal(1);
+    expect(el.primaryActions.length).to.equal(2);
     expect(el.primaryActions[0].text).to.equal('Log In and Borrow');
     expect(el.primaryActions[0].text).to.equal(expectedPrimaryActions[0].text);
   });
