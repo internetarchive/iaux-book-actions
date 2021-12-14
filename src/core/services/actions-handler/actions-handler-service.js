@@ -22,7 +22,7 @@ export default function ActionsHandlerService(options) {
 
   let baseHost = '';
   if (window.location.pathname === '/demo/') {
-    baseHost = `/demo/`;
+    baseHost = `/demo/`; // http://localhost:8000/demo/error.html
   } else {
     baseHost = `/services/loans/loan`;
   }
@@ -36,11 +36,19 @@ export default function ActionsHandlerService(options) {
     body: formData,
   })
     .then(response => {
+      // console.log(response)
+      return { error: response };
+
+      return {
+        status: true,
+        error: 'expected error!!!',
+      };
       if (response.status === 200) {
         option.success.call();
       }
     })
     .catch(error => {
+      return { error: error };
       console.log(error);
     });
 }

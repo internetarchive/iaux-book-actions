@@ -1,4 +1,4 @@
-/* eslint-disable camelcase */
+/* eslint-disable */
 import { html, css, LitElement } from 'lit-element';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
@@ -7,8 +7,11 @@ import './components/collapsible-action-group.js';
 import './components/book-title-bar.js';
 import './components/text-group.js';
 import './components/info-icon.js';
+import './components/show-dialog.js';
 
 import GetLendingActions from './core/services/get-lending-actions.js';
+import ArchiveOrgTokenPoller from './core/services/archive-token-poller.js';
+
 import { mobileContainerWidth } from './core/config/constants.js';
 
 export default class IABookActions extends LitElement {
@@ -22,6 +25,7 @@ export default class IABookActions extends LitElement {
       bwbPurchaseUrl: { type: String },
       barType: { type: String },
       sharedObserver: { attribute: false },
+      dialogVisible: { type: Boolean },
     };
   }
 
@@ -40,6 +44,7 @@ export default class IABookActions extends LitElement {
     this.primaryColor = 'primary';
     this.secondaryActions = [];
     this.lendingOptions = {};
+    this.dialogVisible = false;
   }
 
   disconnectedCallback() {
@@ -145,7 +150,15 @@ export default class IABookActions extends LitElement {
       !this.lendingStatus.browseHasExpired
     ) {
       this.startBrowseTimer();
+      return;
     }
+
+    // token poller start from here...
+    const tokenPoller = new ArchiveOrgTokenPoller(
+      this.identifier,
+      this.lendingStatus
+    );
+    tokenPoller.init();
   }
 
   render() {
@@ -153,7 +166,21 @@ export default class IABookActions extends LitElement {
       <section class="lending-wrapper">
         ${this.barType === 'title' ? this.bookTitleBar : this.bookActionBar}
       </section>
+
+      <show-dialog
+        ?opened="${this.dialogVisible}"
+        @dialog.close="${() => this.closeDialog(this)}"
+      ></show-dialog>
     `;
+  }
+
+  toggleDialog() {
+    this.dialogVisible = !this.dialogVisible;
+  }
+
+  closeDialog() {
+    this.dialogVisible = true;
+    document.getElementsByClassName('ui-overlay').remove;
   }
 
   get bookTitleBar() {
