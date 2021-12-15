@@ -44,7 +44,7 @@ export default class IABookActions extends LitElement {
     this.primaryColor = 'primary';
     this.secondaryActions = [];
     this.lendingOptions = {};
-    this.dialogVisible = false;
+    this.dialogVisible = true;
   }
 
   disconnectedCallback() {
@@ -150,15 +150,15 @@ export default class IABookActions extends LitElement {
       !this.lendingStatus.browseHasExpired
     ) {
       this.startBrowseTimer();
+
+      // token poller start from here...
+      const tokenPoller = new ArchiveOrgTokenPoller(
+        this.identifier,
+        this.lendingStatus
+      );
+      tokenPoller.init();
       return;
     }
-
-    // token poller start from here...
-    const tokenPoller = new ArchiveOrgTokenPoller(
-      this.identifier,
-      this.lendingStatus
-    );
-    tokenPoller.init();
   }
 
   render() {
@@ -174,13 +174,13 @@ export default class IABookActions extends LitElement {
     `;
   }
 
-  toggleDialog() {
+  toggleDialog(e) {
     this.dialogVisible = !this.dialogVisible;
   }
 
-  closeDialog() {
-    this.dialogVisible = true;
-    document.getElementsByClassName('ui-overlay').remove;
+  closeDialog(e) {
+    this.dialogVisible = false;
+    console.log('should close...', this.dialogVisible);
   }
 
   get bookTitleBar() {

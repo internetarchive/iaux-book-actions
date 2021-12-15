@@ -11,7 +11,7 @@ export class showDialog extends LitElement {
       opened: { type: Boolean },
       title: { type: Boolean },
       body: { type: Boolean },
-      // opened: { type: Boolean },
+      actions: { type: Array },
     };
   }
 
@@ -20,12 +20,11 @@ export class showDialog extends LitElement {
     this.opened = false;
     this.title = 'Error';
     this.body =
-      'Unexpected error: loan does not exist. Please try deleting yourarchive.org cookie.';
+      'Unexpected error: loan does not exist. Please try deleting your archive.org cookie.';
+    this.actions = [];
   }
 
   render() {
-    // this.addOverlay();
-
     return html`
       <div
         class="${classMap({
@@ -35,27 +34,27 @@ export class showDialog extends LitElement {
         })}"
       >
         <div class="dialog-head">
-          ${this.title}<ia-icon-close></ia-icon-close>
-        </div>
-        <div class="dialog-body">${this.body}</div>
-        <div class="dialog-foot">
-          <a href="#" class="ia-button primary">Back to item details</a>
-          <button
-            class="ia-button danger"
+          ${this.title}
+          <span
             @click="${() =>
               this.dispatchEvent(new CustomEvent('dialog.close'))}"
           >
-            Close
-          </button>
+            <ia-icon-close fill-color="blue"></ia-icon-close
+          ></span>
         </div>
+        <div class="dialog-body">${this.body}</div>
+        <div class="dialog-foot">${this.renderActionButton()}</div>
       </div>
     `;
   }
 
-  addOverlay() {
-    const overlayElement = document.createElement('div');
-    overlayElement.className = 'ui-overlay';
-    document.getElementsByTagName('body')[0].appendChild(overlayElement);
+  renderActionButton() {
+    return this.actions.map(
+      action =>
+        html`<button class=${action.className} @click=${action.callback}>
+          ${action.text}
+        </button>`
+    );
   }
 
   static get styles() {
@@ -84,11 +83,10 @@ export class showDialog extends LitElement {
       .dialog-foot {
         padding: 1rem;
         user-select: none;
+        text-align: left;
       }
-      .dialog-head {
-        border-bottom: 1px solid #d8d8d8;
-        font-size: 2rem;
-        font-weight: 600;
+      .dialog-body {
+        border: 1px solid #d8d8d8;
       }
       ia-icon-close {
         float: right;
@@ -96,7 +94,7 @@ export class showDialog extends LitElement {
         width: 2.5rem;
         height: 2.5rem;
         vertical-align: middle;
-        --iconFillColor: rgb(217, 83, 79);
+        --iconFillColor: #333;
         cursor: pointer;
       }
       .opened {
@@ -104,6 +102,9 @@ export class showDialog extends LitElement {
       }
       .closed {
         display: none;
+      }
+      a {
+        text-decoration: none;
       }
     `;
 
