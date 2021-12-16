@@ -35,13 +35,17 @@ export default function ActionsHandlerService(options) {
     method: 'POST',
     body: formData,
   })
+    .then(response => response.json())
     .then(response => {
       if (response.status === 200) {
         option.success.call();
+      } else if (response.error) {
+        const message = response.error;
+        if (options.error) {
+          return options?.error(message);
+        }
+        alert(message);
       }
-    })
-    .catch(error => {
-      console.log(error);
     });
 }
 
