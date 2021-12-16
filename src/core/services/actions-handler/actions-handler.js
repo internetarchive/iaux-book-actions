@@ -96,6 +96,9 @@ export default class ActionsHandler extends LitElement {
       success: () => {
         this.handleReadItNow();
       },
+      error: message => {
+        console?.log('Browse error', message);
+      },
     });
   }
 
@@ -116,6 +119,9 @@ export default class ActionsHandler extends LitElement {
       identifier: this.identifier,
       success: () => {
         this.handleReadItNow();
+      },
+      error: message => {
+        console?.log('Borrow error', message);
       },
     });
   }
