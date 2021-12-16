@@ -60,6 +60,7 @@ export default class IABookActions extends LitElement {
   }
 
   updated(changed) {
+    console.log(changed);
     if (changed.has('lendingStatus') || changed.has('bwbPurchaseUrl')) {
       this.setupLendingToolbarActions();
       this.update();
@@ -68,6 +69,11 @@ export default class IABookActions extends LitElement {
     if (changed.has('sharedObserver')) {
       this.disconnectResizeObserver();
       this.setupResizeObserver();
+    }
+
+    if (changed.has('dialogVisible')) {
+      // this.update();
+      // this.performUpdate()
     }
   }
 
@@ -162,6 +168,7 @@ export default class IABookActions extends LitElement {
   }
 
   render() {
+    console.log('here', this.dialogVisible);
     return html`
       <section class="lending-wrapper">
         ${this.barType === 'title' ? this.bookTitleBar : this.bookActionBar}
@@ -169,18 +176,17 @@ export default class IABookActions extends LitElement {
 
       <show-dialog
         ?opened="${this.dialogVisible}"
-        @dialog.close="${() => this.closeDialog(this)}"
+        @dialog.close="${() => this.closeDialog()}"
       ></show-dialog>
     `;
   }
 
-  toggleDialog(e) {
-    this.dialogVisible = !this.dialogVisible;
-  }
-
-  closeDialog(e) {
+  closeDialog() {
     this.dialogVisible = false;
-    console.log('should close...', this.dialogVisible);
+    console.log('should be closed :- ', this.dialogVisible);
+
+    // const overlayElement = document.getElementById('ui-overlay');
+    // if (overlayElement) overlayElement.remove();
   }
 
   get bookTitleBar() {

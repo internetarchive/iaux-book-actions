@@ -5,7 +5,7 @@ import { classMap } from 'lit-html/directives/class-map';
 import '@internetarchive/icon-close/icon-close.js';
 import buttonBaseStyle from '../assets/styles/ia-button.js';
 
-export class showDialog extends LitElement {
+export class ShowDialog extends LitElement {
   static get properties() {
     return {
       opened: { type: Boolean },
@@ -24,7 +24,17 @@ export class showDialog extends LitElement {
     this.actions = [];
   }
 
+  updated(changed) {
+    // console.log(changed)
+    // if (changed.has('opened')) {
+    //   this.update();
+    //   // this.updateComplete();
+    // }
+  }
+
   render() {
+    // this.addOverlay();
+    console.log(this.opened);
     return html`
       <div
         class="${classMap({
@@ -39,13 +49,22 @@ export class showDialog extends LitElement {
             @click="${() =>
               this.dispatchEvent(new CustomEvent('dialog.close'))}"
           >
-            <ia-icon-close fill-color="blue"></ia-icon-close
+            <ia-icon-close></ia-icon-close
           ></span>
         </div>
         <div class="dialog-body">${this.body}</div>
         <div class="dialog-foot">${this.renderActionButton()}</div>
       </div>
     `;
+  }
+
+  addOverlay() {
+    if (this.opened) {
+      const overlayElement = document.createElement('div');
+      overlayElement.id = 'ui-overlay';
+      document.getElementsByTagName('body')[0].appendChild(overlayElement);
+    }
+    return;
   }
 
   renderActionButton() {
@@ -112,4 +131,4 @@ export class showDialog extends LitElement {
   }
 }
 
-customElements.define('show-dialog', showDialog);
+customElements.define('show-dialog', ShowDialog);

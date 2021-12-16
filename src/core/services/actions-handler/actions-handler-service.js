@@ -23,7 +23,7 @@ export default function ActionsHandlerService(options) {
 
   let baseHost = '';
   if (window.location.pathname === '/demo/') {
-    baseHost = `/demo/`; // http://localhost:8000/demo/error.html
+    baseHost = `/demo/`;
   } else {
     baseHost = `/services/loans/loan`;
   }
@@ -40,25 +40,20 @@ export default function ActionsHandlerService(options) {
       console.log('response', response);
 
       if (baseHost == '/demo/') {
-        // option.callback('{"result": true, "token": "token-response"}');
         // option.callback('{"error": "Unexpected error. Please email this link to openlibrary@archive.org with the subject: Unexpected error. Thank you."}');
 
         showDialog(
           option.action,
           '{"error": "Unexpected error. Please email this link to openlibrary@archive.org with the subject: Unexpected error. Thank you."}'
         );
-        // showDialog('{"result": true, "token": "token-response"}');
       }
-      // showDialog(option.action, response);
-      // option.callback(response);
 
       if (response.status === 200) {
-        option.success.call();
+        // option.success.call();
       }
     })
     .catch(error => {
       console.log('error', error);
-      // option.callback(error);
 
       if (baseHost == '/demo/') {
         showDialog(
@@ -115,10 +110,10 @@ function showDialog(action, xhrResponse) {
     showDialog.actions = actions;
   }
 
-  const overlayElement = document.createElement('div');
-  overlayElement.className = 'ui-overlay';
-  console.log(overlayElement);
-  document.getElementsByTagName('body')[0].appendChild(overlayElement);
+  // add overlay
+  // const overlayElement = document.createElement('div');
+  // overlayElement.id = 'ui-overlay';
+  // document.getElementsByTagName('body')[0].appendChild(overlayElement);
 }
 
 function showActionButtonLoader() {
