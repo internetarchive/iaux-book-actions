@@ -22,6 +22,7 @@ export default class IABookActions extends LitElement {
       bwbPurchaseUrl: { type: String },
       barType: { type: String },
       sharedObserver: { attribute: false },
+      disable: { type: Boolean },
     };
   }
 
@@ -40,6 +41,7 @@ export default class IABookActions extends LitElement {
     this.primaryColor = 'primary';
     this.secondaryActions = [];
     this.lendingOptions = {};
+    this.disable = false;
   }
 
   disconnectedCallback() {
@@ -67,8 +69,7 @@ export default class IABookActions extends LitElement {
   }
 
   browseHasExpired() {
-    const browsingExpired = true;
-    const currStatus = { ...this.lendingStatus, browsingExpired };
+    const currStatus = { ...this.lendingStatus, browsingExpired: true };
     this.lendingStatus = currStatus;
   }
 
@@ -173,10 +174,24 @@ export default class IABookActions extends LitElement {
         .secondaryActions=${this.secondaryActions}
         .width=${this.width}
         .hasAdminAccess=${this.hasAdminAccess}
+        .disabled=${this.disable}
+        @toggle-loader=${this.toggleLoader}
       >
       </collapsible-action-group>
       ${this.textGroupTemplate} ${this.infoIconTemplate}
     `;
+  }
+
+  toggleLoader(e) {
+    // if activity loader is disabled and action is browse or borrow,
+    // just change the lendingStatus to dynamic update action buttons
+    if (this.disable && ['browse_book', 'borrow_book'].includes(e.detail)) {
+      console.log('lendingStatus is changed to redraw action-buttons');
+      const currStatus = { ...this.lendingStatus, available_to_browse: false };
+      this.lendingStatus = currStatus;
+    }
+
+    this.disable = !this.disable;
   }
 
   get iconClass() {

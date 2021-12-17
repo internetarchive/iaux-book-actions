@@ -90,52 +90,92 @@ export default class ActionsHandler extends LitElement {
   }
 
   handleBrowseIt() {
+    const context = 'browse_book';
+    this.toggleLoader(context);
+
     ActionsHandlerService({
-      action: 'browse_book',
+      action: context,
       identifier: this.identifier,
       success: () => {
         this.handleReadItNow();
+      },
+      error: response => {
+        console.log(response);
+        alert(JSON.stringify(response.error));
+        this.toggleLoader(context);
       },
     });
   }
 
   handleReturnIt() {
+    const context = 'return_loan';
+    this.toggleLoader(context);
+
     ActionsHandlerService({
-      action: 'return_loan',
+      action: context,
       identifier: this.identifier,
       success: () => {
         this.deleteLoanCookies();
         URLHelper.goToUrl(`/details/${this.identifier}`, true);
       },
+      error: response => {
+        console.log(response);
+        alert(JSON.stringify(response.error));
+        this.toggleLoader(context);
+      },
     });
   }
 
   handleBorrowIt() {
+    const context = 'borrow_book';
+    this.toggleLoader(context);
+
     ActionsHandlerService({
-      action: 'borrow_book',
+      action: context,
       identifier: this.identifier,
       success: () => {
         this.handleReadItNow();
+      },
+      error: response => {
+        console.log(response);
+        alert(JSON.stringify(response.error));
+        this.toggleLoader(context);
       },
     });
   }
 
   handleReserveIt() {
+    const context = 'join_waitlist';
+    this.toggleLoader(context);
+
     ActionsHandlerService({
-      action: 'join_waitlist',
+      action: context,
       identifier: this.identifier,
       success: () => {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
+      },
+      error: response => {
+        console.log(response);
+        alert(JSON.stringify(response.error));
+        this.toggleLoader(context);
       },
     });
   }
 
   handleRemoveFromWaitingList() {
+    const context = 'leave_waitlist';
+    this.toggleLoader(context);
+
     ActionsHandlerService({
-      action: 'leave_waitlist',
+      action: context,
       identifier: this.identifier,
       success: () => {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
+      },
+      error: response => {
+        console.log(response);
+        alert(JSON.stringify(response.error));
+        this.toggleLoader(context);
       },
     });
   }
@@ -188,5 +228,13 @@ export default class ActionsHandler extends LitElement {
     cookie += `; expires=${expiry}`;
     cookie += '; path=/; domain=.archive.org;';
     document.cookie = cookie;
+  }
+
+  toggleLoader(context) {
+    this.dispatchEvent(
+      new CustomEvent('toggle-loader', {
+        detail: context,
+      })
+    );
   }
 }

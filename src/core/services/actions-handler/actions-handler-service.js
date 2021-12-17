@@ -10,19 +10,15 @@ export default function ActionsHandlerService(options) {
     identifier: '',
     data: {},
     success() {},
-    error: null,
+    error() {},
     loader: true,
     type: 'POST',
     ...options,
   };
 
-  if (option.loader) {
-    showActionButtonLoader();
-  }
-
   let baseHost = '';
   if (window.location.pathname === '/demo/') {
-    baseHost = `/demo/`;
+    baseHost = `/demo/1`;
   } else {
     baseHost = `/services/loans/loan`;
   }
@@ -34,29 +30,12 @@ export default function ActionsHandlerService(options) {
   fetch(baseHost, {
     method: 'POST',
     body: formData,
-  })
-    .then(response => response.json())
-    .then(response => {
-      if (response.status === 200) {
-        option.success.call();
-      } else if (response.error) {
-        const message = response.error;
-        if (options.error) {
-          return options?.error(message);
-        }
-        alert(message);
-      }
-    });
-}
-
-function showActionButtonLoader() {
-  const collapsibleElement = document
-    .querySelector('ia-book-actions')
-    .shadowRoot.querySelector('collapsible-action-group');
-  collapsibleElement.setAttribute('style', 'opacity:0.8; pointer-events:none');
-
-  const actionLoader = collapsibleElement.shadowRoot.querySelector(
-    '.action-loader'
-  );
-  actionLoader.setAttribute('style', 'visibility: visible');
+  }).then(response => {
+    if (response.status === 200) {
+      option?.success(response);
+    } else {
+      option?.error(response);
+    }
+    return;
+  });
 }
