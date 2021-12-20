@@ -184,7 +184,7 @@ export default class IABookActions extends LitElement {
 
   toggleLoader(e) {
     // if activity loader is disabled and action is browse or borrow,
-    // just change the lendingStatus to dynamic update action buttons
+    // just change the lendingStatus to update action buttons
     if (this.disable && ['browse_book', 'borrow_book'].includes(e.detail)) {
       console.log('lendingStatus is changed to redraw action-buttons');
       const currStatus = { ...this.lendingStatus, available_to_browse: false };

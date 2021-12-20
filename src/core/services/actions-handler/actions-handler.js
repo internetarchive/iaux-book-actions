@@ -7,10 +7,7 @@ import ActionsHandlerService from './actions-handler-service.js';
  *
  * ActionsHandlerService is a function being used to execute
  * APIs based of the request made by user. It consist some parameters are as follows:-
- * 1. action: action name like browse_book, return_book, borrow_book etc...
- * 2. identifier: book name.
- * 3. success: This is callback function which will be executed after the API request
- *    return reponse as a success.
+ * 1. identifier: book name.
  */
 
 export default class ActionsHandler extends LitElement {
@@ -97,11 +94,11 @@ export default class ActionsHandler extends LitElement {
       action: context,
       identifier: this.identifier,
       success: () => {
-        this.handleReadItNow();
+        // this.handleReadItNow();
       },
-      error: response => {
-        console.log(response);
-        alert(JSON.stringify(response.error));
+      error: data => {
+        console.log(data);
+        alert(data.error);
         this.toggleLoader(context);
       },
     });
@@ -118,9 +115,9 @@ export default class ActionsHandler extends LitElement {
         this.deleteLoanCookies();
         URLHelper.goToUrl(`/details/${this.identifier}`, true);
       },
-      error: response => {
-        console.log(response);
-        alert(JSON.stringify(response.error));
+      error: data => {
+        console.log(data);
+        alert(data.error);
         this.toggleLoader(context);
       },
     });
@@ -136,9 +133,9 @@ export default class ActionsHandler extends LitElement {
       success: () => {
         this.handleReadItNow();
       },
-      error: response => {
-        console.log(response);
-        alert(JSON.stringify(response.error));
+      error: data => {
+        console.log(data);
+        alert(data.error);
         this.toggleLoader(context);
       },
     });
@@ -154,9 +151,9 @@ export default class ActionsHandler extends LitElement {
       success: () => {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
       },
-      error: response => {
-        console.log(response);
-        alert(JSON.stringify(response.error));
+      error: data => {
+        console.log(data);
+        alert(data.error);
         this.toggleLoader(context);
       },
     });
@@ -172,9 +169,9 @@ export default class ActionsHandler extends LitElement {
       success: () => {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
       },
-      error: response => {
-        console.log(response);
-        alert(JSON.stringify(response.error));
+      error: data => {
+        console.log(data);
+        alert(data.error);
         this.toggleLoader(context);
       },
     });

@@ -30,12 +30,23 @@ export default function ActionsHandlerService(options) {
   fetch(baseHost, {
     method: 'POST',
     body: formData,
-  }).then(response => {
-    if (response.status === 200) {
-      option?.success(response);
-    } else {
-      option?.error(response);
-    }
-    return;
-  });
+  })
+    .then(response => {
+      if (baseHost == '/demo/1' || baseHost == '/demo/') {
+        return { error: 'There was an error.' };
+      }
+
+      // The response is a Response instance.
+      // You parse the data into a useable format using `.json()`
+      return response.json();
+    })
+    .then(data => {
+      // `data` is the parsed version of the JSON returned from the above endpoint.
+      console.log(data.error);
+      if (!data.error) {
+        option?.success(data);
+      } else {
+        option?.error(data);
+      }
+    });
 }
