@@ -36,7 +36,7 @@ describe('Get Lending Actions', () => {
     );
     const actions = lendingOptions.getCurrentLendingActions();
 
-    expect(actions.primaryActions.length).to.equal(1);
+    expect(actions.primaryActions.length).to.equal(2);
     expect(actions.primaryTitle).to.equal(
       'This book can be borrowed for 14 days.'
     );

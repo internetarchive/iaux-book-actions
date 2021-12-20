@@ -83,12 +83,7 @@
     import '../src/ia-book-actions.js';
     import {
       defaultLendingStatus,
-      canBrowse,
-      browsed,
       canBrowseAndBorrow,
-      browsedAndBorrow,
-      canBrowseAndBorrowod,
-      canBrowseAndJoinWaitlistForBorrow,
     } from '../src/assets/data/lending-get-status-service.js';
 
     const userid = '@neeraj-archive';
@@ -100,10 +95,22 @@
     // set defaultLendingStatus for unavailable (without borrowables) book
     iaBookActions.userid = '@neeraj-archive';
     iaBookActions.identifier = identifier;
-    iaBookActions.lendingStatus = canBrowseAndBorrow;
+    iaBookActions.bookTitle = 'Contemporary Black biography. Volume 39 : profiles from the interContemporary Black biography. Volume 39';
+    iaBookActions.lendingStatus = defaultLendingStatus;
     iaBookActions.bwbPurchaseUrl = '';
+    iaBookActions.barType = '';
 
     let lendingStatus1 = iaBookActions.lendingStatus;
+
+    document.querySelectorAll('.titleBar input[type=checkbox]').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        if (e.target.checked) {
+          iaBookActions.barType = 'title';
+        } else {
+          iaBookActions.barType = 'action';
+        }
+      });
+    });
 
     document.querySelectorAll('.userState input[type=checkbox]').forEach((item) => {
       item.addEventListener('click', (e) => {
@@ -139,6 +146,13 @@
         if (e.target.value === 'user_has_browsed') {
           lendingStatus1.user_has_browsed = true;
           lendingStatus1.available_to_browse = false;
+          lendingStatus1.secondsLeftOnLoan = 10;
+          lendingStatus1.browsingExpired = false;
+        } else if(e.target.value === 'browsingExpired') {
+          lendingStatus1.user_has_browsed = true;
+          lendingStatus1.available_to_browse = false;
+          lendingStatus1.secondsLeftOnLoan = 0;
+          lendingStatus1.browsingExpired = true;
         } else if (e.target.value === 'available_to_browse') {
           lendingStatus1.available_to_browse = true;
           lendingStatus1.user_has_browsed = false;
@@ -192,7 +206,18 @@
 
   <div>
     <fieldset>
-      <legend>Dev try for lending banner</legend>
+      <legend>Dev testing for book title bar</legend>
+        <table class="initial">
+          <tr>
+            <td class="titleBar">
+              <label><input type="checkbox" name="title" value="title" />Title Bar</label>
+            </td>
+          </tr>
+        </table>
+    </fieldset>
+
+    <fieldset>
+      <legend>Dev testing for book action bar</legend>
         <table class="initial">
           <tr>
             <td class="userState">
@@ -206,6 +231,7 @@
             <td class="availableToBrowse">
               <label><input type="radio" name="browse" value="available_to_browse" />available_to_browse</label>
               <label><input type="radio" name="browse" value="user_has_browsed" />user_has_browsed</label>
+              <label><input type="radio" name="browse" value="browsingExpired" />browsingExpired</label>
             </td>
             <td class="availableToBorrow">
               <label><input type="radio" name="borrow" value="available_to_borrow" />available_to_borrow</label>

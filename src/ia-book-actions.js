@@ -1,8 +1,10 @@
+/* eslint-disable camelcase */
 import { html, css, LitElement } from 'lit-element';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
 
 import './components/collapsible-action-group.js';
+import './components/book-title-bar.js';
 import './components/text-group.js';
 import './components/info-icon.js';
 
@@ -14,9 +16,11 @@ export default class IABookActions extends LitElement {
     return {
       userid: { type: String },
       identifier: { type: String },
+      bookTitle: { type: String },
       lendingStatus: { type: Object },
       width: { type: Number },
       bwbPurchaseUrl: { type: String },
+      barType: { type: String },
       sharedObserver: { attribute: false },
     };
   }
@@ -25,15 +29,17 @@ export default class IABookActions extends LitElement {
     super();
     this.userid = '';
     this.identifier = '';
+    this.bookTitle = '';
     this.lendingStatus = {};
+    this.width = 0;
+    this.bwbPurchaseUrl = '';
+    this.barType = 'action'; // 'title'|'action'
+    this.sharedObserver = undefined;
     this.primaryActions = [];
     this.primaryTitle = '';
     this.primaryColor = 'primary';
     this.secondaryActions = [];
-    this.width = 0;
-    this.bwbPurchaseUrl = '';
-    this.lendingOptions = [];
-    this.sharedObserver = undefined;
+    this.lendingOptions = {};
   }
 
   disconnectedCallback() {
@@ -58,6 +64,28 @@ export default class IABookActions extends LitElement {
       this.disconnectResizeObserver();
       this.setupResizeObserver();
     }
+  }
+
+  browseHasExpired() {
+    const browsingExpired = true;
+    const currStatus = { ...this.lendingStatus, browsingExpired };
+    this.lendingStatus = currStatus;
+  }
+
+  startBrowseTimer() {
+    const {
+      browsingExpired,
+      user_has_browsed,
+      secondsLeftOnLoan,
+    } = this.lendingStatus;
+    if (!user_has_browsed || browsingExpired) {
+      return;
+    }
+
+    const timeLeft = secondsLeftOnLoan * 1000;
+    setTimeout(() => {
+      this.browseHasExpired();
+    }, timeLeft);
   }
 
   /** SharedObserver resize handler */
@@ -111,23 +139,43 @@ export default class IABookActions extends LitElement {
     this.secondaryActions = actions.secondaryActions.filter(action => {
       return action != null;
     });
+
+    if (
+      this.lendingStatus.user_has_browsed &&
+      !this.lendingStatus.browseHasExpired
+    ) {
+      this.startBrowseTimer();
+    }
   }
 
   render() {
     return html`
       <section class="lending-wrapper">
-        <collapsible-action-group
-          .userid=${this.userid}
-          .identifier=${this.identifier}
-          .primaryColor=${this.primaryColor}
-          .primaryActions=${this.primaryActions}
-          .secondaryActions=${this.secondaryActions}
-          .width=${this.width}
-          .hasAdminAccess=${this.hasAdminAccess}
-        >
-        </collapsible-action-group>
-        ${this.textGroupTemplate} ${this.infoIconTemplate}
+        ${this.barType === 'title' ? this.bookTitleBar : this.bookActionBar}
       </section>
+    `;
+  }
+
+  get bookTitleBar() {
+    return html`<book-title-bar
+      .identifier=${this.identifier}
+      .bookTitle=${this.bookTitle}
+    ></book-title-bar>`;
+  }
+
+  get bookActionBar() {
+    return html`
+      <collapsible-action-group
+        .userid=${this.userid}
+        .identifier=${this.identifier}
+        .primaryColor=${this.primaryColor}
+        .primaryActions=${this.primaryActions}
+        .secondaryActions=${this.secondaryActions}
+        .width=${this.width}
+        .hasAdminAccess=${this.hasAdminAccess}
+      >
+      </collapsible-action-group>
+      ${this.textGroupTemplate} ${this.infoIconTemplate}
     `;
   }
 
@@ -146,7 +194,7 @@ export default class IABookActions extends LitElement {
   get textGroupTemplate() {
     return html`<text-group
       textClass=${this.textClass}
-      texts="${this.primaryTitle}"
+      texts=${this.primaryTitle}
     >
     </text-group>`;
   }
@@ -165,7 +213,6 @@ export default class IABookActions extends LitElement {
       .lending-wrapper {
         width: 100%;
         margin: 0 auto;
-        padding: 10px 0;
         display: inline-flex;
         align-items: center;
         justify-content: center;

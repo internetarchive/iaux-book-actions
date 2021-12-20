@@ -82,6 +82,11 @@ export default class ActionsHandler extends LitElement {
       const { category, action } = detail.event;
       this.sendEvent(category, action);
     });
+
+    this.addEventListener('bookTitleBar', ({ detail }) => {
+      const { category, action } = detail.event;
+      this.sendEvent(category, action);
+    });
   }
 
   handleBrowseIt() {
@@ -145,9 +150,6 @@ export default class ActionsHandler extends LitElement {
 
   handleReadItNow(extraParam) {
     const currentParams = new URLSearchParams(window.location.search);
-
-    // Delete the ?q= parameter just after borrow a book. see: WEBDEV-3979
-    currentParams.delete('q');
 
     if (extraParam) {
       // append extraParam key-value in currentParams
