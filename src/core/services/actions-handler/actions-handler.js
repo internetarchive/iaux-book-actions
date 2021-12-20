@@ -90,11 +90,19 @@ export default class ActionsHandler extends LitElement {
   }
 
   handleBrowseIt() {
+    const context = 'browse_book';
+    this.toggleLoader(context);
+
     ActionsHandlerService({
-      action: 'browse_book',
+      action: context,
       identifier: this.identifier,
       success: () => {
-        this.handleReadItNow();
+        // this.handleReadItNow();
+      },
+      error: data => {
+        console.log(data);
+        // alert(data.error);
+        this.toggleLoader(context, data);
       },
     });
   }
@@ -188,5 +196,16 @@ export default class ActionsHandler extends LitElement {
     cookie += `; expires=${expiry}`;
     cookie += '; path=/; domain=.archive.org;';
     document.cookie = cookie;
+  }
+
+  toggleLoader(context, data = []) {
+    this.dispatchEvent(
+      new CustomEvent('toggle-loader', {
+        detail: {
+          context: 'context',
+          data,
+        },
+      })
+    );
   }
 }

@@ -26,6 +26,8 @@ export default class IABookActions extends LitElement {
       barType: { type: String },
       sharedObserver: { attribute: false },
       dialogVisible: { type: Boolean },
+      dialogBody: { type: String },
+      disable: { type: Boolean },
     };
   }
 
@@ -44,7 +46,9 @@ export default class IABookActions extends LitElement {
     this.primaryColor = 'primary';
     this.secondaryActions = [];
     this.lendingOptions = {};
-    this.dialogVisible = true;
+    this.dialogVisible = false;
+    this.dialogBody = 'There was an error';
+    this.disable = false;
   }
 
   disconnectedCallback() {
@@ -168,7 +172,6 @@ export default class IABookActions extends LitElement {
   }
 
   render() {
-    console.log('here', this.dialogVisible);
     return html`
       <section class="lending-wrapper">
         ${this.barType === 'title' ? this.bookTitleBar : this.bookActionBar}
@@ -176,6 +179,7 @@ export default class IABookActions extends LitElement {
 
       <show-dialog
         ?opened="${this.dialogVisible}"
+        body=${this.dialogBody}
         @dialog.close="${() => this.closeDialog()}"
       ></show-dialog>
     `;
@@ -183,10 +187,6 @@ export default class IABookActions extends LitElement {
 
   closeDialog() {
     this.dialogVisible = false;
-    console.log('should be closed :- ', this.dialogVisible);
-
-    // const overlayElement = document.getElementById('ui-overlay');
-    // if (overlayElement) overlayElement.remove();
   }
 
   get bookTitleBar() {
@@ -206,10 +206,29 @@ export default class IABookActions extends LitElement {
         .secondaryActions=${this.secondaryActions}
         .width=${this.width}
         .hasAdminAccess=${this.hasAdminAccess}
+        .disabled=${this.disable}
+        @toggle-loader=${this.toggleLoader}
       >
       </collapsible-action-group>
       ${this.textGroupTemplate} ${this.infoIconTemplate}
     `;
+  }
+
+  toggleLoader(e) {
+    // if activity loader is disabled and action is browse or borrow,
+    // just change the lendingStatus to update action buttons
+    if (this.disable && ['browse_book', 'borrow_book'].includes(e.detail)) {
+      console.log('lendingStatus is changed to redraw action-buttons');
+      const currStatus = { ...this.lendingStatus, available_to_browse: false };
+      this.lendingStatus = currStatus;
+    }
+
+    console.log(e.detail.data.error);
+    this.disable = !this.disable;
+    this.dialogVisible = true;
+    if (e.detail) {
+      this.dialogBody = e.detail.data.error;
+    }
   }
 
   get iconClass() {

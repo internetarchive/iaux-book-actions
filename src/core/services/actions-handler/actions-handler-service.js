@@ -10,20 +10,20 @@ export default function ActionsHandlerService(options) {
     identifier: '',
     data: {},
     success() {},
-    error: null,
+    error() {},
     callback() {},
     loader: true,
     type: 'POST',
     ...options,
   };
 
-  if (option.loader) {
-    showActionButtonLoader();
-  }
+  // if (option.loader) {
+  //   showActionButtonLoader();
+  // }
 
   let baseHost = '';
   if (window.location.pathname === '/demo/') {
-    baseHost = `/demo/`;
+    baseHost = `/demo/1`;
   } else {
     baseHost = `/services/loans/loan`;
   }
@@ -37,34 +37,46 @@ export default function ActionsHandlerService(options) {
     body: formData,
   })
     .then(response => {
-      console.log('response', response);
-
-      if (baseHost == '/demo/') {
-        // option.callback('{"error": "Unexpected error. Please email this link to openlibrary@archive.org with the subject: Unexpected error. Thank you."}');
-
-        showDialog(
-          option.action,
-          '{"error": "Unexpected error. Please email this link to openlibrary@archive.org with the subject: Unexpected error. Thank you."}'
-        );
+      if (baseHost == '/demo/1' || baseHost == '/demo/') {
+        return { error: 'There was an error.' };
       }
 
-      if (response.status === 200) {
-        // option.success.call();
-      }
+      // The response is a Response instance.
+      // You parse the data into a useable format using `.json()`
+      return response.json();
     })
-    .catch(error => {
-      console.log('error', error);
-
-      if (baseHost == '/demo/') {
-        showDialog(
-          option.action,
-          '{"error": "Unexpected error. Please email this link to openlibrary@archive.org with the subject: Unexpected error. Thank you."}'
-        );
-        // showDialog('{"result": true, "token": "token-response"}');
+    .then(data => {
+      // `data` is the parsed version of the JSON returned from the above endpoint.
+      console.log(data.error);
+      if (!data.error) {
+        option?.success(data);
       } else {
-        showDialog(option.action, error);
+        option?.error(data);
       }
     });
+
+  // if (baseHost == '/demo/') {
+  //   // option.callback('{"error": "Unexpected error. Please email this link to openlibrary@archive.org with the subject: Unexpected error. Thank you."}');
+
+  //   showDialog(
+  //     option.action,
+  //     '{"error": "Unexpected error. Please email this link to openlibrary@archive.org with the subject: Unexpected error. Thank you."}'
+  //   );
+  // }
+
+  // .catch(error => {
+  //   console.log('error', error);
+
+  //   if (baseHost == '/demo/') {
+  //     showDialog(
+  //       option.action,
+  //       '{"error": "Unexpected error. Please email this link to openlibrary@archive.org with the subject: Unexpected error. Thank you."}'
+  //     );
+  //     // showDialog('{"result": true, "token": "token-response"}');
+  //   } else {
+  //     showDialog(option.action, error);
+  //   }
+  // });
 }
 
 function showDialog(action, xhrResponse) {

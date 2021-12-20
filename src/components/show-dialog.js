@@ -9,8 +9,8 @@ export class ShowDialog extends LitElement {
   static get properties() {
     return {
       opened: { type: Boolean },
-      title: { type: Boolean },
-      body: { type: Boolean },
+      body: { type: String },
+      title: { type: String },
       actions: { type: Array },
     };
   }
@@ -33,6 +33,7 @@ export class ShowDialog extends LitElement {
   }
 
   render() {
+    console.log(this.body);
     // this.addOverlay();
     console.log(this.opened);
     return html`
