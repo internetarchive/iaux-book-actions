@@ -17,7 +17,7 @@ export default function ActionsHandlerService(options) {
   };
 
   if (option.loader) {
-    // showActionButtonLoader();
+    showActionButtonLoader();
   }
 
   let baseHost = '';
@@ -37,7 +37,7 @@ export default function ActionsHandlerService(options) {
   })
     .then(response => {
       if (response.status === 200) {
-        // option.success.call();
+        option.success.call();
       }
     })
     .catch(error => {
