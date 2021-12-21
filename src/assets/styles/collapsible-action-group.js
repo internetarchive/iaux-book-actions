@@ -129,7 +129,6 @@ export default css`
     display: initial;
     font-size: 1.4rem;
   }
-
   .unavailable {
     opacity: 0.7;
     pointer-events: none;

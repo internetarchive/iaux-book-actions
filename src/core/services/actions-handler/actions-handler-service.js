@@ -11,15 +11,10 @@ export default function ActionsHandlerService(options) {
     data: {},
     success() {},
     error() {},
-    callback() {},
     loader: true,
     type: 'POST',
     ...options,
   };
-
-  // if (option.loader) {
-  //   showActionButtonLoader();
-  // }
 
   let baseHost = '';
   if (window.location.pathname === '/demo/') {
@@ -37,8 +32,13 @@ export default function ActionsHandlerService(options) {
     body: formData,
   })
     .then(response => {
+      // test changes, (won't affect you)
       if (baseHost == '/demo/1' || baseHost == '/demo/') {
-        return { error: 'There was an error.' };
+        return {
+          error:
+            'This book is not available to browse at this time. Please try again later.',
+          // error: 'This book is not available to borrow at this time. Please try again later.',
+        };
       }
 
       // The response is a Response instance.
@@ -47,7 +47,7 @@ export default function ActionsHandlerService(options) {
     })
     .then(data => {
       // `data` is the parsed version of the JSON returned from the above endpoint.
-      console.log(data.error);
+      console.log('actual reponse for endpoint', data);
       if (!data.error) {
         option?.success(data);
       } else {
@@ -126,16 +126,4 @@ function showDialog(action, xhrResponse) {
   // const overlayElement = document.createElement('div');
   // overlayElement.id = 'ui-overlay';
   // document.getElementsByTagName('body')[0].appendChild(overlayElement);
-}
-
-function showActionButtonLoader() {
-  const collapsibleElement = document
-    .querySelector('ia-book-actions')
-    .shadowRoot.querySelector('collapsible-action-group');
-  collapsibleElement.setAttribute('style', 'opacity:0.8; pointer-events:none');
-
-  const actionLoader = collapsibleElement.shadowRoot.querySelector(
-    '.action-loader'
-  );
-  actionLoader.setAttribute('style', 'visibility: visible');
 }

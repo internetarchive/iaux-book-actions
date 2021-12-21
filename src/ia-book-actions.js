@@ -25,8 +25,6 @@ export default class IABookActions extends LitElement {
       bwbPurchaseUrl: { type: String },
       barType: { type: String },
       sharedObserver: { attribute: false },
-      dialogVisible: { type: Boolean },
-      dialogBody: { type: String },
       disable: { type: Boolean },
     };
   }
@@ -46,8 +44,6 @@ export default class IABookActions extends LitElement {
     this.primaryColor = 'primary';
     this.secondaryActions = [];
     this.lendingOptions = {};
-    this.dialogVisible = false;
-    this.dialogBody = 'There was an error';
     this.disable = false;
   }
 
@@ -82,8 +78,7 @@ export default class IABookActions extends LitElement {
   }
 
   browseHasExpired() {
-    const browsingExpired = true;
-    const currStatus = { ...this.lendingStatus, browsingExpired };
+    const currStatus = { ...this.lendingStatus, browsingExpired: true };
     this.lendingStatus = currStatus;
   }
 
@@ -207,27 +202,33 @@ export default class IABookActions extends LitElement {
         .width=${this.width}
         .hasAdminAccess=${this.hasAdminAccess}
         .disabled=${this.disable}
-        @toggle-loader=${this.toggleLoader}
+        @toggle-action-bar-state=${this.toggleActionBarState}
       >
       </collapsible-action-group>
       ${this.textGroupTemplate} ${this.infoIconTemplate}
     `;
   }
 
-  toggleLoader(e) {
-    // if activity loader is disabled and action is browse or borrow,
-    // just change the lendingStatus to update action buttons
-    if (this.disable && ['browse_book', 'borrow_book'].includes(e.detail)) {
-      console.log('lendingStatus is changed to redraw action-buttons');
-      const currStatus = { ...this.lendingStatus, available_to_browse: false };
-      this.lendingStatus = currStatus;
-    }
-
-    console.log(e.detail.data.error);
+  toggleActionBarState(e) {
+    // toggle activity loader
     this.disable = !this.disable;
-    this.dialogVisible = true;
-    if (e.detail) {
-      this.dialogBody = e.detail.data.error;
+
+    // update action bar states is book is not available to browse or borrow.
+    if (e?.detail?.data?.error) {
+      const errorMsg = e.detail.data.error;
+      if (errorMsg.match(/not available to browse/gm)) {
+        const currStatus = {
+          ...this.lendingStatus,
+          available_to_browse: false,
+        };
+        this.lendingStatus = currStatus;
+      } else if (errorMsg.match(/not available to borrow/gm)) {
+        const currStatus = {
+          ...this.lendingStatus,
+          available_to_borrow: false,
+        };
+        this.lendingStatus = currStatus;
+      }
     }
   }
 
