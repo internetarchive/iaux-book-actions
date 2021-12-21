@@ -33,7 +33,10 @@ export default function ActionsHandlerService(options) {
   })
     .then(response => {
       if (baseHost == '/demo/1' || baseHost == '/demo/') {
-        return { error: 'There was an error.' };
+        return {
+          error:
+            'Unexpected error.\nPlease email this link to openlibrary@archive.org with the subject: Unexpected error. Thank you. \nMessage:UNAVAILABLE',
+        };
       }
 
       // The response is a Response instance.
@@ -42,7 +45,7 @@ export default function ActionsHandlerService(options) {
     })
     .then(data => {
       // `data` is the parsed version of the JSON returned from the above endpoint.
-      console.log(data.error);
+      console.log('actual reponse for endpoint', data);
       if (!data.error) {
         option?.success(data);
       } else {

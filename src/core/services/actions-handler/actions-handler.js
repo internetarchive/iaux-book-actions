@@ -88,25 +88,25 @@ export default class ActionsHandler extends LitElement {
 
   handleBrowseIt() {
     const context = 'browse_book';
-    this.toggleLoader(context);
+    this.toggleActionBarState(context);
 
     ActionsHandlerService({
       action: context,
       identifier: this.identifier,
       success: () => {
-        // this.handleReadItNow();
+        this.handleReadItNow();
       },
       error: data => {
         console.log(data);
         alert(data.error);
-        this.toggleLoader(context);
+        this.toggleActionBarState(context, data);
       },
     });
   }
 
   handleReturnIt() {
     const context = 'return_loan';
-    this.toggleLoader(context);
+    this.toggleActionBarState(context);
 
     ActionsHandlerService({
       action: context,
@@ -118,14 +118,14 @@ export default class ActionsHandler extends LitElement {
       error: data => {
         console.log(data);
         alert(data.error);
-        this.toggleLoader(context);
+        this.toggleActionBarState(context);
       },
     });
   }
 
   handleBorrowIt() {
     const context = 'borrow_book';
-    this.toggleLoader(context);
+    this.toggleActionBarState(context);
 
     ActionsHandlerService({
       action: context,
@@ -136,14 +136,14 @@ export default class ActionsHandler extends LitElement {
       error: data => {
         console.log(data);
         alert(data.error);
-        this.toggleLoader(context);
+        this.toggleActionBarState(context, data);
       },
     });
   }
 
   handleReserveIt() {
     const context = 'join_waitlist';
-    this.toggleLoader(context);
+    this.toggleActionBarState(context);
 
     ActionsHandlerService({
       action: context,
@@ -154,14 +154,14 @@ export default class ActionsHandler extends LitElement {
       error: data => {
         console.log(data);
         alert(data.error);
-        this.toggleLoader(context);
+        this.toggleActionBarState(context);
       },
     });
   }
 
   handleRemoveFromWaitingList() {
     const context = 'leave_waitlist';
-    this.toggleLoader(context);
+    this.toggleActionBarState(context);
 
     ActionsHandlerService({
       action: context,
@@ -172,7 +172,7 @@ export default class ActionsHandler extends LitElement {
       error: data => {
         console.log(data);
         alert(data.error);
-        this.toggleLoader(context);
+        this.toggleActionBarState(context);
       },
     });
   }
@@ -227,10 +227,10 @@ export default class ActionsHandler extends LitElement {
     document.cookie = cookie;
   }
 
-  toggleLoader(context) {
+  toggleActionBarState(context, data = {}) {
     this.dispatchEvent(
-      new CustomEvent('toggle-loader', {
-        detail: context,
+      new CustomEvent('toggle-action-bar-state', {
+        detail: { context, data },
       })
     );
   }

@@ -175,20 +175,26 @@ export default class IABookActions extends LitElement {
         .width=${this.width}
         .hasAdminAccess=${this.hasAdminAccess}
         .disabled=${this.disable}
-        @toggle-loader=${this.toggleLoader}
+        @toggle-action-bar-state=${this.toggleActionBarState}
       >
       </collapsible-action-group>
       ${this.textGroupTemplate} ${this.infoIconTemplate}
     `;
   }
 
-  toggleLoader(e) {
-    // if activity loader is disabled and action is browse or borrow,
-    // just change the lendingStatus to update action buttons
-    if (this.disable && ['browse_book', 'borrow_book'].includes(e.detail)) {
-      console.log('lendingStatus is changed to redraw action-buttons');
-      const currStatus = { ...this.lendingStatus, available_to_browse: false };
-      this.lendingStatus = currStatus;
+  toggleActionBarState(e) {
+    console.log(e);
+
+    // update action bar states is book is not available to browse or borrow.
+    if (e?.detail?.data?.error) {
+      const errorMsg = e.detail.data.error;
+      if (errorMsg.match(/(^|\W)UNAVAILABLE($|\W)/)) {
+        const currStatus = {
+          ...this.lendingStatus,
+          available_to_browse: false,
+        };
+        this.lendingStatus = currStatus;
+      }
     }
 
     this.disable = !this.disable;
