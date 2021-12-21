@@ -97,7 +97,6 @@ export default class ActionsHandler extends LitElement {
         this.handleReadItNow();
       },
       error: data => {
-        console.log(data);
         alert(data.error);
         this.toggleActionBarState(context, data);
       },
@@ -116,7 +115,6 @@ export default class ActionsHandler extends LitElement {
         URLHelper.goToUrl(`/details/${this.identifier}`, true);
       },
       error: data => {
-        console.log(data);
         alert(data.error);
         this.toggleActionBarState(context);
       },
@@ -134,7 +132,6 @@ export default class ActionsHandler extends LitElement {
         this.handleReadItNow();
       },
       error: data => {
-        console.log(data);
         alert(data.error);
         this.toggleActionBarState(context, data);
       },
@@ -152,7 +149,6 @@ export default class ActionsHandler extends LitElement {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
       },
       error: data => {
-        console.log(data);
         alert(data.error);
         this.toggleActionBarState(context);
       },
@@ -170,7 +166,6 @@ export default class ActionsHandler extends LitElement {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
       },
       error: data => {
-        console.log(data);
         alert(data.error);
         this.toggleActionBarState(context);
       },

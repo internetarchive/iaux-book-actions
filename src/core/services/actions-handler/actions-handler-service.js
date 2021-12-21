@@ -32,10 +32,12 @@ export default function ActionsHandlerService(options) {
     body: formData,
   })
     .then(response => {
+      // test changes, (won't affect you)
       if (baseHost == '/demo/1' || baseHost == '/demo/') {
         return {
           error:
-            'Unexpected error.\nPlease email this link to openlibrary@archive.org with the subject: Unexpected error. Thank you. \nMessage:UNAVAILABLE',
+            'This book is not available to browse at this time. Please try again later.',
+          // error: 'This book is not available to borrow at this time. Please try again later.',
         };
       }
 

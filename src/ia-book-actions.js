@@ -183,21 +183,26 @@ export default class IABookActions extends LitElement {
   }
 
   toggleActionBarState(e) {
-    console.log(e);
+    // toggle activity loader
+    this.disable = !this.disable;
 
     // update action bar states is book is not available to browse or borrow.
     if (e?.detail?.data?.error) {
       const errorMsg = e.detail.data.error;
-      if (errorMsg.match(/(^|\W)UNAVAILABLE($|\W)/)) {
+      if (errorMsg.match(/not available to browse/gm)) {
         const currStatus = {
           ...this.lendingStatus,
           available_to_browse: false,
         };
         this.lendingStatus = currStatus;
+      } else if (errorMsg.match(/not available to borrow/gm)) {
+        const currStatus = {
+          ...this.lendingStatus,
+          available_to_borrow: false,
+        };
+        this.lendingStatus = currStatus;
       }
     }
-
-    this.disable = !this.disable;
   }
 
   get iconClass() {
