@@ -39,6 +39,22 @@ describe('<collapsible-action-group>', () => {
     const primaryButton = primaryActionContainer.querySelector('.ia-button');
     expect(primaryButton.innerText).to.equal('Borrow for 1 hour');
   });
+
+  it('check if loader is active and action-group is disabled', async () => {
+    const el = await fixture(container());
+
+    const primaryActionContainer = el.shadowRoot.querySelector('.primary');
+    primaryActionContainer
+      .querySelector('.ia-button')
+      .dispatchEvent(new CustomEvent('toggle-loader'));
+    el.disabled = true;
+    await el.updateComplete;
+
+    expect(el.disabled).to.be.true;
+    expect(el.shadowRoot.querySelector('div').classList.contains('disabled')).to
+      .be.true;
+  });
+
   it('fires analytics events', async () => {
     const el = await fixture(container());
     const primaryActionContainer = el.shadowRoot.querySelector('.primary');

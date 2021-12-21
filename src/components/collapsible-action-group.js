@@ -1,5 +1,6 @@
 import { html } from 'lit-element';
 import { nothing } from 'lit-html';
+import { classMap } from 'lit-html/directives/class-map';
 
 import ActionsHandler from '../core/services/actions-handler/actions-handler.js';
 
@@ -25,6 +26,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
       width: { type: Number },
       hasAdminAccess: { type: Boolean },
       dropdownArrow: { type: String },
+      disabled: { type: Boolean },
     };
   }
 
@@ -42,6 +44,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
     this.initialButton = false;
     this.title = '';
     this.loaderIcon = 'https://archive.org/upload/images/tree/loading.gif';
+    this.disabled = false;
   }
 
   updated(changed) {
@@ -94,13 +97,20 @@ export class CollapsibleActionGroup extends ActionsHandler {
 
   render() {
     return html`
-      ${this.getLoaderIcon}
-      <section class="action-buttons primary">
-        ${this.renderPrimaryActions}
-      </section>
-      <section class="action-buttons secondary">
-        ${this.renderSecondaryActions}
-      </section>
+      <div
+        class="${classMap({
+          actiongroup: true,
+          disabled: this.disabled,
+        })}"
+      >
+        ${this.getLoaderIcon}
+        <section class="action-buttons primary">
+          ${this.renderPrimaryActions}
+        </section>
+        <section class="action-buttons secondary">
+          ${this.renderSecondaryActions}
+        </section>
+      </div>
     `;
   }
 
@@ -225,7 +235,14 @@ export class CollapsibleActionGroup extends ActionsHandler {
    * @returns { HTMLElement }
    */
   get getLoaderIcon() {
-    return html`<img class="action-loader" alt="" src="${this.loaderIcon}" />`;
+    return html`<img
+      class="${classMap({
+        actionloader: true,
+        disabled: this.disabled,
+      })}"
+      alt=""
+      src="${this.loaderIcon}"
+    />`;
   }
 
   /**

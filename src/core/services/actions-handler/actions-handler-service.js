@@ -10,19 +10,15 @@ export default function ActionsHandlerService(options) {
     identifier: '',
     data: {},
     success() {},
-    error: null,
+    error() {},
     loader: true,
     type: 'POST',
     ...options,
   };
 
-  if (option.loader) {
-    showActionButtonLoader();
-  }
-
   let baseHost = '';
   if (window.location.pathname === '/demo/') {
-    baseHost = `/demo/`;
+    baseHost = `/demo/1`;
   } else {
     baseHost = `/services/loans/loan`;
   }
@@ -36,23 +32,26 @@ export default function ActionsHandlerService(options) {
     body: formData,
   })
     .then(response => {
-      if (response.status === 200) {
-        option.success.call();
+      // test changes, (won't affect you)
+      if (baseHost == '/demo/1' || baseHost == '/demo/') {
+        return {
+          error:
+            'This book is not available to browse at this time. Please try again later.',
+          // error: 'This book is not available to borrow at this time. Please try again later.',
+        };
       }
+
+      // The response is a Response instance.
+      // You parse the data into a useable format using `.json()`
+      return response.json();
     })
-    .catch(error => {
-      console.log(error);
+    .then(data => {
+      // `data` is the parsed version of the JSON returned from the above endpoint.
+      console.log('actual reponse for endpoint', data);
+      if (!data.error) {
+        option?.success(data);
+      } else {
+        option?.error(data);
+      }
     });
-}
-
-function showActionButtonLoader() {
-  const collapsibleElement = document
-    .querySelector('ia-book-actions')
-    .shadowRoot.querySelector('collapsible-action-group');
-  collapsibleElement.setAttribute('style', 'opacity:0.8; pointer-events:none');
-
-  const actionLoader = collapsibleElement.shadowRoot.querySelector(
-    '.action-loader'
-  );
-  actionLoader.setAttribute('style', 'visibility: visible');
 }

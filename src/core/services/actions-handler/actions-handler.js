@@ -7,10 +7,7 @@ import ActionsHandlerService from './actions-handler-service.js';
  *
  * ActionsHandlerService is a function being used to execute
  * APIs based of the request made by user. It consist some parameters are as follows:-
- * 1. action: action name like browse_book, return_book, borrow_book etc...
- * 2. identifier: book name.
- * 3. success: This is callback function which will be executed after the API request
- *    return reponse as a success.
+ * 1. identifier: book name.
  */
 
 export default class ActionsHandler extends LitElement {
@@ -90,52 +87,87 @@ export default class ActionsHandler extends LitElement {
   }
 
   handleBrowseIt() {
+    const context = 'browse_book';
+    this.toggleActionBarState(context);
+
     ActionsHandlerService({
-      action: 'browse_book',
+      action: context,
       identifier: this.identifier,
       success: () => {
         this.handleReadItNow();
+      },
+      error: data => {
+        alert(data.error);
+        this.toggleActionBarState(context, data);
       },
     });
   }
 
   handleReturnIt() {
+    const context = 'return_loan';
+    this.toggleActionBarState(context);
+
     ActionsHandlerService({
-      action: 'return_loan',
+      action: context,
       identifier: this.identifier,
       success: () => {
         this.deleteLoanCookies();
         URLHelper.goToUrl(`/details/${this.identifier}`, true);
       },
+      error: data => {
+        alert(data.error);
+        this.toggleActionBarState(context);
+      },
     });
   }
 
   handleBorrowIt() {
+    const context = 'borrow_book';
+    this.toggleActionBarState(context);
+
     ActionsHandlerService({
-      action: 'borrow_book',
+      action: context,
       identifier: this.identifier,
       success: () => {
         this.handleReadItNow();
+      },
+      error: data => {
+        alert(data.error);
+        this.toggleActionBarState(context, data);
       },
     });
   }
 
   handleReserveIt() {
+    const context = 'join_waitlist';
+    this.toggleActionBarState(context);
+
     ActionsHandlerService({
-      action: 'join_waitlist',
+      action: context,
       identifier: this.identifier,
       success: () => {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
+      },
+      error: data => {
+        alert(data.error);
+        this.toggleActionBarState(context);
       },
     });
   }
 
   handleRemoveFromWaitingList() {
+    const context = 'leave_waitlist';
+    this.toggleActionBarState(context);
+
     ActionsHandlerService({
-      action: 'leave_waitlist',
+      action: context,
       identifier: this.identifier,
       success: () => {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
+      },
+      error: data => {
+        alert(data.error);
+        this.toggleActionBarState(context);
       },
     });
   }
@@ -185,5 +217,13 @@ export default class ActionsHandler extends LitElement {
     cookie += `; expires=${expiry}`;
     cookie += '; path=/; domain=.archive.org;';
     document.cookie = cookie;
+  }
+
+  toggleActionBarState(context, data = {}) {
+    this.dispatchEvent(
+      new CustomEvent('toggle-action-bar-state', {
+        detail: { context, data },
+      })
+    );
   }
 }

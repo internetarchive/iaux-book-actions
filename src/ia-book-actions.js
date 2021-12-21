@@ -22,6 +22,7 @@ export default class IABookActions extends LitElement {
       bwbPurchaseUrl: { type: String },
       barType: { type: String },
       sharedObserver: { attribute: false },
+      disable: { type: Boolean },
     };
   }
 
@@ -40,6 +41,7 @@ export default class IABookActions extends LitElement {
     this.primaryColor = 'primary';
     this.secondaryActions = [];
     this.lendingOptions = {};
+    this.disable = false;
   }
 
   disconnectedCallback() {
@@ -67,8 +69,7 @@ export default class IABookActions extends LitElement {
   }
 
   browseHasExpired() {
-    const browsingExpired = true;
-    const currStatus = { ...this.lendingStatus, browsingExpired };
+    const currStatus = { ...this.lendingStatus, browsingExpired: true };
     this.lendingStatus = currStatus;
   }
 
@@ -173,10 +174,35 @@ export default class IABookActions extends LitElement {
         .secondaryActions=${this.secondaryActions}
         .width=${this.width}
         .hasAdminAccess=${this.hasAdminAccess}
+        .disabled=${this.disable}
+        @toggle-action-bar-state=${this.toggleActionBarState}
       >
       </collapsible-action-group>
       ${this.textGroupTemplate} ${this.infoIconTemplate}
     `;
+  }
+
+  toggleActionBarState(e) {
+    // toggle activity loader
+    this.disable = !this.disable;
+
+    // update action bar states is book is not available to browse or borrow.
+    if (e?.detail?.data?.error) {
+      const errorMsg = e.detail.data.error;
+      if (errorMsg.match(/not available to browse/gm)) {
+        const currStatus = {
+          ...this.lendingStatus,
+          available_to_browse: false,
+        };
+        this.lendingStatus = currStatus;
+      } else if (errorMsg.match(/not available to borrow/gm)) {
+        const currStatus = {
+          ...this.lendingStatus,
+          available_to_borrow: false,
+        };
+        this.lendingStatus = currStatus;
+      }
+    }
   }
 
   get iconClass() {
