@@ -10,7 +10,7 @@ import './components/info-icon.js';
 import './components/show-dialog.js';
 
 import GetLendingActions from './core/services/get-lending-actions.js';
-import ArchiveOrgTokenPoller from './core/services/archive-token-poller.js';
+// import ArchiveOrgTokenPoller from './core/services/archive-token-poller.js';
 
 import { mobileContainerWidth } from './core/config/constants.js';
 
@@ -60,7 +60,6 @@ export default class IABookActions extends LitElement {
   }
 
   updated(changed) {
-    console.log(changed);
     if (changed.has('lendingStatus') || changed.has('bwbPurchaseUrl')) {
       this.setupLendingToolbarActions();
       this.update();
@@ -69,11 +68,6 @@ export default class IABookActions extends LitElement {
     if (changed.has('sharedObserver')) {
       this.disconnectResizeObserver();
       this.setupResizeObserver();
-    }
-
-    if (changed.has('dialogVisible')) {
-      // this.update();
-      // this.performUpdate()
     }
   }
 
@@ -156,13 +150,30 @@ export default class IABookActions extends LitElement {
     ) {
       this.startBrowseTimer();
 
+      // setTimeout(() => {
+      console.log('first...');
+      try {
+        console.log(
+          this.dispatchEvent(
+            new CustomEvent('bookLoanToken', {
+              detail: {
+                event: { category: 'action' },
+              },
+            })
+          )
+        );
+      } catch (error) {
+        console.log(error);
+      }
+
+      // }, 1000);
       // token poller start from here...
-      const tokenPoller = new ArchiveOrgTokenPoller(
-        this.identifier,
-        this.lendingStatus
-      );
-      tokenPoller.init();
-      return;
+      // const tokenPoller = new ArchiveOrgTokenPoller(
+      //   this.identifier,
+      //   this.lendingStatus
+      // );
+      // tokenPoller.init();
+      // return;
     }
   }
 
@@ -203,13 +214,19 @@ export default class IABookActions extends LitElement {
         .hasAdminAccess=${this.hasAdminAccess}
         .disabled=${this.disable}
         @toggle-action-bar-state=${this.toggleActionBarState}
+        @bookLoanToken=${this.dummy}
       >
       </collapsible-action-group>
       ${this.textGroupTemplate} ${this.infoIconTemplate}
     `;
   }
 
+  dummy() {
+    console.log('ddddd');
+  }
+
   toggleActionBarState(e) {
+    console.log(e);
     // toggle activity loader
     this.disable = !this.disable;
 

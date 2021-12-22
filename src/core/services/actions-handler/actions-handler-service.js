@@ -34,6 +34,12 @@ export default function ActionsHandlerService(options) {
     .then(response => {
       // test changes, (won't affect you)
       if (baseHost == '/demo/1' || baseHost == '/demo/') {
+        if (option.action == 'create_token') {
+          return {
+            error: 'loan token not found. please try again later.',
+          };
+        }
+
         return {
           error:
             'This book is not available to browse at this time. Please try again later.',
@@ -55,75 +61,10 @@ export default function ActionsHandlerService(options) {
       }
     });
 
-  // if (baseHost == '/demo/') {
-  //   // option.callback('{"error": "Unexpected error. Please email this link to openlibrary@archive.org with the subject: Unexpected error. Thank you."}');
-
+  //     showDialog(option.action, error);
   //   showDialog(
   //     option.action,
   //     '{"error": "Unexpected error. Please email this link to openlibrary@archive.org with the subject: Unexpected error. Thank you."}'
   //   );
   // }
-
-  // .catch(error => {
-  //   console.log('error', error);
-
-  //   if (baseHost == '/demo/') {
-  //     showDialog(
-  //       option.action,
-  //       '{"error": "Unexpected error. Please email this link to openlibrary@archive.org with the subject: Unexpected error. Thank you."}'
-  //     );
-  //     // showDialog('{"result": true, "token": "token-response"}');
-  //   } else {
-  //     showDialog(option.action, error);
-  //   }
-  // });
-}
-
-function showDialog(action, xhrResponse) {
-  const showDialog = document
-    .querySelector('ia-book-actions')
-    .shadowRoot.querySelector('show-dialog');
-
-  let title = 'Connection error';
-  let body = 'Please check internet connection.';
-  let actions = [
-    {
-      text: 'Okay',
-      callback: () => {
-        weAreBack();
-        this.updateToken();
-      },
-      className: 'ia-button primary',
-    },
-  ];
-
-  // Specific error
-  const data = JSON.parse(xhrResponse);
-  console.log('data', data);
-  if (data.error) {
-    title = 'Sorry!';
-    body = data.error;
-    // Only go back to item button on error
-    actions = [
-      {
-        text: 'Back to item details',
-        callback: () => {
-          URLHelper.goToUrl(this.lendingStatus.bookUrl);
-        },
-        className: 'ia-button primary',
-      },
-    ];
-  }
-
-  showDialog.opened = true;
-  showDialog.title = title;
-  showDialog.body = body;
-  if (action === 'create_token') {
-    showDialog.actions = actions;
-  }
-
-  // add overlay
-  // const overlayElement = document.createElement('div');
-  // overlayElement.id = 'ui-overlay';
-  // document.getElementsByTagName('body')[0].appendChild(overlayElement);
 }

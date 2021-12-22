@@ -24,18 +24,9 @@ export class ShowDialog extends LitElement {
     this.actions = [];
   }
 
-  updated(changed) {
-    // console.log(changed)
-    // if (changed.has('opened')) {
-    //   this.update();
-    //   // this.updateComplete();
-    // }
-  }
+  updated(changed) {}
 
   render() {
-    console.log(this.body);
-    // this.addOverlay();
-    console.log(this.opened);
     return html`
       <div
         class="${classMap({

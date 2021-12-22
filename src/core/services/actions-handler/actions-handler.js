@@ -1,6 +1,8 @@
 import { LitElement } from 'lit-element';
 import { URLHelper } from '../../config/url-helper.js';
+
 import ActionsHandlerService from './actions-handler-service.js';
+// import ArchiveOrgTokenPoller from '../archive-token-poller.js';
 
 /**
  * These are callback functions calling from actions-config.js file.
@@ -15,6 +17,7 @@ export default class ActionsHandler extends LitElement {
     super();
     this.identifier = identifier;
     this.ajaxTimeout = 6000;
+    this.pollingDelay = 5000; // 20000 ms = 20 sec
     this.bindEvents();
   }
 
@@ -29,6 +32,7 @@ export default class ActionsHandler extends LitElement {
   }
 
   bindEvents() {
+    console.log('event bind!');
     this.addEventListener('browseBook', ({ detail }) => {
       this.handleBrowseIt();
       const { category, action } = detail.event;
@@ -65,6 +69,22 @@ export default class ActionsHandler extends LitElement {
       this.sendEvent(category, action);
     });
 
+    this.addEventListener('bookLoanToken', ({ detail }) => {
+      console.log('token poll started...');
+      console.log(detail);
+      // return;
+      // Do an initial token, then set an interval
+
+      setInterval(() => {
+        this.handleLoanTokenPoller();
+      }, this.pollingDelay);
+
+      // const tokenPoller = ArchiveOrgTokenPoller(
+      //   this.identifier
+      // );
+      // tokenPoller.init();
+    });
+
     this.addEventListener('purchaseBook', ({ detail }) => {
       const { category, action } = detail.event;
       this.sendEvent(category, action);
@@ -94,7 +114,7 @@ export default class ActionsHandler extends LitElement {
       action: context,
       identifier: this.identifier,
       success: () => {
-        // this.handleReadItNow();
+        this.handleReadItNow();
       },
       error: data => {
         alert(data.error);
@@ -168,6 +188,25 @@ export default class ActionsHandler extends LitElement {
       error: data => {
         alert(data.error);
         this.toggleActionBarState(context);
+      },
+    });
+  }
+
+  handleLoanTokenPoller() {
+    const context = 'create_token';
+    this.toggleActionBarState(context);
+
+    ActionsHandlerService({
+      identifier: this.identifier,
+      action: context,
+      loader: false,
+      success: () => {
+        this.handleReadItNow();
+      },
+      error: data => {
+        alert(data.error);
+        this.toggleActionBarState(context);
+        // this.showDialog(context, data);
       },
     });
   }

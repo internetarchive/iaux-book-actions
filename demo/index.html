@@ -156,7 +156,7 @@
         if (e.target.value === 'user_has_browsed') {
           lendingStatus1.user_has_browsed = true;
           lendingStatus1.available_to_browse = false;
-          lendingStatus1.secondsLeftOnLoan = 10;
+          lendingStatus1.secondsLeftOnLoan = 60;
           lendingStatus1.browsingExpired = false;
         } else if(e.target.value === 'browsingExpired') {
           lendingStatus1.user_has_browsed = true;
@@ -213,6 +213,7 @@
       })
     });
 </script>
+
   <div>
     <fieldset>
       <legend>Dev testing for book title bar</legend>
