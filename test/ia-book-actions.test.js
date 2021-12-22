@@ -138,7 +138,6 @@ describe('Borrow status actions', () => {
     const el = await fixture(
       container({
         userid: '@user1',
-        identifier: 'foobar',
         lendingStatus: {
           is_lendable: true,
           available_to_browse: true,
