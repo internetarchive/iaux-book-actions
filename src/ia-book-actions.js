@@ -10,11 +10,10 @@ import './components/info-icon.js';
 import './components/show-dialog.js';
 
 import GetLendingActions from './core/services/get-lending-actions.js';
-// import ArchiveOrgTokenPoller from './core/services/archive-token-poller.js';
+import ActionsHandler from './core/services/actions-handler/actions-handler.js';
 
 import { mobileContainerWidth } from './core/config/constants.js';
-
-export default class IABookActions extends LitElement {
+export default class IABookActions extends ActionsHandler {
   static get properties() {
     return {
       userid: { type: String },
@@ -26,6 +25,7 @@ export default class IABookActions extends LitElement {
       barType: { type: String },
       sharedObserver: { attribute: false },
       disable: { type: Boolean },
+      dialogVisible: { type: Boolean },
     };
   }
 
@@ -45,6 +45,7 @@ export default class IABookActions extends LitElement {
     this.secondaryActions = [];
     this.lendingOptions = {};
     this.disable = false;
+    this.dialogVisible = false;
   }
 
   disconnectedCallback() {
@@ -150,30 +151,13 @@ export default class IABookActions extends LitElement {
     ) {
       this.startBrowseTimer();
 
-      // setTimeout(() => {
-      console.log('first...');
-      try {
-        console.log(
-          this.dispatchEvent(
-            new CustomEvent('bookLoanToken', {
-              detail: {
-                event: { category: 'action' },
-              },
-            })
-          )
-        );
-      } catch (error) {
-        console.log(error);
-      }
-
-      // }, 1000);
-      // token poller start from here...
-      // const tokenPoller = new ArchiveOrgTokenPoller(
-      //   this.identifier,
-      //   this.lendingStatus
-      // );
-      // tokenPoller.init();
-      // return;
+      this.dispatchEvent(
+        new CustomEvent('bookLoanToken', {
+          detail: {
+            event: { category: 'action' },
+          },
+        })
+      );
     }
   }
 
@@ -184,8 +168,10 @@ export default class IABookActions extends LitElement {
       </section>
 
       <show-dialog
+        .title="Sorry!"
+        .body=${this.dialogBody}
+        .actions=${this.dialogActions}
         ?opened="${this.dialogVisible}"
-        body=${this.dialogBody}
         @dialog.close="${() => this.closeDialog()}"
       ></show-dialog>
     `;
@@ -214,21 +200,27 @@ export default class IABookActions extends LitElement {
         .hasAdminAccess=${this.hasAdminAccess}
         .disabled=${this.disable}
         @toggle-action-bar-state=${this.toggleActionBarState}
-        @bookLoanToken=${this.dummy}
       >
       </collapsible-action-group>
       ${this.textGroupTemplate} ${this.infoIconTemplate}
     `;
   }
 
-  dummy() {
-    console.log('ddddd');
-  }
-
   toggleActionBarState(e) {
-    console.log(e);
     // toggle activity loader
     this.disable = !this.disable;
+
+    if (e == 'create_token') {
+      this.dialogVisible = true;
+      this.dialogBody = 'Unexpected error. loan does not exist';
+      this.dialogActions = [
+        {
+          className: 'ia-button primary',
+          text: 'Back to Item Details',
+          action: 'callback',
+        },
+      ];
+    }
 
     // update action bar states is book is not available to browse or borrow.
     if (e?.detail?.data?.error) {

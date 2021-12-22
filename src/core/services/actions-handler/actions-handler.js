@@ -32,7 +32,7 @@ export default class ActionsHandler extends LitElement {
   }
 
   bindEvents() {
-    console.log('event bind!');
+    console.log('event binded!');
     this.addEventListener('browseBook', ({ detail }) => {
       this.handleBrowseIt();
       const { category, action } = detail.event;
@@ -69,20 +69,12 @@ export default class ActionsHandler extends LitElement {
       this.sendEvent(category, action);
     });
 
-    this.addEventListener('bookLoanToken', ({ detail }) => {
+    this.addEventListener('bookLoanToken', () => {
       console.log('token poll started...');
-      console.log(detail);
-      // return;
       // Do an initial token, then set an interval
-
-      setInterval(() => {
-        this.handleLoanTokenPoller();
-      }, this.pollingDelay);
-
-      // const tokenPoller = ArchiveOrgTokenPoller(
-      //   this.identifier
-      // );
-      // tokenPoller.init();
+      // setInterval(() => {
+      this.handleLoanTokenPoller();
+      // }, this.pollingDelay);
     });
 
     this.addEventListener('purchaseBook', ({ detail }) => {
@@ -204,9 +196,8 @@ export default class ActionsHandler extends LitElement {
         this.handleReadItNow();
       },
       error: data => {
-        alert(data.error);
-        this.toggleActionBarState(context);
-        // this.showDialog(context, data);
+        console.log('data', data);
+        this.toggleActionBarState(context, data);
       },
     });
   }
@@ -259,6 +250,7 @@ export default class ActionsHandler extends LitElement {
   }
 
   toggleActionBarState(context, data = {}) {
+    console.log(context, data);
     this.dispatchEvent(
       new CustomEvent('toggle-action-bar-state', {
         detail: { context, data },

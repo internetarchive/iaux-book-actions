@@ -8,10 +8,10 @@ import buttonBaseStyle from '../assets/styles/ia-button.js';
 export class ShowDialog extends LitElement {
   static get properties() {
     return {
-      opened: { type: Boolean },
-      body: { type: String },
       title: { type: String },
+      body: { type: String },
       actions: { type: Array },
+      opened: { type: Boolean },
     };
   }
 
@@ -24,8 +24,6 @@ export class ShowDialog extends LitElement {
     this.actions = [];
   }
 
-  updated(changed) {}
-
   render() {
     return html`
       <div
@@ -37,12 +35,10 @@ export class ShowDialog extends LitElement {
       >
         <div class="dialog-head">
           ${this.title}
-          <span
+          <ia-icon-close
             @click="${() =>
               this.dispatchEvent(new CustomEvent('dialog.close'))}"
-          >
-            <ia-icon-close></ia-icon-close
-          ></span>
+          ></ia-icon-close>
         </div>
         <div class="dialog-body">${this.body}</div>
         <div class="dialog-foot">${this.renderActionButton()}</div>
@@ -60,6 +56,9 @@ export class ShowDialog extends LitElement {
   }
 
   renderActionButton() {
+    if (!this.actions);
+    return;
+
     return this.actions.map(
       action =>
         html`<button class=${action.className} @click=${action.callback}>

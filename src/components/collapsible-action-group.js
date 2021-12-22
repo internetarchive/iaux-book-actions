@@ -133,10 +133,10 @@ export class CollapsibleActionGroup extends ActionsHandler {
         @click=${this.toggleDropdown}
       >
         ${this.dropdownArrow}
-        <ul class="dropdown-content ${this.dropdownState}">
-          ${this.getPrimaryItems}
-        </ul>
       </button>
+      <ul class="dropdown-content ${this.dropdownState}">
+        ${this.getPrimaryItems}
+      </ul>
     `;
   }
 

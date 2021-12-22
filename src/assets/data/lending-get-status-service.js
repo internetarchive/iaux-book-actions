@@ -87,7 +87,7 @@ export const canBrowseAndBorrow = {
   user_can_claim_waitlist: false,
   user_has_acs_borrowed: false,
   user_has_borrowed: false,
-  user_has_browsed: true,
+  user_has_browsed: false,
   user_is_printdisabled: false,
   user_loan_count: 1,
   user_loan_record: {
