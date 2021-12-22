@@ -6,6 +6,9 @@ export default css`
     height: 3.5rem;
     padding: 1rem 0;
   }
+  .actiongroup {
+    display: flex;
+  }
   .action-buttons {
     display: inline-flex;
     align-items: center;

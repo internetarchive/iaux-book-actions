@@ -18,7 +18,7 @@ export default function ActionsHandlerService(options) {
 
   let baseHost = '';
   if (window.location.pathname === '/demo/') {
-    baseHost = `/demo/1`;
+    baseHost = `/demo/`;
   } else {
     baseHost = `/services/loans/loan`;
   }
@@ -36,8 +36,7 @@ export default function ActionsHandlerService(options) {
       if (baseHost == '/demo/1' || baseHost == '/demo/') {
         return {
           error:
-            'This book is not available to browse at this time. Please try again later.',
-          // error: 'This book is not available to borrow at this time. Please try again later.',
+            'This book is not available to borrow at this time. Please try again later.',
         };
       }
 
