@@ -88,7 +88,7 @@ export default class ActionsHandler extends LitElement {
 
   handleBrowseIt() {
     const context = 'browse_book';
-    this.toggleActionBarState(context);
+    this.ActionError(context);
 
     ActionsHandlerService({
       action: context,
@@ -98,14 +98,14 @@ export default class ActionsHandler extends LitElement {
       },
       error: data => {
         alert(data.error);
-        this.toggleActionBarState(context, data);
+        this.ActionError(context, data);
       },
     });
   }
 
   handleReturnIt() {
     const context = 'return_loan';
-    this.toggleActionBarState(context);
+    this.ActionError(context);
 
     ActionsHandlerService({
       action: context,
@@ -116,14 +116,14 @@ export default class ActionsHandler extends LitElement {
       },
       error: data => {
         alert(data.error);
-        this.toggleActionBarState(context);
+        this.ActionError(context);
       },
     });
   }
 
   handleBorrowIt() {
     const context = 'borrow_book';
-    this.toggleActionBarState(context);
+    this.ActionError(context);
 
     ActionsHandlerService({
       action: context,
@@ -133,14 +133,14 @@ export default class ActionsHandler extends LitElement {
       },
       error: data => {
         alert(data.error);
-        this.toggleActionBarState(context, data);
+        this.ActionError(context, data);
       },
     });
   }
 
   handleReserveIt() {
     const context = 'join_waitlist';
-    this.toggleActionBarState(context);
+    this.ActionError(context);
 
     ActionsHandlerService({
       action: context,
@@ -150,14 +150,14 @@ export default class ActionsHandler extends LitElement {
       },
       error: data => {
         alert(data.error);
-        this.toggleActionBarState(context);
+        this.ActionError(context);
       },
     });
   }
 
   handleRemoveFromWaitingList() {
     const context = 'leave_waitlist';
-    this.toggleActionBarState(context);
+    this.ActionError(context);
 
     ActionsHandlerService({
       action: context,
@@ -167,7 +167,7 @@ export default class ActionsHandler extends LitElement {
       },
       error: data => {
         alert(data.error);
-        this.toggleActionBarState(context);
+        this.ActionError(context);
       },
     });
   }
@@ -219,9 +219,9 @@ export default class ActionsHandler extends LitElement {
     document.cookie = cookie;
   }
 
-  toggleActionBarState(context, data = {}) {
+  ActionError(context, data = {}) {
     this.dispatchEvent(
-      new CustomEvent('toggle-action-bar-state', {
+      new CustomEvent('lendingActionError', {
         detail: { context, data },
       })
     );

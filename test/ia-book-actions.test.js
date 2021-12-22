@@ -106,6 +106,64 @@ describe('Primary Actions data', () => {
 });
 
 describe('Borrow status actions', () => {
+  it('Update available_to_browse key when book is not available to borrow', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        lendingStatus: {
+          is_lendable: true,
+          available_to_browse: true,
+          available_to_borrow: true,
+        },
+      })
+    );
+
+    const errorEvent = new Event('lendingActionError');
+    el.addEventListener('lendingActionError', () => {
+      el.handleLendingActionError({
+        detail: {
+          context: 'browse_book',
+          data: { error: 'not available to borrow' },
+        },
+      });
+    });
+    el.dispatchEvent(errorEvent);
+    await el.updateComplete;
+
+    expect(el.lendingStatus.available_to_browse).to.be.false;
+    expect(el.primaryActions[0].text).to.equal('Borrow for 14 days');
+  });
+
+  it('Update available_to_borrow key when book is not available to borrow', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: {
+          is_lendable: true,
+          available_to_browse: true,
+          available_to_borrow: true,
+        },
+      })
+    );
+
+    const errorEvent = new Event('lendingActionError');
+    el.addEventListener('lendingActionError', () => {
+      el.handleLendingActionError({
+        detail: {
+          context: 'borrow_book',
+          data: { error: 'not available to borrow' },
+        },
+      });
+    });
+    el.dispatchEvent(errorEvent);
+    await el.updateComplete;
+
+    // removed available_to_borrow from lending bar
+    expect(el.lendingStatus.available_to_borrow).to.be.false;
+    expect(el.primaryActions[0].text).to.equal('Borrow for 1 hour');
+  });
+
   it('Check action for borrowable book without user', async () => {
     const el = await fixture(
       container({

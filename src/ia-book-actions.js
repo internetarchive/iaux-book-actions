@@ -175,33 +175,35 @@ export default class IABookActions extends LitElement {
         .width=${this.width}
         .hasAdminAccess=${this.hasAdminAccess}
         .disabled=${this.disable}
-        @toggle-action-bar-state=${this.toggleActionBarState}
+        @lendingActionError=${this.handleLendingActionError}
       >
       </collapsible-action-group>
       ${this.textGroupTemplate} ${this.infoIconTemplate}
     `;
   }
 
-  toggleActionBarState(e) {
+  handleLendingActionError(e) {
     // toggle activity loader
     this.disable = !this.disable;
 
+    const context = e?.detail?.context;
+    const errorMsg = e?.detail?.data?.error;
+    console.log(errorMsg);
     // update action bar states is book is not available to browse or borrow.
-    if (e?.detail?.data?.error) {
-      const errorMsg = e.detail.data.error;
-      if (errorMsg.match(/not available to browse/gm)) {
-        const currStatus = {
+    if (errorMsg.match(/not available to borrow/gm)) {
+      let currStatus = this.lendingStatus;
+      if (context === 'browse_book') {
+        currStatus = {
           ...this.lendingStatus,
           available_to_browse: false,
         };
-        this.lendingStatus = currStatus;
-      } else if (errorMsg.match(/not available to borrow/gm)) {
-        const currStatus = {
+      } else if (context === 'borrow_book') {
+        currStatus = {
           ...this.lendingStatus,
           available_to_borrow: false,
         };
-        this.lendingStatus = currStatus;
       }
+      this.lendingStatus = currStatus;
     }
   }
 
