@@ -148,7 +148,7 @@ export default class IABookActions extends LitElement {
 
     this.bookHasBrowsed =
       this.lendingStatus.user_has_browsed &&
-      !this.lendingStatus.browseHasExpired;
+      !this.lendingStatus.browsingExpired;
     if (this.bookHasBrowsed) {
       // start time for 1-hour borrowed book.
       // when 1 hour is completed, we shows browse-again button

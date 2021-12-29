@@ -50,9 +50,8 @@ export class CollapsibleActionGroup extends ActionsHandler {
   }
 
   firstUpdated() {
-    console.log(this.bookHasBrowsed);
     if (this.bookHasBrowsed) {
-      // this.emitLoanToken();
+      // this.emitFetchLoanToken();
     }
   }
 
@@ -62,19 +61,18 @@ export class CollapsibleActionGroup extends ActionsHandler {
         this.resetActions();
       }
     }
+
     if (changed.has('bookHasBrowsed')) {
-      this.emitLoanToken();
+      this.emitFetchLoanToken();
     }
   }
 
-  emitLoanToken() {
-    console.log('oneeeeee');
+  emitFetchLoanToken() {
     this.dispatchEvent(
       new CustomEvent('bookLoanToken', {
         detail: {
           event: { category: 'action' },
-          bubbles: true,
-          cancelable: true,
+          bookHasBrowsed: this.bookHasBrowsed,
         },
       })
     );

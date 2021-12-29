@@ -17,7 +17,8 @@ export default class ActionsHandler extends LitElement {
     super();
     this.identifier = identifier;
     this.ajaxTimeout = 6000;
-    this.pollingDelay = 3000; // 20000 ms = 20 sec
+    this.loanTokenPollingDelay = 3000; // 20000 ms = 20 sec
+    this.loanTokenInterval = null;
     this.bindEvents();
   }
 
@@ -69,12 +70,20 @@ export default class ActionsHandler extends LitElement {
       this.sendEvent(category, action);
     });
 
-    this.addEventListener('bookLoanToken', () => {
-      console.log('token poll started...');
+    this.addEventListener('bookLoanToken', ({ detail }) => {
+      const bookHasBrowsed = detail?.bookHasBrowsed;
+
       // Do an initial token, then set an interval
-      setInterval(() => {
-        this.handleLoanTokenPoller();
-      }, this.pollingDelay);
+      if (bookHasBrowsed) {
+        console.log('token poll started...');
+
+        this.loanTokenInterval = setInterval(() => {
+          this.handleLoanTokenPoller();
+        }, this.loanTokenPollingDelay);
+      } else {
+        // if book is not browsed, just clear token polling interval
+        clearInterval(this.loanTokenInterval);
+      }
     });
 
     this.addEventListener('purchaseBook', ({ detail }) => {
@@ -196,10 +205,17 @@ export default class ActionsHandler extends LitElement {
         this.handleReadItNow();
       },
       error: data => {
-        console.log('data', data);
         this.ActionError(context, data);
       },
     });
+  }
+
+  ActionError(context, data = {}) {
+    this.dispatchEvent(
+      new CustomEvent('lendingActionError', {
+        detail: { context, data },
+      })
+    );
   }
 
   handleLoginOk() {
@@ -247,13 +263,5 @@ export default class ActionsHandler extends LitElement {
     cookie += `; expires=${expiry}`;
     cookie += '; path=/; domain=.archive.org;';
     document.cookie = cookie;
-  }
-
-  ActionError(context, data = {}) {
-    this.dispatchEvent(
-      new CustomEvent('lendingActionError', {
-        detail: { context, data },
-      })
-    );
   }
 }
