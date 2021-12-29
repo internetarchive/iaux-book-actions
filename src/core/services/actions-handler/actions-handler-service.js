@@ -18,7 +18,7 @@ export default function ActionsHandlerService(options) {
 
   let baseHost = '';
   if (window.location.pathname === '/demo/') {
-    baseHost = `/demo/1`;
+    baseHost = `/demo/`;
   } else {
     baseHost = `/services/loans/loan`;
   }
