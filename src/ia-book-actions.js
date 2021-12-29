@@ -10,10 +10,9 @@ import './components/info-icon.js';
 import './components/show-dialog.js';
 
 import GetLendingActions from './core/services/get-lending-actions.js';
-import ActionsHandler from './core/services/actions-handler/actions-handler.js';
-
 import { mobileContainerWidth } from './core/config/constants.js';
-export default class IABookActions extends ActionsHandler {
+
+export default class IABookActions extends LitElement {
   static get properties() {
     return {
       userid: { type: String },
@@ -26,6 +25,7 @@ export default class IABookActions extends ActionsHandler {
       sharedObserver: { attribute: false },
       disable: { type: Boolean },
       dialogVisible: { type: Boolean },
+      bookHasBrowsed: { type: Boolean },
     };
   }
 
@@ -44,6 +44,7 @@ export default class IABookActions extends ActionsHandler {
     this.primaryColor = 'primary';
     this.secondaryActions = [];
     this.lendingOptions = {};
+    this.bookHasBrowsed = false;
     this.disable = false;
     this.dialogVisible = false;
   }
@@ -145,19 +146,13 @@ export default class IABookActions extends ActionsHandler {
       return action != null;
     });
 
-    if (
+    this.bookHasBrowsed =
       this.lendingStatus.user_has_browsed &&
-      !this.lendingStatus.browseHasExpired
-    ) {
+      !this.lendingStatus.browseHasExpired;
+    if (this.bookHasBrowsed) {
+      // start time for 1-hour borrowed book.
+      // when 1 hour is completed, we shows browse-again button
       this.startBrowseTimer();
-
-      this.dispatchEvent(
-        new CustomEvent('bookLoanToken', {
-          detail: {
-            event: { category: 'action' },
-          },
-        })
-      );
     }
   }
 
@@ -199,6 +194,7 @@ export default class IABookActions extends ActionsHandler {
         .width=${this.width}
         .hasAdminAccess=${this.hasAdminAccess}
         .disabled=${this.disable}
+        .bookHasBrowsed=${this.bookHasBrowsed}
         @lendingActionError=${this.handleLendingActionError}
       >
       </collapsible-action-group>
@@ -210,7 +206,10 @@ export default class IABookActions extends ActionsHandler {
     // toggle activity loader
     this.disable = !this.disable;
 
-    if (e == 'create_token') {
+    const context = e?.detail?.context;
+    const errorMsg = e?.detail?.data?.error;
+
+    if (context == 'create_token') {
       this.dialogVisible = true;
       this.dialogBody = 'Unexpected error. loan does not exist';
       this.dialogActions = [
@@ -220,10 +219,8 @@ export default class IABookActions extends ActionsHandler {
           action: 'callback',
         },
       ];
+      return; // early exit for create-token error
     }
-
-    const context = e?.detail?.context;
-    const errorMsg = e?.detail?.data?.error;
 
     // update action bar state if book is not available to browse or borrow.
     if (errorMsg && errorMsg.match(/not available to borrow/gm)) {

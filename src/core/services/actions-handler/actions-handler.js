@@ -17,7 +17,7 @@ export default class ActionsHandler extends LitElement {
     super();
     this.identifier = identifier;
     this.ajaxTimeout = 6000;
-    this.pollingDelay = 5000; // 20000 ms = 20 sec
+    this.pollingDelay = 3000; // 20000 ms = 20 sec
     this.bindEvents();
   }
 
@@ -72,9 +72,9 @@ export default class ActionsHandler extends LitElement {
     this.addEventListener('bookLoanToken', () => {
       console.log('token poll started...');
       // Do an initial token, then set an interval
-      // setInterval(() => {
-      this.handleLoanTokenPoller();
-      // }, this.pollingDelay);
+      setInterval(() => {
+        this.handleLoanTokenPoller();
+      }, this.pollingDelay);
     });
 
     this.addEventListener('purchaseBook', ({ detail }) => {
@@ -186,7 +186,7 @@ export default class ActionsHandler extends LitElement {
 
   handleLoanTokenPoller() {
     const context = 'create_token';
-    this.toggleActionBarState(context);
+    this.ActionError(context);
 
     ActionsHandlerService({
       identifier: this.identifier,
@@ -197,7 +197,7 @@ export default class ActionsHandler extends LitElement {
       },
       error: data => {
         console.log('data', data);
-        this.toggleActionBarState(context, data);
+        this.ActionError(context, data);
       },
     });
   }

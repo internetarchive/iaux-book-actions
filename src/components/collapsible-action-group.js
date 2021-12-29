@@ -27,6 +27,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
       hasAdminAccess: { type: Boolean },
       dropdownArrow: { type: String },
       disabled: { type: Boolean },
+      bookHasBrowsed: { type: Boolean },
     };
   }
 
@@ -45,6 +46,14 @@ export class CollapsibleActionGroup extends ActionsHandler {
     this.title = '';
     this.loaderIcon = 'https://archive.org/upload/images/tree/loading.gif';
     this.disabled = false;
+    this.bookHasBrowsed = false;
+  }
+
+  firstUpdated() {
+    console.log(this.bookHasBrowsed);
+    if (this.bookHasBrowsed) {
+      // this.emitLoanToken();
+    }
   }
 
   updated(changed) {
@@ -53,6 +62,22 @@ export class CollapsibleActionGroup extends ActionsHandler {
         this.resetActions();
       }
     }
+    if (changed.has('bookHasBrowsed')) {
+      this.emitLoanToken();
+    }
+  }
+
+  emitLoanToken() {
+    console.log('oneeeeee');
+    this.dispatchEvent(
+      new CustomEvent('bookLoanToken', {
+        detail: {
+          event: { category: 'action' },
+          bubbles: true,
+          cancelable: true,
+        },
+      })
+    );
   }
 
   /**
@@ -134,6 +159,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
       >
         ${this.dropdownArrow}
       </button>
+
       <ul class="dropdown-content ${this.dropdownState}">
         ${this.getPrimaryItems}
       </ul>
