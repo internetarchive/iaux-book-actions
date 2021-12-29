@@ -163,7 +163,7 @@ export default class IABookActions extends LitElement {
       </section>
 
       <show-dialog
-        .title="Sorry!"
+        .title=${this.dialogTitle}
         .body=${this.dialogBody}
         .actions=${this.dialogActions}
         ?opened="${this.dialogVisible}"
@@ -211,12 +211,13 @@ export default class IABookActions extends LitElement {
 
     if (context == 'create_token') {
       this.dialogVisible = true;
+      this.dialogTitle = 'Sorry!';
       this.dialogBody = 'Unexpected error. loan does not exist';
       this.dialogActions = [
         {
           className: 'ia-button primary',
           text: 'Back to Item Details',
-          action: 'callback',
+          href: `/details/${this.lendingStatus.bookUrl}`,
         },
       ];
       return; // early exit for create-token error

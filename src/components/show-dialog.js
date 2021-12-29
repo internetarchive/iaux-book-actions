@@ -17,11 +17,19 @@ export class ShowDialog extends LitElement {
 
   constructor() {
     super();
-    this.opened = false;
     this.title = 'Error';
     this.body =
       'Unexpected error: loan does not exist. Please try deleting your archive.org cookie.';
     this.actions = [];
+    this.opened = false;
+  }
+
+  updated(changed) {
+    if (changed.has('opened')) {
+      this.removeOverlay();
+    } else {
+      this.addOverlay();
+    }
   }
 
   render() {
@@ -41,27 +49,30 @@ export class ShowDialog extends LitElement {
           ></ia-icon-close>
         </div>
         <div class="dialog-body">${this.body}</div>
-        <div class="dialog-foot">${this.renderActionButton()}</div>
+        <div class="dialog-foot">${this.renderActionButton}</div>
       </div>
     `;
   }
 
   addOverlay() {
-    if (this.opened) {
+    if (this.opened && !document.getElementById('ui-overlay')) {
       const overlayElement = document.createElement('div');
       overlayElement.id = 'ui-overlay';
       document.getElementsByTagName('body')[0].appendChild(overlayElement);
     }
-    return;
   }
 
-  renderActionButton() {
-    if (!this.actions);
-    return;
+  removeOverlay() {
+    const overlayElement = document.getElementById('ui-overlay');
+    if (overlayElement) overlayElement.remove();
+  }
+
+  get renderActionButton() {
+    if (!this.actions) return;
 
     return this.actions.map(
       action =>
-        html`<button class=${action.className} @click=${action.callback}>
+        html`<a class=${action.className} href=${action.href}>
           ${action.text}
         </button>`
     );
