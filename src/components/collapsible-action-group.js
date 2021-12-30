@@ -51,7 +51,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
 
   firstUpdated() {
     if (this.bookHasBrowsed) {
-      // this.emitFetchLoanToken();
+      this.emitFetchLoanToken();
     }
   }
 
@@ -62,6 +62,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
       }
     }
 
+    // this is execute on demo page only
     if (changed.has('bookHasBrowsed')) {
       this.emitFetchLoanToken();
     }
@@ -69,7 +70,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
 
   emitFetchLoanToken() {
     this.dispatchEvent(
-      new CustomEvent('bookLoanToken', {
+      new CustomEvent('fetchLoanToken', {
         detail: {
           event: { category: 'action' },
           bookHasBrowsed: this.bookHasBrowsed,

@@ -1,8 +1,6 @@
 import { LitElement } from 'lit-element';
 import { URLHelper } from '../../config/url-helper.js';
-
 import ActionsHandlerService from './actions-handler-service.js';
-// import ArchiveOrgTokenPoller from '../archive-token-poller.js';
 
 /**
  * These are callback functions calling from actions-config.js file.
@@ -17,7 +15,7 @@ export default class ActionsHandler extends LitElement {
     super();
     this.identifier = identifier;
     this.ajaxTimeout = 6000;
-    this.loanTokenPollingDelay = 3000; // 20000 ms = 20 sec
+    this.loanTokenPollingDelay = 5000; // 20000 ms = 20 sec
     this.loanTokenInterval = null;
     this.bindEvents();
   }
@@ -33,7 +31,6 @@ export default class ActionsHandler extends LitElement {
   }
 
   bindEvents() {
-    console.log('event binded!');
     this.addEventListener('browseBook', ({ detail }) => {
       this.handleBrowseIt();
       const { category, action } = detail.event;
@@ -70,7 +67,7 @@ export default class ActionsHandler extends LitElement {
       this.sendEvent(category, action);
     });
 
-    this.addEventListener('bookLoanToken', ({ detail }) => {
+    this.addEventListener('fetchLoanToken', ({ detail }) => {
       const bookHasBrowsed = detail?.bookHasBrowsed;
 
       // Do an initial token, then set an interval
@@ -118,7 +115,7 @@ export default class ActionsHandler extends LitElement {
         this.handleReadItNow();
       },
       error: data => {
-        alert(data.error);
+        // alert(data.error);
         this.ActionError(context, data);
       },
     });
@@ -136,8 +133,8 @@ export default class ActionsHandler extends LitElement {
         URLHelper.goToUrl(`/details/${this.identifier}`, true);
       },
       error: data => {
-        alert(data.error);
-        this.ActionError(context);
+        // alert(data.error);
+        this.ActionError(context, data);
       },
     });
   }
@@ -153,7 +150,7 @@ export default class ActionsHandler extends LitElement {
         this.handleReadItNow();
       },
       error: data => {
-        alert(data.error);
+        // alert(data.error);
         this.ActionError(context, data);
       },
     });
@@ -170,8 +167,8 @@ export default class ActionsHandler extends LitElement {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
       },
       error: data => {
-        alert(data.error);
-        this.ActionError(context);
+        // alert(data.error);
+        this.ActionError(context, data);
       },
     });
   }
@@ -187,8 +184,8 @@ export default class ActionsHandler extends LitElement {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
       },
       error: data => {
-        alert(data.error);
-        this.ActionError(context);
+        // alert(data.error);
+        this.ActionError(context, data);
       },
     });
   }

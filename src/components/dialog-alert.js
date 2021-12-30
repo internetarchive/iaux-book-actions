@@ -25,10 +25,10 @@ export class ShowDialog extends LitElement {
   }
 
   updated(changed) {
-    if (changed.has('opened')) {
-      this.removeOverlay();
-    } else {
+    if (changed.get('opened') === false) {
       this.addOverlay();
+    } else {
+      this.removeOverlay();
     }
   }
 
@@ -54,6 +54,7 @@ export class ShowDialog extends LitElement {
     `;
   }
 
+  /* exceptional case to use dom element */
   addOverlay() {
     if (this.opened && !document.getElementById('ui-overlay')) {
       const overlayElement = document.createElement('div');
@@ -62,6 +63,7 @@ export class ShowDialog extends LitElement {
     }
   }
 
+  /* exceptional case to use dom element */
   removeOverlay() {
     const overlayElement = document.getElementById('ui-overlay');
     if (overlayElement) overlayElement.remove();
@@ -90,8 +92,8 @@ export class ShowDialog extends LitElement {
         border-radius: 1.2rem;
         z-index: 3000;
         flex-direction: column;
-        width: 400px;
-        max-width: 500px;
+        min-width: 300px;
+        max-width: 400px;
         left: 50%;
         transform: translateX(-50%);
 
@@ -110,8 +112,9 @@ export class ShowDialog extends LitElement {
         border: 1px solid #d8d8d8;
       }
       ia-icon-close {
-        float: right;
-        display: inline-block;
+        position: absolute;
+        right: 0.5rem;
+        top: 0.5rem;
         width: 2.5rem;
         height: 2.5rem;
         vertical-align: middle;

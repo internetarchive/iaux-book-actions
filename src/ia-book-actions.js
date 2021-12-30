@@ -1,4 +1,4 @@
-/* eslint-disable */
+/* eslint-disable camelcase */
 import { html, css, LitElement } from 'lit-element';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
@@ -7,7 +7,7 @@ import './components/collapsible-action-group.js';
 import './components/book-title-bar.js';
 import './components/text-group.js';
 import './components/info-icon.js';
-import './components/show-dialog.js';
+import './components/dialog-alert.js';
 
 import GetLendingActions from './core/services/get-lending-actions.js';
 import { mobileContainerWidth } from './core/config/constants.js';
@@ -44,9 +44,9 @@ export default class IABookActions extends LitElement {
     this.primaryColor = 'primary';
     this.secondaryActions = [];
     this.lendingOptions = {};
-    this.bookHasBrowsed = false;
-    this.disable = false;
+    this.disableActionGroup = false;
     this.dialogVisible = false;
+    this.bookHasBrowsed = false;
   }
 
   disconnectedCallback() {
@@ -150,7 +150,7 @@ export default class IABookActions extends LitElement {
       this.lendingStatus.user_has_browsed &&
       !this.lendingStatus.browsingExpired;
     if (this.bookHasBrowsed) {
-      // start time for 1-hour borrowed book.
+      // start timer for 1-hour borrowed book.
       // when 1 hour is completed, we shows browse-again button
       this.startBrowseTimer();
     }
@@ -193,7 +193,7 @@ export default class IABookActions extends LitElement {
         .secondaryActions=${this.secondaryActions}
         .width=${this.width}
         .hasAdminAccess=${this.hasAdminAccess}
-        .disabled=${this.disable}
+        .disabled=${this.disableActionGroup}
         .bookHasBrowsed=${this.bookHasBrowsed}
         @lendingActionError=${this.handleLendingActionError}
       >
@@ -204,24 +204,15 @@ export default class IABookActions extends LitElement {
 
   handleLendingActionError(e) {
     // toggle activity loader
-    this.disable = !this.disable;
+    this.disableActionGroup = !this.disableActionGroup;
 
     const context = e?.detail?.context;
     const errorMsg = e?.detail?.data?.error;
 
-    if (context == 'create_token') {
-      this.dialogVisible = true;
-      this.dialogTitle = 'Sorry!';
-      this.dialogBody = 'Unexpected error. loan does not exist';
-      this.dialogActions = [
-        {
-          className: 'ia-button primary',
-          text: 'Back to Item Details',
-          href: `/details/${this.lendingStatus.bookUrl}`,
-        },
-      ];
-      return; // early exit for create-token error
-    }
+    // early exist if you don't have errorMsg
+    if (!errorMsg) return;
+
+    this.initializeDialogAlert(context, errorMsg);
 
     // update action bar state if book is not available to browse or borrow.
     if (errorMsg && errorMsg.match(/not available to borrow/gm)) {
@@ -238,6 +229,23 @@ export default class IABookActions extends LitElement {
         };
       }
       this.lendingStatus = currStatus;
+    }
+  }
+
+  /* set props value to show dialog alert */
+  initializeDialogAlert(context, errorMsg) {
+    this.dialogVisible = true;
+    this.dialogTitle = 'Sorry!';
+    this.dialogBody = errorMsg;
+
+    if (context === 'create_token') {
+      this.dialogActions = [
+        {
+          className: 'ia-button primary',
+          text: 'Back to Item Details',
+          href: `/details/${this.lendingStatus.bookUrl}`,
+        },
+      ];
     }
   }
 

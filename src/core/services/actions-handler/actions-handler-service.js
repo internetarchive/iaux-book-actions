@@ -58,11 +58,4 @@ export default function ActionsHandlerService(options) {
         option?.error(data);
       }
     });
-
-  //     showDialog(option.action, error);
-  //   showDialog(
-  //     option.action,
-  //     '{"error": "Unexpected error. Please email this link to openlibrary@archive.org with the subject: Unexpected error. Thank you."}'
-  //   );
-  // }
 }

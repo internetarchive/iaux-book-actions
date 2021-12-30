@@ -1,13 +1,14 @@
-import { html, css, LitElement } from 'lit-element';
+import { html, css } from 'lit-element';
 
 import {
   analyticsCategories,
   analyticsActions,
 } from '../core/config/analytics-event-and-category.js';
+import ActionsHandler from '../core/services/actions-handler/actions-handler.js';
 
 import { archiveLogo } from '../assets/data/archive-logo.js';
 
-export class BookTitleBar extends LitElement {
+export class BookTitleBar extends ActionsHandler {
   static get properties() {
     return {
       identifier: { type: String },
