@@ -15,7 +15,8 @@ export default class ActionsHandler extends LitElement {
     super();
     this.identifier = identifier;
     this.ajaxTimeout = 6000;
-    this.loanTokenPollingDelay = 5000; // 20000 ms = 20 sec
+    this.loanTokenPollingDelay =
+      window.location.pathname === '/demo/' ? 5000 : 20000; // 20000 ms = 20 sec
     this.loanTokenInterval = null;
     this.bindEvents();
   }
@@ -67,22 +68,6 @@ export default class ActionsHandler extends LitElement {
       this.sendEvent(category, action);
     });
 
-    this.addEventListener('fetchLoanToken', ({ detail }) => {
-      const bookHasBrowsed = detail?.bookHasBrowsed;
-
-      // Do an initial token, then set an interval
-      if (bookHasBrowsed) {
-        console.log('token poll started...');
-
-        this.loanTokenInterval = setInterval(() => {
-          this.handleLoanTokenPoller();
-        }, this.loanTokenPollingDelay);
-      } else {
-        // if book is not browsed, just clear token polling interval
-        clearInterval(this.loanTokenInterval);
-      }
-    });
-
     this.addEventListener('purchaseBook', ({ detail }) => {
       const { category, action } = detail.event;
       this.sendEvent(category, action);
@@ -102,6 +87,22 @@ export default class ActionsHandler extends LitElement {
       const { category, action } = detail.event;
       this.sendEvent(category, action);
     });
+
+    this.addEventListener('fetchLoanToken', ({ detail }) => {
+      const bookHasBrowsed = detail?.bookHasBrowsed;
+
+      // fetch loan token and set an interval
+      if (bookHasBrowsed) {
+        console.log('token poll started...');
+
+        this.loanTokenInterval = setInterval(() => {
+          this.handleLoanTokenPoller();
+        }, this.loanTokenPollingDelay);
+      } else {
+        // if book is not browsed, just clear token polling interval
+        clearInterval(this.loanTokenInterval);
+      }
+    });
   }
 
   handleBrowseIt() {
@@ -115,7 +116,6 @@ export default class ActionsHandler extends LitElement {
         this.handleReadItNow();
       },
       error: data => {
-        // alert(data.error);
         this.ActionError(context, data);
       },
     });
@@ -133,7 +133,6 @@ export default class ActionsHandler extends LitElement {
         URLHelper.goToUrl(`/details/${this.identifier}`, true);
       },
       error: data => {
-        // alert(data.error);
         this.ActionError(context, data);
       },
     });
@@ -150,7 +149,6 @@ export default class ActionsHandler extends LitElement {
         this.handleReadItNow();
       },
       error: data => {
-        // alert(data.error);
         this.ActionError(context, data);
       },
     });
@@ -167,7 +165,6 @@ export default class ActionsHandler extends LitElement {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
       },
       error: data => {
-        // alert(data.error);
         this.ActionError(context, data);
       },
     });
@@ -184,7 +181,6 @@ export default class ActionsHandler extends LitElement {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
       },
       error: data => {
-        // alert(data.error);
         this.ActionError(context, data);
       },
     });

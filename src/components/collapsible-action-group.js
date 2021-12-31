@@ -68,6 +68,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
     }
   }
 
+  /* emit custom event to fetch loan token */
   emitFetchLoanToken() {
     this.dispatchEvent(
       new CustomEvent('fetchLoanToken', {

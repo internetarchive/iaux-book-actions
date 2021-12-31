@@ -45,7 +45,7 @@ export class ShowDialog extends LitElement {
           ${this.title}
           <ia-icon-close
             @click="${() =>
-              this.dispatchEvent(new CustomEvent('dialog.close'))}"
+              this.dispatchEvent(new CustomEvent('dialogAlertClose'))}"
           ></ia-icon-close>
         </div>
         <div class="dialog-body">${this.body}</div>

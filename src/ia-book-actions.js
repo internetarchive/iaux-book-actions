@@ -167,12 +167,12 @@ export default class IABookActions extends LitElement {
         .body=${this.dialogBody}
         .actions=${this.dialogActions}
         ?opened="${this.dialogVisible}"
-        @dialog.close="${() => this.closeDialog()}"
+        @dialogAlertClose="${() => this.closeDialogAlert()}"
       ></show-dialog>
     `;
   }
 
-  closeDialog() {
+  closeDialogAlert() {
     this.dialogVisible = false;
   }
 
