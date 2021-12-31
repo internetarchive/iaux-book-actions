@@ -237,6 +237,7 @@ export default class IABookActions extends LitElement {
     this.dialogVisible = true;
     this.dialogTitle = 'Sorry!';
     this.dialogBody = errorMsg;
+    this.dialogActions = [];
 
     if (context === 'create_token') {
       this.dialogActions = [
