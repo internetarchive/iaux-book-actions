@@ -8,11 +8,8 @@ export default function ActionsHandlerService(options) {
   const option = {
     action: null,
     identifier: '',
-    data: {},
     success() {},
     error() {},
-    loader: true,
-    type: 'POST',
     ...options,
   };
 
@@ -35,8 +32,10 @@ export default function ActionsHandlerService(options) {
       // test changes, (won't affect you)
       if (baseHost == '/demo/1' || baseHost == '/demo/') {
         if (option.action == 'create_token') {
+          // return {'success': false, 'error': 'loan token not found. please try again later.',};
           return {
-            error: 'loan token not found. please try again later.',
+            success: true,
+            token: '1640945898-f77a0cb615190798f1faf2dafe277b2e',
           };
         }
 

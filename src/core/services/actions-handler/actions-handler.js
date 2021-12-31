@@ -187,15 +187,9 @@ export default class ActionsHandler extends LitElement {
 
   handleLoanTokenPoller() {
     const context = 'create_token';
-    this.ActionError(context);
-
     ActionsHandlerService({
       identifier: this.identifier,
       action: context,
-      loader: false,
-      success: () => {
-        this.handleReadItNow();
-      },
       error: data => {
         this.ActionError(context, data);
       },
