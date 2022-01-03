@@ -15,7 +15,8 @@ export default class ActionsHandler extends LitElement {
     super();
     this.identifier = identifier;
     this.ajaxTimeout = 6000;
-    this.loanTokenPollingDelay = 20000; // 20000 ms = 20 sec
+    this.loanTokenPollingDelay =
+      window.location.pathname === '/demo/' ? 2000 : 20000; // 20000 ms = 20 sec
     this.loanTokenInterval = null;
     this.bindEvents();
   }
@@ -192,6 +193,7 @@ export default class ActionsHandler extends LitElement {
       action: context,
       error: data => {
         this.ActionError(context, data);
+        clearInterval(this.loanTokenInterval); // stop token fetch api
       },
     });
   }

@@ -23,7 +23,7 @@ export default class IABookActions extends LitElement {
       bwbPurchaseUrl: { type: String },
       barType: { type: String },
       sharedObserver: { attribute: false },
-      disable: { type: Boolean },
+      disableActionGroup: { type: Boolean },
       dialogVisible: { type: Boolean },
       bookHasBrowsed: { type: Boolean },
     };
@@ -166,7 +166,8 @@ export default class IABookActions extends LitElement {
         .title=${this.dialogTitle}
         .body=${this.dialogBody}
         .actions=${this.dialogActions}
-        ?opened="${this.dialogVisible}"
+        ?opened=${this.dialogVisible}
+        ?allowClose=${this.allowClose}
         @dialogAlertClose="${() => this.closeDialogAlert()}"
       ></show-dialog>
     `;
@@ -192,9 +193,9 @@ export default class IABookActions extends LitElement {
         .primaryActions=${this.primaryActions}
         .secondaryActions=${this.secondaryActions}
         .width=${this.width}
-        .hasAdminAccess=${this.hasAdminAccess}
-        .disabled=${this.disableActionGroup}
-        .bookHasBrowsed=${this.bookHasBrowsed}
+        ?hasAdminAccess=${this.hasAdminAccess}
+        ?disabled=${this.disableActionGroup}
+        ?bookHasBrowsed=${this.bookHasBrowsed}
         @lendingActionError=${this.handleLendingActionError}
       >
       </collapsible-action-group>
@@ -209,10 +210,8 @@ export default class IABookActions extends LitElement {
     const context = e?.detail?.context;
     const errorMsg = e?.detail?.data?.error;
 
-    // early exist if you don't have errorMsg
-    if (!errorMsg) return;
-
-    this.initializeDialogAlert(context, errorMsg);
+    // initiate dialog-alert if error occured
+    if (errorMsg) this.initializeDialogAlert(context, errorMsg);
 
     // update action bar state if book is not available to browse or borrow.
     if (errorMsg && errorMsg.match(/not available to borrow/gm)) {
@@ -237,14 +236,15 @@ export default class IABookActions extends LitElement {
     this.dialogVisible = true;
     this.dialogTitle = 'Sorry!';
     this.dialogBody = errorMsg;
-    this.dialogActions = [];
+    this.allowClose = true;
 
     if (context === 'create_token') {
+      this.allowClose = false;
       this.dialogActions = [
         {
           className: 'ia-button primary',
           text: 'Back to Item Details',
-          href: `/details/${this.lendingStatus.bookUrl}`,
+          href: this.lendingStatus.bookUrl,
         },
       ];
     }

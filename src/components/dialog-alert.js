@@ -12,6 +12,7 @@ export class ShowDialog extends LitElement {
       body: { type: String },
       actions: { type: Array },
       opened: { type: Boolean },
+      allowClose: { type: Boolean },
     };
   }
 
@@ -22,6 +23,7 @@ export class ShowDialog extends LitElement {
       'Unexpected error: loan does not exist. Please try deleting your archive.org cookie.';
     this.actions = [];
     this.opened = false;
+    this.allowClose = false;
   }
 
   updated(changed) {
@@ -41,17 +43,20 @@ export class ShowDialog extends LitElement {
           closed: !this.opened,
         })}"
       >
-        <div class="dialog-head">
-          ${this.title}
-          <ia-icon-close
-            @click="${() =>
-              this.dispatchEvent(new CustomEvent('dialogAlertClose'))}"
-          ></ia-icon-close>
-        </div>
+        <div class="dialog-head">${this.title} ${this.closeButton}</div>
         <div class="dialog-body">${this.body}</div>
         <div class="dialog-foot">${this.renderActionButton}</div>
       </div>
     `;
+  }
+
+  get closeButton() {
+    return this.allowClose
+      ? html`<ia-icon-close
+          @click="${() =>
+            this.dispatchEvent(new CustomEvent('dialogAlertClose'))}"
+        ></ia-icon-close>`
+      : html``;
   }
 
   /* exceptional case to use dom element */

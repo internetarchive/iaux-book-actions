@@ -63,7 +63,10 @@ export class CollapsibleActionGroup extends ActionsHandler {
     }
 
     // this is execute on demo page only
-    if (changed.has('bookHasBrowsed')) {
+    if (
+      changed.has('bookHasBrowsed') &&
+      window.location.pathname === '/demo/'
+    ) {
       this.emitFetchLoanToken();
     }
   }
