@@ -21,6 +21,10 @@ export default class ActionsHandler extends LitElement {
     this.bindEvents();
   }
 
+  disconnectedCallback() {
+    this.loanTokenInterval = undefined;
+  }
+
   sendEvent(eventCategory, eventAction) {
     // eslint-disable-next-line no-console
     console?.log('Book action: ', { eventCategory, eventAction });
@@ -88,16 +92,19 @@ export default class ActionsHandler extends LitElement {
       this.sendEvent(category, action);
     });
 
-    this.addEventListener('fetchLoanToken', ({ detail }) => {
-      const bookHasBrowsed = detail?.bookHasBrowsed;
+    this.addEventListener('enableBookAccess', ({ detail }) => {
+      const borrowType = detail?.borrowType;
 
-      // fetch loan token and set an interval
-      if (bookHasBrowsed) {
+      // fetch loan token for browsed/borrowed book and set an interval
+      if (borrowType) {
         console.log('token poll started...');
 
         this.loanTokenInterval = setInterval(() => {
           this.handleLoanTokenPoller();
         }, this.loanTokenPollingDelay);
+
+        const { category, action } = detail?.event;
+        this.sendEvent(category, action);
       } else {
         // if book is not browsed, just clear token polling interval
         clearInterval(this.loanTokenInterval);
@@ -199,6 +206,7 @@ export default class ActionsHandler extends LitElement {
   }
 
   ActionError(context, data = {}) {
+    console.log(context, data);
     this.dispatchEvent(
       new CustomEvent('lendingActionError', {
         detail: { context, data },

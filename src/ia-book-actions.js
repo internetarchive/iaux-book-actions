@@ -7,8 +7,8 @@ import './components/collapsible-action-group.js';
 import './components/book-title-bar.js';
 import './components/text-group.js';
 import './components/info-icon.js';
-import './components/dialog-alert.js';
 
+import { ModalConfig } from '@internetarchive/modal-manager';
 import GetLendingActions from './core/services/get-lending-actions.js';
 import { mobileContainerWidth } from './core/config/constants.js';
 
@@ -25,7 +25,6 @@ export default class IABookActions extends LitElement {
       sharedObserver: { attribute: false },
       disableActionGroup: { type: Boolean },
       dialogVisible: { type: Boolean },
-      bookHasBrowsed: { type: Boolean },
     };
   }
 
@@ -46,7 +45,7 @@ export default class IABookActions extends LitElement {
     this.lendingOptions = {};
     this.disableActionGroup = false;
     this.dialogVisible = false;
-    this.bookHasBrowsed = false;
+    this.renderModalManager();
   }
 
   disconnectedCallback() {
@@ -146,12 +145,12 @@ export default class IABookActions extends LitElement {
       return action != null;
     });
 
-    this.bookHasBrowsed =
-      this.lendingStatus.user_has_browsed &&
-      !this.lendingStatus.browsingExpired;
-    if (this.bookHasBrowsed) {
-      // start timer for 1-hour borrowed book.
-      // when 1 hour is completed, we shows browse-again button
+    this.borrowType = actions.borrowType;
+    this.consecutiveLoanCounts = actions.consecutiveLoanCounts;
+
+    if (this.borrowType === 'browsed') {
+      // start timer for browsed.
+      // when browse is completed, we shows browse-again button
       this.startBrowseTimer();
     }
   }
@@ -161,15 +160,6 @@ export default class IABookActions extends LitElement {
       <section class="lending-wrapper">
         ${this.barType === 'title' ? this.bookTitleBar : this.bookActionBar}
       </section>
-
-      <show-dialog
-        .title=${this.dialogTitle}
-        .body=${this.dialogBody}
-        .actions=${this.dialogActions}
-        ?opened=${this.dialogVisible}
-        ?allowClose=${this.allowClose}
-        @dialogAlertClose="${() => this.closeDialogAlert()}"
-      ></show-dialog>
     `;
   }
 
@@ -193,9 +183,10 @@ export default class IABookActions extends LitElement {
         .primaryActions=${this.primaryActions}
         .secondaryActions=${this.secondaryActions}
         .width=${this.width}
+        .borrowType=${this.borrowType}
+        .consecutiveLoanCounts=${this.consecutiveLoanCounts}
         ?hasAdminAccess=${this.hasAdminAccess}
         ?disabled=${this.disableActionGroup}
-        ?bookHasBrowsed=${this.bookHasBrowsed}
         @lendingActionError=${this.handleLendingActionError}
       >
       </collapsible-action-group>
@@ -211,7 +202,7 @@ export default class IABookActions extends LitElement {
     const errorMsg = e?.detail?.data?.error;
 
     // initiate dialog-alert if error occured
-    if (errorMsg) this.initializeDialogAlert(context, errorMsg);
+    if (errorMsg) this.showErrorModal(context, errorMsg);
 
     // update action bar state if book is not available to browse or borrow.
     if (errorMsg && errorMsg.match(/not available to borrow/gm)) {
@@ -231,23 +222,32 @@ export default class IABookActions extends LitElement {
     }
   }
 
-  /* set props value to show dialog alert */
-  initializeDialogAlert(context, errorMsg) {
-    this.dialogVisible = true;
-    this.dialogTitle = 'Sorry!';
-    this.dialogBody = errorMsg;
-    this.allowClose = true;
+  renderModalManager() {
+    this.modal = document.createElement('modal-manager');
+    this.modalConfig = new ModalConfig();
+    this.modalConfig.headerColor = '#d9534f';
+    document.body.appendChild(this.modal);
+  }
 
+  /* set props value to show dialog alert */
+  showErrorModal(context, errorMsg) {
+    let someContent = ``;
+    this.modalConfig.title = 'Sorry!';
+    this.modalConfig.headline = errorMsg;
     if (context === 'create_token') {
-      this.allowClose = false;
-      this.dialogActions = [
-        {
-          className: 'ia-button primary',
-          text: 'Back to Item Details',
-          href: this.lendingStatus.bookUrl,
-        },
-      ];
+      this.modalConfig.showCloseButton = false;
+      this.modalConfig.closeOnBackdropClick = false;
+      someContent = html`<a
+        href="${this.lendingStatus.bookUrl}"
+        class="ia-button primary"
+        >Back to Item Details</a
+      >`;
     }
+
+    this.modal.showModal({
+      config: this.modalConfig,
+      customModalContent: someContent,
+    });
   }
 
   get iconClass() {

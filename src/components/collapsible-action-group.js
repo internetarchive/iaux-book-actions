@@ -27,7 +27,8 @@ export class CollapsibleActionGroup extends ActionsHandler {
       hasAdminAccess: { type: Boolean },
       dropdownArrow: { type: String },
       disabled: { type: Boolean },
-      bookHasBrowsed: { type: Boolean },
+      borrowType: { type: String },
+      consecutiveLoanCounts: { type: Number },
     };
   }
 
@@ -46,13 +47,8 @@ export class CollapsibleActionGroup extends ActionsHandler {
     this.title = '';
     this.loaderIcon = 'https://archive.org/upload/images/tree/loading.gif';
     this.disabled = false;
-    this.bookHasBrowsed = false;
-  }
-
-  firstUpdated() {
-    if (this.bookHasBrowsed) {
-      this.emitFetchLoanToken();
-    }
+    this.borrowType = ''; // (browsed|borrowed)
+    this.consecutiveLoanCounts = 0;
   }
 
   updated(changed) {
@@ -62,11 +58,8 @@ export class CollapsibleActionGroup extends ActionsHandler {
       }
     }
 
-    // this is execute on demo page only
-    if (
-      changed.has('bookHasBrowsed') &&
-      window.location.pathname === '/demo/'
-    ) {
+    // this is execute to fetch loan token
+    if (changed.has('borrowType')) {
       this.emitFetchLoanToken();
     }
   }
@@ -74,10 +67,13 @@ export class CollapsibleActionGroup extends ActionsHandler {
   /* emit custom event to fetch loan token */
   emitFetchLoanToken() {
     this.dispatchEvent(
-      new CustomEvent('fetchLoanToken', {
+      new CustomEvent('enableBookAccess', {
         detail: {
-          event: { category: 'action' },
-          bookHasBrowsed: this.bookHasBrowsed,
+          event: {
+            category: `${this.borrowType}BookAccess`, // browsedBookAccess
+            action: `consecutiveLoanCounts-${this.consecutiveLoanCounts}`, // consecutiveLoanCounts-1|2|3...
+          },
+          borrowType: this.borrowType,
         },
       })
     );
