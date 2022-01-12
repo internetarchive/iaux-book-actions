@@ -29,22 +29,32 @@ export default function ActionsHandlerService(options) {
     body: formData,
   })
     .then(response => {
-      // test changes, (won't affect you)
-      if (baseHost == '/demo/1' || baseHost == '/demo/') {
-        if (option.action == 'create_token') {
-          return {
-            success: false,
-            error: 'loan token not found. please try again later.',
-          };
-          return {
-            success: true,
-            token: '1640945898-f77a0cb615190798f1faf2dafe277b2e',
-          };
-        }
+      let shouldReturnError =
+        window.location.href.indexOf('?error=true') !== -1;
+      const tokenError = 'loan token not found. please try again later.';
+      const borrowError =
+        'This book is not available to borrow at this time. Please try again later.';
 
+      // return error reponse if query param has ?error=true param...
+      if (option.action == 'create_token' && shouldReturnError) {
         return {
-          error:
-            'This book is not available to borrow at this time. Please try again later.',
+          success: false,
+          error: tokenError,
+        };
+      }
+
+      if (shouldReturnError) {
+        return {
+          status: true,
+          error: borrowError,
+        };
+      }
+
+      // return success response for /demo/ server...
+      if (baseHost == '/demo/1' || baseHost == '/demo/') {
+        return {
+          success: true,
+          message: 'operation executed successfully!',
         };
       }
 

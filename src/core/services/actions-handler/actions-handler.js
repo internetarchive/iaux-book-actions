@@ -28,16 +28,24 @@ export default class ActionsHandler extends LitElement {
   sendEvent(eventCategory, eventAction) {
     // eslint-disable-next-line no-console
     console?.log('Book action: ', { eventCategory, eventAction });
-    window?.archive_analytics?.send_event(
+    window?.archive_analytics?.send_event_no_sampling(
       eventCategory,
       eventAction,
-      window.location.pathname
+      `identifier=${this.identifier}`
     );
   }
 
   bindEvents() {
     this.addEventListener('browseBook', ({ detail }) => {
       this.handleBrowseIt();
+      this.setConsecutiveLoanCounts();
+      const { category, action } = detail.event;
+      this.sendEvent(category, action);
+    });
+
+    this.addEventListener('browseBookAgain', ({ detail }) => {
+      this.handleBrowseIt();
+      this.setConsecutiveLoanCounts('browseAgain');
       const { category, action } = detail.event;
       this.sendEvent(category, action);
     });
@@ -244,6 +252,23 @@ export default class ActionsHandler extends LitElement {
     setTimeout(() => {
       URLHelper.goToUrl(redirectTo, true);
     }, this.ajaxTimeout);
+  }
+
+  // save consecutive loan count for borrow
+  setConsecutiveLoanCounts(action = '') {
+    const { localStorage } = window;
+    if (localStorage) {
+      let newCount = 1;
+      const storageKey = `consecutive-loan-count`;
+      const existingCount = Number(localStorage.getItem(storageKey));
+
+      // want to increase browse-count by 1 if,
+      // you consecutive reading a book.
+      if (action === 'browseAgain') {
+        newCount = existingCount ? existingCount + 1 : 1;
+      }
+      localStorage.setItem(storageKey, newCount);
+    }
   }
 
   deleteLoanCookies() {

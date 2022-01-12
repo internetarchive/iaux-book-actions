@@ -8,7 +8,6 @@ import './components/book-title-bar.js';
 import './components/text-group.js';
 import './components/info-icon.js';
 
-import { ModalConfig } from '@internetarchive/modal-manager';
 import GetLendingActions from './core/services/get-lending-actions.js';
 import { mobileContainerWidth } from './core/config/constants.js';
 
@@ -24,7 +23,7 @@ export default class IABookActions extends LitElement {
       barType: { type: String },
       sharedObserver: { attribute: false },
       disableActionGroup: { type: Boolean },
-      dialogVisible: { type: Boolean },
+      modalConfig: { type: Object },
     };
   }
 
@@ -44,8 +43,7 @@ export default class IABookActions extends LitElement {
     this.secondaryActions = [];
     this.lendingOptions = {};
     this.disableActionGroup = false;
-    this.dialogVisible = false;
-    this.renderModalManager();
+    this.modalConfig = {};
   }
 
   disconnectedCallback() {
@@ -146,8 +144,6 @@ export default class IABookActions extends LitElement {
     });
 
     this.borrowType = actions.borrowType;
-    this.consecutiveLoanCounts = actions.consecutiveLoanCounts;
-
     if (this.borrowType === 'browsed') {
       // start timer for browsed.
       // when browse is completed, we shows browse-again button
@@ -161,10 +157,6 @@ export default class IABookActions extends LitElement {
         ${this.barType === 'title' ? this.bookTitleBar : this.bookActionBar}
       </section>
     `;
-  }
-
-  closeDialogAlert() {
-    this.dialogVisible = false;
   }
 
   get bookTitleBar() {
@@ -184,7 +176,6 @@ export default class IABookActions extends LitElement {
         .secondaryActions=${this.secondaryActions}
         .width=${this.width}
         .borrowType=${this.borrowType}
-        .consecutiveLoanCounts=${this.consecutiveLoanCounts}
         ?hasAdminAccess=${this.hasAdminAccess}
         ?disabled=${this.disableActionGroup}
         @lendingActionError=${this.handleLendingActionError}
@@ -222,31 +213,35 @@ export default class IABookActions extends LitElement {
     }
   }
 
-  renderModalManager() {
-    this.modal = document.createElement('modal-manager');
-    this.modalConfig = new ModalConfig();
-    this.modalConfig.headerColor = '#d9534f';
-    document.body.appendChild(this.modal);
-  }
-
-  /* set props value to show dialog alert */
+  /* show error message if something went wrong */
   showErrorModal(context, errorMsg) {
-    let someContent = ``;
+    console.log(this.modalConfig);
+    this.modal = document.querySelector('modal-manager');
+
+    // fallback if <modal-manager> is not found!
+    if (!this.modal) {
+      alert(errorMsg);
+      return;
+    }
+
+    this.disableActionGroup = false;
     this.modalConfig.title = 'Sorry!';
-    this.modalConfig.headline = errorMsg;
+    this.modalConfig.message = errorMsg;
+
     if (context === 'create_token') {
-      this.modalConfig.showCloseButton = false;
-      this.modalConfig.closeOnBackdropClick = false;
-      someContent = html`<a
-        href="${this.lendingStatus.bookUrl}"
-        class="ia-button primary"
-        >Back to Item Details</a
-      >`;
+      this.modalConfig.message = html`<p class="headline">
+        Uh oh, something went wrong trying to access this book. Please
+        <a href="#">refresh</a> to try again or send us an email to
+        <a
+          href="mailto:info@archive.org?subject=Help: cannot access my borrowed book: ${this
+            .identifier}"
+          >info@archive.org</a
+        >
+      </p>`;
     }
 
     this.modal.showModal({
       config: this.modalConfig,
-      customModalContent: someContent,
     });
   }
 
