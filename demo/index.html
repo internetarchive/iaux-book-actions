@@ -72,15 +72,6 @@
       margin: 2px;
     }
 
-    #ui-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: black;
-      opacity: 0.3;
-    }
     body.modal-manager-open {
       overflow: hidden;
     }
@@ -142,7 +133,6 @@
     });
 
     document.querySelectorAll('.errorEnable input[type=checkbox]').forEach((item) => {
-      console.log(item.value);
       if (window.location.href.indexOf('?error=true') !== -1) {
         item.checked = true;
       }
@@ -273,7 +263,7 @@
       <legend>Dev testing for book action bar</legend>
         <table class="initial">
           <tr colspan='5'>
-            <td class="errorEnable"><label><input type="checkbox" name="errorEnable" value="errorEnable" />Do you want to see error response???</label></td>
+            <td class="errorEnable"><label><input type="checkbox" name="errorEnable" value="errorEnable" />Do you want to see error response?</label></td>
           </tr>
           <tr>
             <td class="userState">

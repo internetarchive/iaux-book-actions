@@ -192,7 +192,6 @@ export default class IABookActions extends LitElement {
     const context = e?.detail?.context;
     const errorMsg = e?.detail?.data?.error;
 
-    // initiate dialog-alert if error occured
     if (errorMsg) this.showErrorModal(context, errorMsg);
 
     // update action bar state if book is not available to browse or borrow.
@@ -215,7 +214,6 @@ export default class IABookActions extends LitElement {
 
   /* show error message if something went wrong */
   showErrorModal(context, errorMsg) {
-    console.log(this.modalConfig);
     this.modal = document.querySelector('modal-manager');
 
     // fallback if <modal-manager> is not found!

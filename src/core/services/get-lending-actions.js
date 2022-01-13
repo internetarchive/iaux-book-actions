@@ -97,7 +97,6 @@ export default class GetLendingActions {
         this.actionsConfig.purchaseConfig(),
       ],
       borrowType: isBrowsed ? 'browsed' : 'borrowed',
-      consecutiveLoanCounts: lendingStatus.user_loan_count,
     };
   }
 

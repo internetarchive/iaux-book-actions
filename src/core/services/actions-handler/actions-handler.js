@@ -16,7 +16,7 @@ export default class ActionsHandler extends LitElement {
     this.identifier = identifier;
     this.ajaxTimeout = 6000;
     this.loanTokenPollingDelay =
-      window.location.pathname === '/demo/' ? 2000 : 20000; // 20000 ms = 20 sec
+      window.location.pathname === '/demo/' ? 2000 : 120000; // 120000 ms = 2 min
     this.loanTokenInterval = null;
     this.bindEvents();
   }
