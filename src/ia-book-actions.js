@@ -2,6 +2,7 @@
 import { html, css, LitElement } from 'lit-element';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
+import { ModalConfig } from '@internetarchive/modal-manager';
 
 import './components/collapsible-action-group.js';
 import './components/book-title-bar.js';
@@ -54,6 +55,11 @@ export default class IABookActions extends LitElement {
     if (!this.sharedObserver) {
       this.sharedObserver = new SharedResizeObserver();
       this.setupResizeObserver();
+    }
+
+    if (!this.modalConfig) {
+      this.modalConfig = new ModalConfig();
+      this.modalConfig.headerColor = '#d9534f';
     }
     this.setupLendingToolbarActions();
   }
