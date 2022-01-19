@@ -214,7 +214,6 @@ export default class ActionsHandler extends LitElement {
   }
 
   ActionError(context, data = {}) {
-    console.log(context, data);
     this.dispatchEvent(
       new CustomEvent('lendingActionError', {
         detail: { context, data },

@@ -57,7 +57,7 @@ export default class IABookActions extends LitElement {
       this.setupResizeObserver();
     }
 
-    if (!this.modalConfig) {
+    if (!Object.keys(this.modalConfig).length) {
       this.modalConfig = new ModalConfig();
       this.modalConfig.headerColor = '#d9534f';
     }
@@ -191,6 +191,10 @@ export default class IABookActions extends LitElement {
     `;
   }
 
+  /*
+   * handle lending errors occure on different operation like
+   * browse book, borrow book, borrowed book token etc...
+   */
   handleLendingActionError(e) {
     // toggle activity loader
     this.disableActionGroup = !this.disableActionGroup;
@@ -219,8 +223,10 @@ export default class IABookActions extends LitElement {
   }
 
   /* show error message if something went wrong */
-  showErrorModal(context, errorMsg) {
-    this.modal = document.querySelector('modal-manager');
+  async showErrorModal(context, errorMsg) {
+    // add modal-manager in DOM to show alert message
+    this.modal = document.createElement('modal-manager');
+    await document.body.appendChild(this.modal);
 
     // fallback if <modal-manager> is not found!
     if (!this.modal) {
@@ -231,18 +237,6 @@ export default class IABookActions extends LitElement {
     this.disableActionGroup = false;
     this.modalConfig.title = 'Sorry!';
     this.modalConfig.message = errorMsg;
-
-    if (context === 'create_token') {
-      this.modalConfig.message = html`<p class="headline">
-        Uh oh, something went wrong trying to access this book. Please
-        <a href="#">refresh</a> to try again or send us an email to
-        <a
-          href="mailto:info@archive.org?subject=Help: cannot access my borrowed book: ${this
-            .identifier}"
-          >info@archive.org</a
-        >
-      </p>`;
-    }
 
     this.modal.showModal({
       config: this.modalConfig,
