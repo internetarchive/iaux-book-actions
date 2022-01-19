@@ -226,6 +226,7 @@ export default class IABookActions extends LitElement {
   async showErrorModal(context, errorMsg) {
     // add modal-manager in DOM to show alert message
     this.modal = document.createElement('modal-manager');
+    this.modal.id = 'action-bar-modal';
     await document.body.appendChild(this.modal);
 
     // fallback if <modal-manager> is not found!
