@@ -36,17 +36,11 @@ export default function ActionsHandlerService(options) {
         'This book is not available to borrow at this time. Please try again later.';
 
       // return error reponse if query param has ?error=true param...
-      if (option.action == 'create_token' && shouldReturnError) {
+      const erroneousActions = ['browse_book', 'borrow_book', 'create_token'];
+      if (shouldReturnError && erroneousActions.includes(option.action)) {
         return {
           success: false,
-          error: tokenError,
-        };
-      }
-
-      if (shouldReturnError) {
-        return {
-          status: true,
-          error: borrowError,
+          error: option.action === 'create_token' ? tokenError : borrowError,
         };
       }
 
