@@ -236,7 +236,7 @@ export default class IABookActions extends LitElement {
     }
 
     this.disableActionGroup = false;
-    this.modalConfig.title = 'Sorry!';
+    this.modalConfig.title = 'Lending error';
     this.modalConfig.message = errorMsg;
 
     this.modal.showModal({
