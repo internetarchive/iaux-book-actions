@@ -10,6 +10,8 @@ import './components/text-group.js';
 import './components/info-icon.js';
 
 import GetLendingActions from './core/services/get-lending-actions.js';
+import getRealTimeLendingStatus from './core/services/get-realtime-lending-status.js';
+
 import { mobileContainerWidth } from './core/config/constants.js';
 
 export default class IABookActions extends LitElement {
@@ -45,6 +47,7 @@ export default class IABookActions extends LitElement {
     this.lendingOptions = {};
     this.disableActionGroup = false;
     this.modalConfig = {};
+    this.realtimeInternal = 0; // store intervalID
   }
 
   disconnectedCallback() {
@@ -62,6 +65,20 @@ export default class IABookActions extends LitElement {
       this.modalConfig.headerColor = '#d9534f';
     }
     this.setupLendingToolbarActions();
+
+    // fetch latest lending status after an internal
+    if (
+      !this.lendingStatus.user_has_browsed &&
+      !this.lendingStatus.user_has_borrowed
+    ) {
+      this.realtimeInternal = setInterval(() => {
+        const latestLendingStatus = getRealTimeLendingStatus(
+          'naturalhistoryof00unse_4'
+        );
+        console.log(latestLendingStatus);
+        if (latestLendingStatus) this.lendingStatus = latestLendingStatus;
+      }, 30000); // 60000 ms = 1 min
+    }
   }
 
   updated(changed) {
