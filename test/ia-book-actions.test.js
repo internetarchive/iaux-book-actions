@@ -130,7 +130,6 @@ describe('Borrow status actions', () => {
     el.dispatchEvent(errorEvent);
     await el.updateComplete;
 
-    console.log(el.lendingStatus);
     // removed available_to_browse from lending bar
     expect(el.lendingStatus.available_to_browse).to.be.false;
     expect(el.primaryActions[0].text).to.equal('Borrow for 14 days');

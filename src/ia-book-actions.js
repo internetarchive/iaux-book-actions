@@ -2,6 +2,7 @@
 import { html, css, LitElement } from 'lit-element';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
+import { ModalConfig } from '@internetarchive/modal-manager';
 
 import './components/collapsible-action-group.js';
 import './components/book-title-bar.js';
@@ -22,7 +23,8 @@ export default class IABookActions extends LitElement {
       bwbPurchaseUrl: { type: String },
       barType: { type: String },
       sharedObserver: { attribute: false },
-      disable: { type: Boolean },
+      disableActionGroup: { type: Boolean },
+      modalConfig: { type: Object },
     };
   }
 
@@ -41,7 +43,8 @@ export default class IABookActions extends LitElement {
     this.primaryColor = 'primary';
     this.secondaryActions = [];
     this.lendingOptions = {};
-    this.disable = false;
+    this.disableActionGroup = false;
+    this.modalConfig = {};
   }
 
   disconnectedCallback() {
@@ -52,6 +55,11 @@ export default class IABookActions extends LitElement {
     if (!this.sharedObserver) {
       this.sharedObserver = new SharedResizeObserver();
       this.setupResizeObserver();
+    }
+
+    if (!Object.keys(this.modalConfig).length) {
+      this.modalConfig = new ModalConfig();
+      this.modalConfig.headerColor = '#d9534f';
     }
     this.setupLendingToolbarActions();
   }
@@ -141,10 +149,10 @@ export default class IABookActions extends LitElement {
       return action != null;
     });
 
-    if (
-      this.lendingStatus.user_has_browsed &&
-      !this.lendingStatus.browseHasExpired
-    ) {
+    this.borrowType = actions.borrowType;
+    if (this.borrowType === 'browsed') {
+      // start timer for browsed.
+      // when browse is completed, we shows browse-again button
       this.startBrowseTimer();
     }
   }
@@ -173,8 +181,9 @@ export default class IABookActions extends LitElement {
         .primaryActions=${this.primaryActions}
         .secondaryActions=${this.secondaryActions}
         .width=${this.width}
-        .hasAdminAccess=${this.hasAdminAccess}
-        .disabled=${this.disable}
+        .borrowType=${this.borrowType}
+        ?hasAdminAccess=${this.hasAdminAccess}
+        ?disabled=${this.disableActionGroup}
         @lendingActionError=${this.handleLendingActionError}
       >
       </collapsible-action-group>
@@ -182,12 +191,18 @@ export default class IABookActions extends LitElement {
     `;
   }
 
+  /*
+   * handle lending errors occure on different operation like
+   * browse book, borrow book, borrowed book token etc...
+   */
   handleLendingActionError(e) {
     // toggle activity loader
-    this.disable = !this.disable;
+    this.disableActionGroup = !this.disableActionGroup;
 
     const context = e?.detail?.context;
     const errorMsg = e?.detail?.data?.error;
+
+    if (errorMsg) this.showErrorModal(context, errorMsg);
 
     // update action bar state if book is not available to browse or borrow.
     if (errorMsg && errorMsg.match(/not available to borrow/gm)) {
@@ -205,6 +220,28 @@ export default class IABookActions extends LitElement {
       }
       this.lendingStatus = currStatus;
     }
+  }
+
+  /* show error message if something went wrong */
+  async showErrorModal(context, errorMsg) {
+    // add modal-manager in DOM to show alert message
+    this.modal = document.createElement('modal-manager');
+    this.modal.id = 'action-bar-modal';
+    await document.body.appendChild(this.modal);
+
+    // fallback if <modal-manager> is not found!
+    if (!this.modal) {
+      alert(errorMsg);
+      return;
+    }
+
+    this.disableActionGroup = false;
+    this.modalConfig.title = 'Lending error';
+    this.modalConfig.message = errorMsg;
+
+    this.modal.showModal({
+      config: this.modalConfig,
+    });
   }
 
   get iconClass() {

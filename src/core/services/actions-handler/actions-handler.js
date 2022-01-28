@@ -15,22 +15,37 @@ export default class ActionsHandler extends LitElement {
     super();
     this.identifier = identifier;
     this.ajaxTimeout = 6000;
+    this.loanTokenPollingDelay =
+      window.location.pathname === '/demo/' ? 2000 : 120000; // 120000 ms = 2 min
+    this.loanTokenInterval = null;
     this.bindEvents();
+  }
+
+  disconnectedCallback() {
+    this.loanTokenInterval = undefined;
   }
 
   sendEvent(eventCategory, eventAction) {
     // eslint-disable-next-line no-console
     console?.log('Book action: ', { eventCategory, eventAction });
-    window?.archive_analytics?.send_event(
+    window?.archive_analytics?.send_event_no_sampling(
       eventCategory,
       eventAction,
-      window.location.pathname
+      `identifier=${this.identifier}`
     );
   }
 
   bindEvents() {
     this.addEventListener('browseBook', ({ detail }) => {
       this.handleBrowseIt();
+      this.setConsecutiveLoanCounts();
+      const { category, action } = detail.event;
+      this.sendEvent(category, action);
+    });
+
+    this.addEventListener('browseBookAgain', ({ detail }) => {
+      this.handleBrowseIt();
+      this.setConsecutiveLoanCounts('browseAgain');
       const { category, action } = detail.event;
       this.sendEvent(category, action);
     });
@@ -84,6 +99,25 @@ export default class ActionsHandler extends LitElement {
       const { category, action } = detail.event;
       this.sendEvent(category, action);
     });
+
+    this.addEventListener('enableBookAccess', ({ detail }) => {
+      const borrowType = detail?.borrowType;
+
+      // fetch loan token for browsed/borrowed book and set an interval
+      if (borrowType) {
+        console.log('token poll started...');
+
+        this.loanTokenInterval = setInterval(() => {
+          this.handleLoanTokenPoller();
+        }, this.loanTokenPollingDelay);
+
+        const { category, action } = detail?.event;
+        this.sendEvent(category, action);
+      } else {
+        // if book is not browsed, just clear token polling interval
+        clearInterval(this.loanTokenInterval);
+      }
+    });
   }
 
   handleBrowseIt() {
@@ -97,7 +131,6 @@ export default class ActionsHandler extends LitElement {
         this.handleReadItNow();
       },
       error: data => {
-        alert(data.error);
         this.ActionError(context, data);
       },
     });
@@ -115,8 +148,7 @@ export default class ActionsHandler extends LitElement {
         URLHelper.goToUrl(`/details/${this.identifier}`, true);
       },
       error: data => {
-        alert(data.error);
-        this.ActionError(context);
+        this.ActionError(context, data);
       },
     });
   }
@@ -132,7 +164,6 @@ export default class ActionsHandler extends LitElement {
         this.handleReadItNow();
       },
       error: data => {
-        alert(data.error);
         this.ActionError(context, data);
       },
     });
@@ -149,8 +180,7 @@ export default class ActionsHandler extends LitElement {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
       },
       error: data => {
-        alert(data.error);
-        this.ActionError(context);
+        this.ActionError(context, data);
       },
     });
   }
@@ -166,10 +196,29 @@ export default class ActionsHandler extends LitElement {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
       },
       error: data => {
-        alert(data.error);
-        this.ActionError(context);
+        this.ActionError(context, data);
       },
     });
+  }
+
+  handleLoanTokenPoller() {
+    const context = 'create_token';
+    ActionsHandlerService({
+      identifier: this.identifier,
+      action: context,
+      error: data => {
+        this.ActionError(context, data);
+        clearInterval(this.loanTokenInterval); // stop token fetch api
+      },
+    });
+  }
+
+  ActionError(context, data = {}) {
+    this.dispatchEvent(
+      new CustomEvent('lendingActionError', {
+        detail: { context, data },
+      })
+    );
   }
 
   handleLoginOk() {
@@ -204,6 +253,23 @@ export default class ActionsHandler extends LitElement {
     }, this.ajaxTimeout);
   }
 
+  // save consecutive loan count for borrow
+  setConsecutiveLoanCounts(action = '') {
+    const { localStorage } = window;
+    if (localStorage) {
+      let newCount = 1;
+      const storageKey = `consecutive-loan-count`;
+      const existingCount = Number(localStorage.getItem(storageKey));
+
+      // want to increase browse-count by 1 if,
+      // you consecutive reading a book.
+      if (action === 'browseAgain') {
+        newCount = existingCount ? existingCount + 1 : 1;
+      }
+      localStorage.setItem(storageKey, newCount);
+    }
+  }
+
   deleteLoanCookies() {
     const date = new Date();
     date.setTime(date.getTime() - 24 * 60 * 60 * 1000); // one day ago
@@ -217,13 +283,5 @@ export default class ActionsHandler extends LitElement {
     cookie += `; expires=${expiry}`;
     cookie += '; path=/; domain=.archive.org;';
     document.cookie = cookie;
-  }
-
-  ActionError(context, data = {}) {
-    this.dispatchEvent(
-      new CustomEvent('lendingActionError', {
-        detail: { context, data },
-      })
-    );
   }
 }
