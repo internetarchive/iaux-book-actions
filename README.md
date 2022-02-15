@@ -4,15 +4,12 @@
 
 The book action button component build on LitElement with support for custom content and light DOM elements.
 
-
-![Book Action](./assets/ia-book-action-screen.png "Book Action Demo")
-
 ## Installation
 ```bash
 npm install --save @internetarchive/ia-book-actions
 ```
 
-## Usage of book-action-bar
+## Usage of Book Actions
 ```html
 <!-- index.html -->
 <style>
@@ -46,54 +43,6 @@ npm install --save @internetarchive/ia-book-actions
     --primaryErrorCTAFillRGB: 229, 28, 38;
     --primaryDisableCTAFill: #767676;
   }
-
-  fieldset {
-    width: fit-content;
-    margin-top: 50px;
-  }
-  fieldset legend {
-    text-align: left;
-    font-size: 12px;
-  }
-  td {
-    color: white;
-    font-size: 14px;
-    border-radius: 5%;
-    display: table-cell;
-    text-align: initial;
-    margin: 5px 0;
-    width: max-content;
-    display: block;
-  }
-  label {
-    padding: 10px;
-    display: block;
-    cursor: pointer;
-    margin: 2px;
-    background: #4e545a;
-    border-radius: 10px;
-  }
-  input[type="radio"], input[type="checkbox"] {
-    margin-top: 0;
-    vertical-align: middle;
-  }
-
-  .initial td {
-    float: left;
-    margin: 2px;
-  }
-
-  body.modal-manager-open {
-    overflow: hidden;
-  }
-
-  modal-manager {
-    display: none;
-  }
-
-  modal-manager[mode='open'] {
-    display: block;
-  }
 </style>
 
 <ia-book-actions></ia-book-actions>
@@ -106,36 +55,26 @@ npm install --save @internetarchive/ia-book-actions
       canBrowseAndBorrow,
     } from '../src/assets/data/lending-get-status-service.js';
 
-    const userid = '@neeraj-archive';
-    const identifier = 'naturalhistoryof00unse_4111';
-    let bwbPurchaseUrl = 'https://www.betterworldbooks.com/product/detail/cambridge-ancient-hist-v04-0521044863';
-
     let iaBookActions = document.querySelector('ia-book-actions');
-
-    const modalConfig = new ModalConfig();
-    modalConfig.headerColor = '#d9534f';
-
-    // set defaultLendingStatus for unavailable (without borrowables) book
-    iaBookActions.userid = userid;
-    iaBookActions.identifier = identifier;
-    iaBookActions.bookTitle = 'Contemporary Black biography. Volume 39 : profiles from the interContemporary Black biography. Volume 39';
-    iaBookActions.lendingStatus = canBrowseAndBorrow;
-    iaBookActions.bwbPurchaseUrl = '';
+    iaBookActions.userid = '@neeraj-archive';
+    iaBookActions.identifier = 'naturalhistoryof00unse_4111';
+    iaBookActions.bookTitle = 'This is test title for any book';
+    iaBookActions.lendingStatus = {}; // lendinStatus in json
+    iaBookActions.bwbPurchaseUrl = 'https://bwb.com/produce/123';
     iaBookActions.barType = ''; // title|action
-    iaBookActions.modalConfig = modalConfig;
 </script>
 ```
 
 ![Book Action Bar](./assets/ia-book-action-screen.png "Book Action Bar Demo")
 
-## Usage of book-title-bar
+## Usage of Book Title
 ```html
 <!-- along with above properties, assign 'title' to barType pro something like this iaBookActions.barType = 'title' -->
 <script type="module">
   iaBookActions.barType = ''; // title|action
 </script>
 ```
-![Book Title Bar](./assets/ia-book-action-screen.png "Book Title Bar Demo")
+![Book Title Bar](./assets/ia-book-title-screen.png "Book Title Bar Demo")
 
 ### Config Options
 
