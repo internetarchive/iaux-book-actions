@@ -69,7 +69,7 @@ npm install --save @internetarchive/ia-book-actions
 
 ## Usage of Book Title
 ```html
-<!-- along with above properties, assign 'title' to barType pro something like this iaBookActions.barType = 'title' -->
+<!-- along with above properties, set iaBookActions.barType = 'title' -->
 <script type="module">
   iaBookActions.barType = ''; // title|action
 </script>
