@@ -1,11 +1,11 @@
 ![Build Status](https://github.com/internetarchive/iaux-modal-manager/actions/workflows/ci.yml/badge.svg) [![codecov](https://codecov.io/gh/internetarchive/iaux-modal-manager/branch/master/graph/badge.svg)](https://codecov.io/gh/internetarchive/iaux-modal-manager)
 
-# Book Action Button Component for lendable and embedded items
+# Component for lendable and embed items
 
 The book action button component build on LitElement with support for custom content and light DOM elements.
 
 
-![Modal Manager](./assets/modal-screenshot.jpg "Modal Manager Demo")
+![Book Action](./assets/ia-book-action-screen.png "Book Action Demo")
 
 ## Installation
 ```bash
@@ -126,14 +126,16 @@ npm install --save @internetarchive/ia-book-actions
 </script>
 ```
 
-## Usage of book-action-bar
+![Book Action Bar](./assets/ia-book-action-screen.png "Book Action Bar Demo")
+
+## Usage of book-title-bar
 ```html
 <!-- along with above properties, assign 'title' to barType pro something like this iaBookActions.barType = 'title' -->
 <script type="module">
   iaBookActions.barType = ''; // title|action
 </script>
 ```
-
+![Book Title Bar](./assets/ia-book-action-screen.png "Book Title Bar Demo")
 
 ### Config Options
 
