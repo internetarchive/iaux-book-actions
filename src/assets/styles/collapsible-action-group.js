@@ -6,6 +6,9 @@ export default css`
     height: 3.5rem;
     padding: 1rem 0;
   }
+  .actiongroup {
+    display: flex;
+  }
   .action-buttons {
     display: inline-flex;
     align-items: center;
@@ -77,7 +80,7 @@ export default css`
     padding: 0 0.6rem;
     margin-left: 0;
   }
-  .action-loader {
+  .actionloader {
     vertical-align: middle;
     visibility: hidden;
     padding: 0.9rem 0.2rem;
@@ -126,9 +129,14 @@ export default css`
     display: initial;
     font-size: 1.4rem;
   }
-
   .unavailable {
     opacity: 0.7;
     pointer-events: none;
+  }
+
+  .disabled {
+    opacity: 0.8;
+    pointer-events: none;
+    visibility: visible;
   }
 `;

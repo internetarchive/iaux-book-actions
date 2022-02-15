@@ -71,6 +71,18 @@
       float: left;
       margin: 2px;
     }
+
+    body.modal-manager-open {
+      overflow: hidden;
+    }
+  
+    modal-manager {
+      display: none;
+    }
+  
+    modal-manager[mode='open'] {
+      display: block;
+    }
   </style>
 </head>
 
@@ -85,6 +97,7 @@
       defaultLendingStatus,
       canBrowseAndBorrow,
     } from '../src/assets/data/lending-get-status-service.js';
+    import { ModalConfig } from '@internetarchive/modal-manager';
 
     const userid = '@neeraj-archive';
     const identifier = 'naturalhistoryof00unse_4111';
@@ -92,13 +105,17 @@
 
     let iaBookActions = document.querySelector('ia-book-actions');
 
+    const modalConfig = new ModalConfig();
+    modalConfig.headerColor = '#d9534f';
+
     // set defaultLendingStatus for unavailable (without borrowables) book
-    iaBookActions.userid = '@neeraj-archive';
+    iaBookActions.userid = userid;
     iaBookActions.identifier = identifier;
     iaBookActions.bookTitle = 'Contemporary Black biography. Volume 39 : profiles from the interContemporary Black biography. Volume 39';
-    iaBookActions.lendingStatus = defaultLendingStatus;
+    iaBookActions.lendingStatus = canBrowseAndBorrow;
     iaBookActions.bwbPurchaseUrl = '';
     iaBookActions.barType = '';
+    iaBookActions.modalConfig = modalConfig;
 
     let lendingStatus1 = iaBookActions.lendingStatus;
 
@@ -112,6 +129,29 @@
       });
     });
 
+    document.querySelectorAll('.errorEnable input[type=checkbox]').forEach((item) => {
+      if (window.location.href.indexOf('?error=true') !== -1) {
+        item.checked = true;
+      }
+      item.addEventListener('click', (e) => {
+        var searchParams = new URLSearchParams(window.location.search);
+        var separate = '';
+        if (e.target.checked) {
+          separate = '?';
+          searchParams.set('error', true);
+        } else {
+          separate = '';
+          searchParams.delete('error');
+        }
+
+        if (history.pushState) {
+          var newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + separate + searchParams;
+          window.history.pushState({path:newurl},'',newurl);
+        }
+      });
+    });
+
+    
     document.querySelectorAll('.userState input[type=checkbox]').forEach((item) => {
       item.addEventListener('click', (e) => {
         if (e.target.checked) {
@@ -219,6 +259,9 @@
     <fieldset>
       <legend>Dev testing for book action bar</legend>
         <table class="initial">
+          <tr colspan='5'>
+            <td class="errorEnable"><label><input type="checkbox" name="errorEnable" value="errorEnable" />Do you want to see error response?</label></td>
+          </tr>
           <tr>
             <td class="userState">
               <label><input type="checkbox" name="user" value="isAdmin" />isAdmin</label>

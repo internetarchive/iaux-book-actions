@@ -1,5 +1,6 @@
 import { html } from 'lit-element';
 import { nothing } from 'lit-html';
+import { classMap } from 'lit-html/directives/class-map';
 
 import ActionsHandler from '../core/services/actions-handler/actions-handler.js';
 
@@ -25,6 +26,8 @@ export class CollapsibleActionGroup extends ActionsHandler {
       width: { type: Number },
       hasAdminAccess: { type: Boolean },
       dropdownArrow: { type: String },
+      disabled: { type: Boolean },
+      borrowType: { type: String },
     };
   }
 
@@ -42,6 +45,9 @@ export class CollapsibleActionGroup extends ActionsHandler {
     this.initialButton = false;
     this.title = '';
     this.loaderIcon = 'https://archive.org/upload/images/tree/loading.gif';
+    this.disabled = false;
+    this.borrowType = ''; // (browsed|borrowed)
+    this.consecutiveLoanCounts = 1; // consecutive loan count
   }
 
   updated(changed) {
@@ -50,6 +56,35 @@ export class CollapsibleActionGroup extends ActionsHandler {
         this.resetActions();
       }
     }
+
+    // this is execute to fetch loan token
+    if (changed.has('borrowType')) {
+      this.emitEnableBookAccess();
+    }
+  }
+
+  /* emit custom event to fetch loan token */
+  emitEnableBookAccess() {
+    // send consecutiveLoanCounts for browsed books only.
+    // for borrowed books, we just send [Counts-1]
+    if (this.borrowType === 'browsed') {
+      this.consecutiveLoanCounts =
+        localStorage.getItem('consecutive-loan-count') ?? 1;
+    }
+
+    this.dispatchEvent(
+      new CustomEvent('enableBookAccess', {
+        detail: {
+          event: {
+            category: `${this.borrowType}BookAccess`, // browsedBookAccess | borrowedBookAccess
+            action: `${
+              this.borrowType === 'browsed' ? 'BrowseCounts-' : 'Counts-'
+            }${this.consecutiveLoanCounts}`, // (BrowseCounts-1|Counts-X)
+          },
+          borrowType: this.borrowType,
+        },
+      })
+    );
   }
 
   /**
@@ -94,13 +129,20 @@ export class CollapsibleActionGroup extends ActionsHandler {
 
   render() {
     return html`
-      ${this.getLoaderIcon}
-      <section class="action-buttons primary">
-        ${this.renderPrimaryActions}
-      </section>
-      <section class="action-buttons secondary">
-        ${this.renderSecondaryActions}
-      </section>
+      <div
+        class="${classMap({
+          actiongroup: true,
+          disabled: this.disabled,
+        })}"
+      >
+        ${this.getLoaderIcon}
+        <section class="action-buttons primary">
+          ${this.renderPrimaryActions}
+        </section>
+        <section class="action-buttons secondary">
+          ${this.renderSecondaryActions}
+        </section>
+      </div>
     `;
   }
 
@@ -225,7 +267,14 @@ export class CollapsibleActionGroup extends ActionsHandler {
    * @returns { HTMLElement }
    */
   get getLoaderIcon() {
-    return html`<img class="action-loader" alt="" src="${this.loaderIcon}" />`;
+    return html`<img
+      class="${classMap({
+        actionloader: true,
+        disabled: this.disabled,
+      })}"
+      alt=""
+      src="${this.loaderIcon}"
+    />`;
   }
 
   /**

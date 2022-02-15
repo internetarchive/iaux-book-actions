@@ -7,10 +7,7 @@ import ActionsHandlerService from './actions-handler-service.js';
  *
  * ActionsHandlerService is a function being used to execute
  * APIs based of the request made by user. It consist some parameters are as follows:-
- * 1. action: action name like browse_book, return_book, borrow_book etc...
- * 2. identifier: book name.
- * 3. success: This is callback function which will be executed after the API request
- *    return reponse as a success.
+ * 1. identifier: book name.
  */
 
 export default class ActionsHandler extends LitElement {
@@ -18,22 +15,37 @@ export default class ActionsHandler extends LitElement {
     super();
     this.identifier = identifier;
     this.ajaxTimeout = 6000;
+    this.loanTokenPollingDelay =
+      window.location.pathname === '/demo/' ? 2000 : 120000; // 120000 ms = 2 min
+    this.loanTokenInterval = null;
     this.bindEvents();
+  }
+
+  disconnectedCallback() {
+    this.loanTokenInterval = undefined;
   }
 
   sendEvent(eventCategory, eventAction) {
     // eslint-disable-next-line no-console
     console?.log('Book action: ', { eventCategory, eventAction });
-    window?.archive_analytics?.send_event(
+    window?.archive_analytics?.send_event_no_sampling(
       eventCategory,
       eventAction,
-      window.location.pathname
+      `identifier=${this.identifier}`
     );
   }
 
   bindEvents() {
     this.addEventListener('browseBook', ({ detail }) => {
       this.handleBrowseIt();
+      this.setConsecutiveLoanCounts();
+      const { category, action } = detail.event;
+      this.sendEvent(category, action);
+    });
+
+    this.addEventListener('browseBookAgain', ({ detail }) => {
+      this.handleBrowseIt();
+      this.setConsecutiveLoanCounts('browseAgain');
       const { category, action } = detail.event;
       this.sendEvent(category, action);
     });
@@ -87,57 +99,126 @@ export default class ActionsHandler extends LitElement {
       const { category, action } = detail.event;
       this.sendEvent(category, action);
     });
+
+    this.addEventListener('enableBookAccess', ({ detail }) => {
+      const borrowType = detail?.borrowType;
+
+      // fetch loan token for browsed/borrowed book and set an interval
+      if (borrowType) {
+        console.log('token poll started...');
+
+        this.loanTokenInterval = setInterval(() => {
+          this.handleLoanTokenPoller();
+        }, this.loanTokenPollingDelay);
+
+        const { category, action } = detail?.event;
+        this.sendEvent(category, action);
+      } else {
+        // if book is not browsed, just clear token polling interval
+        clearInterval(this.loanTokenInterval);
+      }
+    });
   }
 
   handleBrowseIt() {
+    const context = 'browse_book';
+    this.ActionError(context);
+
     ActionsHandlerService({
-      action: 'browse_book',
+      action: context,
       identifier: this.identifier,
       success: () => {
         this.handleReadItNow();
+      },
+      error: data => {
+        this.ActionError(context, data);
       },
     });
   }
 
   handleReturnIt() {
+    const context = 'return_loan';
+    this.ActionError(context);
+
     ActionsHandlerService({
-      action: 'return_loan',
+      action: context,
       identifier: this.identifier,
       success: () => {
         this.deleteLoanCookies();
         URLHelper.goToUrl(`/details/${this.identifier}`, true);
       },
+      error: data => {
+        this.ActionError(context, data);
+      },
     });
   }
 
   handleBorrowIt() {
+    const context = 'borrow_book';
+    this.ActionError(context);
+
     ActionsHandlerService({
-      action: 'borrow_book',
+      action: context,
       identifier: this.identifier,
       success: () => {
         this.handleReadItNow();
+      },
+      error: data => {
+        this.ActionError(context, data);
       },
     });
   }
 
   handleReserveIt() {
+    const context = 'join_waitlist';
+    this.ActionError(context);
+
     ActionsHandlerService({
-      action: 'join_waitlist',
+      action: context,
       identifier: this.identifier,
       success: () => {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
+      },
+      error: data => {
+        this.ActionError(context, data);
       },
     });
   }
 
   handleRemoveFromWaitingList() {
+    const context = 'leave_waitlist';
+    this.ActionError(context);
+
     ActionsHandlerService({
-      action: 'leave_waitlist',
+      action: context,
       identifier: this.identifier,
       success: () => {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
       },
+      error: data => {
+        this.ActionError(context, data);
+      },
     });
+  }
+
+  handleLoanTokenPoller() {
+    const context = 'create_token';
+    ActionsHandlerService({
+      identifier: this.identifier,
+      action: context,
+      error: data => {
+        this.ActionError(context, data);
+        clearInterval(this.loanTokenInterval); // stop token fetch api
+      },
+    });
+  }
+
+  ActionError(context, data = {}) {
+    this.dispatchEvent(
+      new CustomEvent('lendingActionError', {
+        detail: { context, data },
+      })
+    );
   }
 
   handleLoginOk() {
@@ -170,6 +251,23 @@ export default class ActionsHandler extends LitElement {
     setTimeout(() => {
       URLHelper.goToUrl(redirectTo, true);
     }, this.ajaxTimeout);
+  }
+
+  // save consecutive loan count for borrow
+  setConsecutiveLoanCounts(action = '') {
+    const { localStorage } = window;
+    if (localStorage) {
+      let newCount = 1;
+      const storageKey = `consecutive-loan-count`;
+      const existingCount = Number(localStorage.getItem(storageKey));
+
+      // want to increase browse-count by 1 if,
+      // you consecutive reading a book.
+      if (action === 'browseAgain') {
+        newCount = existingCount ? existingCount + 1 : 1;
+      }
+      localStorage.setItem(storageKey, newCount);
+    }
   }
 
   deleteLoanCookies() {
