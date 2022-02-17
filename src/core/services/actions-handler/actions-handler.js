@@ -17,7 +17,7 @@ export default class ActionsHandler extends LitElement {
     this.ajaxTimeout = 6000;
     this.loanTokenPollingDelay =
       window.location.pathname === '/demo/' ? 2000 : 120000; // 120000 ms = 2 min
-    this.loanTokenInterval = null;
+    this.loanTokenInterval = undefined;
     this.bindEvents();
   }
 
@@ -105,8 +105,6 @@ export default class ActionsHandler extends LitElement {
 
       // fetch loan token for browsed/borrowed book and set an interval
       if (borrowType) {
-        console.log('token poll started...');
-
         this.loanTokenInterval = setInterval(() => {
           this.handleLoanTokenPoller();
         }, this.loanTokenPollingDelay);
@@ -122,7 +120,7 @@ export default class ActionsHandler extends LitElement {
 
   handleBrowseIt() {
     const context = 'browse_book';
-    this.ActionError(context);
+    this.dispatchToggleActionGroup(context);
 
     ActionsHandlerService({
       action: context,
@@ -131,14 +129,14 @@ export default class ActionsHandler extends LitElement {
         this.handleReadItNow();
       },
       error: data => {
-        this.ActionError(context, data);
+        this.dispatchActionError(context, data);
       },
     });
   }
 
   handleReturnIt() {
     const context = 'return_loan';
-    this.ActionError(context);
+    this.dispatchToggleActionGroup(context);
 
     ActionsHandlerService({
       action: context,
@@ -148,14 +146,14 @@ export default class ActionsHandler extends LitElement {
         URLHelper.goToUrl(`/details/${this.identifier}`, true);
       },
       error: data => {
-        this.ActionError(context, data);
+        this.dispatchActionError(context, data);
       },
     });
   }
 
   handleBorrowIt() {
     const context = 'borrow_book';
-    this.ActionError(context);
+    this.dispatchToggleActionGroup(context);
 
     ActionsHandlerService({
       action: context,
@@ -164,14 +162,14 @@ export default class ActionsHandler extends LitElement {
         this.handleReadItNow();
       },
       error: data => {
-        this.ActionError(context, data);
+        this.dispatchActionError(context, data);
       },
     });
   }
 
   handleReserveIt() {
     const context = 'join_waitlist';
-    this.ActionError(context);
+    this.dispatchToggleActionGroup(context);
 
     ActionsHandlerService({
       action: context,
@@ -180,14 +178,14 @@ export default class ActionsHandler extends LitElement {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
       },
       error: data => {
-        this.ActionError(context, data);
+        this.dispatchActionError(context, data);
       },
     });
   }
 
   handleRemoveFromWaitingList() {
     const context = 'leave_waitlist';
-    this.ActionError(context);
+    this.dispatchToggleActionGroup(context);
 
     ActionsHandlerService({
       action: context,
@@ -196,7 +194,7 @@ export default class ActionsHandler extends LitElement {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
       },
       error: data => {
-        this.ActionError(context, data);
+        this.dispatchActionError(context, data);
       },
     });
   }
@@ -207,15 +205,23 @@ export default class ActionsHandler extends LitElement {
       identifier: this.identifier,
       action: context,
       error: data => {
-        this.ActionError(context, data);
+        this.dispatchActionError(context, data);
         clearInterval(this.loanTokenInterval); // stop token fetch api
       },
     });
   }
 
-  ActionError(context, data = {}) {
+  dispatchActionError(context, data = {}) {
     this.dispatchEvent(
       new CustomEvent('lendingActionError', {
+        detail: { context, data },
+      })
+    );
+  }
+
+  dispatchToggleActionGroup(context, data = {}) {
+    this.dispatchEvent(
+      new CustomEvent('toggleActionGroup', {
         detail: { context, data },
       })
     );

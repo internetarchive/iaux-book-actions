@@ -87,7 +87,7 @@ describe('<collapsible-action-group>', () => {
 });
 
 describe('fetch loan token and localStorage for browsed/borrowsed book', () => {
-  beforeEach(() => {
+  afterEach(() => {
     const localStorageMock = {
       getItem: Sinon.spy(),
       setItem: Sinon.spy(),
