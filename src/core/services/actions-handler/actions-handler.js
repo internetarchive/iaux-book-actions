@@ -120,7 +120,7 @@ export default class ActionsHandler extends LitElement {
 
   handleBrowseIt() {
     const context = 'browse_book';
-    this.dispatchToggleActionGroup(context);
+    this.dispatchToggleActionGroup();
 
     ActionsHandlerService({
       action: context,
@@ -136,7 +136,7 @@ export default class ActionsHandler extends LitElement {
 
   handleReturnIt() {
     const context = 'return_loan';
-    this.dispatchToggleActionGroup(context);
+    this.dispatchToggleActionGroup();
 
     ActionsHandlerService({
       action: context,
@@ -153,7 +153,7 @@ export default class ActionsHandler extends LitElement {
 
   handleBorrowIt() {
     const context = 'borrow_book';
-    this.dispatchToggleActionGroup(context);
+    this.dispatchToggleActionGroup();
 
     ActionsHandlerService({
       action: context,
@@ -169,7 +169,7 @@ export default class ActionsHandler extends LitElement {
 
   handleReserveIt() {
     const context = 'join_waitlist';
-    this.dispatchToggleActionGroup(context);
+    this.dispatchToggleActionGroup();
 
     ActionsHandlerService({
       action: context,
@@ -185,7 +185,7 @@ export default class ActionsHandler extends LitElement {
 
   handleRemoveFromWaitingList() {
     const context = 'leave_waitlist';
-    this.dispatchToggleActionGroup(context);
+    this.dispatchToggleActionGroup();
 
     ActionsHandlerService({
       action: context,
@@ -219,12 +219,8 @@ export default class ActionsHandler extends LitElement {
     );
   }
 
-  dispatchToggleActionGroup(context, data = {}) {
-    this.dispatchEvent(
-      new CustomEvent('toggleActionGroup', {
-        detail: { context, data },
-      })
-    );
+  dispatchToggleActionGroup() {
+    this.dispatchEvent(new CustomEvent('toggleActionGroup'));
   }
 
   handleLoginOk() {

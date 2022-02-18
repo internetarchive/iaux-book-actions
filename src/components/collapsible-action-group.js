@@ -27,6 +27,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
       hasAdminAccess: { type: Boolean },
       dropdownArrow: { type: String },
       disabled: { type: Boolean },
+      borrowType: { type: String },
     };
   }
 
@@ -45,6 +46,8 @@ export class CollapsibleActionGroup extends ActionsHandler {
     this.title = '';
     this.loaderIcon = 'https://archive.org/upload/images/tree/loading.gif';
     this.disabled = false;
+    this.borrowType = ''; // (browsed|borrowed)
+    this.consecutiveLoanCounts = 1; // consecutive loan count
   }
 
   updated(changed) {
@@ -53,6 +56,38 @@ export class CollapsibleActionGroup extends ActionsHandler {
         this.resetActions();
       }
     }
+
+    // this is execute to fetch loan token
+    if (changed.has('borrowType')) {
+      this.emitEnableBookAccess();
+    }
+  }
+
+  /* emit custom event to fetch loan token */
+  emitEnableBookAccess() {
+    // send consecutiveLoanCounts for browsed books only.
+    if (this.borrowType === 'browsing') {
+      this.consecutiveLoanCounts =
+        localStorage.getItem('consecutive-loan-count') ?? 1;
+    }
+
+    // event category and action for browsing book access
+    const eventCategory = `${this.borrowType}BookAccess`;
+    const eventAction = `${
+      this.borrowType === 'browsing' ? 'BrowseCounts-' : 'Counts-'
+    }${this.consecutiveLoanCounts}`;
+
+    this.dispatchEvent(
+      new CustomEvent('enableBookAccess', {
+        detail: {
+          event: {
+            category: eventCategory, // brosingBookAccess | borrowingBookAccess
+            action: eventAction, // (BrowseCounts-N|Counts-N)
+          },
+          borrowType: this.borrowType,
+        },
+      })
+    );
   }
 
   /**

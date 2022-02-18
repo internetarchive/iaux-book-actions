@@ -1,5 +1,5 @@
 /* eslint-disable camelcase */
-import { html, css } from 'lit-element';
+import { html, css, LitElement } from 'lit-element';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
 import { ModalConfig } from '@internetarchive/modal-manager';
@@ -9,11 +9,10 @@ import './components/book-title-bar.js';
 import './components/text-group.js';
 import './components/info-icon.js';
 
-import ActionsHandler from './core/services/actions-handler/actions-handler.js';
 import GetLendingActions from './core/services/get-lending-actions.js';
 import { mobileContainerWidth } from './core/config/constants.js';
 
-export default class IABookActions extends ActionsHandler {
+export default class IABookActions extends LitElement {
   static get properties() {
     return {
       userid: { type: String },
@@ -44,7 +43,6 @@ export default class IABookActions extends ActionsHandler {
     this.secondaryActions = [];
     this.lendingOptions = {};
     this.disableActionGroup = false;
-    this.borrowType = '';
   }
 
   disconnectedCallback() {
@@ -64,11 +62,6 @@ export default class IABookActions extends ActionsHandler {
     if (changed.has('lendingStatus') || changed.has('bwbPurchaseUrl')) {
       this.setupLendingToolbarActions();
       this.update();
-    }
-    // this is execute to fetch loan token
-    if (this.borrowType) {
-      console.log(this.borrowType);
-      this.emitEnableBookAccess();
     }
 
     if (changed.has('sharedObserver')) {
@@ -193,12 +186,17 @@ export default class IABookActions extends ActionsHandler {
     `;
   }
 
+  /*
+   * custom event handler to toggle action group visibility
+   *
+   * @event IABookActions#toggleActionGroup
+   */
   handleToggleActionGroup() {
     this.disableActionGroup = !this.disableActionGroup;
   }
 
   /*
-   * handle lending errors occure on different operation like
+   * handle lending errors occure during different operation like
    * browse book, borrow book, borrowed book token etc...
    *
    * @event IABookActions#lendingActionError
@@ -207,6 +205,7 @@ export default class IABookActions extends ActionsHandler {
    * @param {string} event.detail.data.error - error message
    */
   handleLendingActionError(event) {
+    console.log(event?.detail?.data);
     // toggle activity loader
     this.handleToggleActionGroup();
 
@@ -251,33 +250,6 @@ export default class IABookActions extends ActionsHandler {
         headerColor: '#d9534f',
       }),
     });
-  }
-
-  /* emit custom event to fetch loan token */
-  emitEnableBookAccess() {
-    // send consecutiveLoanCounts for browsed books only.
-    if (this.borrowType === 'browsing') {
-      this.consecutiveLoanCounts =
-        localStorage.getItem('consecutive-loan-count') ?? 1;
-    }
-
-    // event category and action for browsing book access
-    const eventCategory = `${this.borrowType}BookAccess`;
-    const eventAction = `${
-      this.borrowType === 'browsing' ? 'BrowseCounts-' : 'Counts-'
-    }${this.consecutiveLoanCounts}`;
-
-    this.dispatchEvent(
-      new CustomEvent('enableBookAccess', {
-        detail: {
-          event: {
-            category: eventCategory, // brosingBookAccess | borrowingBookAccess
-            action: eventAction, // (BrowseCounts-N|Counts-N)
-          },
-          borrowType: this.borrowType,
-        },
-      })
-    );
   }
 
   get iconClass() {
