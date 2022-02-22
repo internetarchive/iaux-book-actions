@@ -87,7 +87,7 @@ describe('<collapsible-action-group>', () => {
 });
 
 describe('fetch loan token and localStorage for browsed/borrowsed book', () => {
-  afterEach(() => {
+  beforeEach(() => {
     const localStorageMock = {
       getItem: Sinon.spy(),
       setItem: Sinon.spy(),
@@ -97,14 +97,14 @@ describe('fetch loan token and localStorage for browsed/borrowsed book', () => {
     });
   });
 
-  it('test localStorage function when borrowType is browsed', async () => {
-    await fixture(container({ borrowType: 'browsed' }));
+  it('test localStorage function when borrowType is browsing', async () => {
+    await fixture(container({ borrowType: 'browsing' }));
     expect(localStorage.getItem).to.be.calledOnce;
     expect(localStorage.getItem).to.be.calledWith('consecutive-loan-count');
   });
 
-  it('test localStorage function when borrowType is borrowed', async () => {
-    await fixture(container({ borrowType: 'borrowed' }));
+  it('test localStorage function when borrowType is borrowing', async () => {
+    await fixture(container({ borrowType: 'borrowing' }));
     expect(localStorage.getItem).to.not.be.calledOnce;
     expect(localStorage.getItem).to.not.be.calledWith('consecutive-loan-count');
   });
