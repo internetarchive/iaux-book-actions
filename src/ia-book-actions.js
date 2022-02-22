@@ -201,28 +201,27 @@ export default class IABookActions extends LitElement {
    *
    * @event IABookActions#lendingActionError
    * @param {Object} event - The employee who is responsible for the project
-   * @param {string} event.detail.context - action when error occurred like 'browseBook', 'borrowBook'
-   * @param {string} event.detail.data.error - error message
+   *  @param {string} event.detail.action - action when error occurred like 'browseBook', 'borrowBook'
+   *  @param {string} event.detail.data.error - error message
    */
   handleLendingActionError(event) {
-    console.log(event?.detail?.data);
     // toggle activity loader
     this.handleToggleActionGroup();
 
-    const context = event?.detail?.context;
+    const action = event?.detail?.action;
     const errorMsg = event?.detail?.data?.error;
 
-    if (errorMsg) this.showErrorModal(errorMsg);
+    if (errorMsg) this.showErrorModal(errorMsg, action);
 
     // update action bar state if book is not available to browse or borrow.
     if (errorMsg && errorMsg.match(/not available to borrow/gm)) {
       let currStatus = this.lendingStatus;
-      if (context === 'browse_book') {
+      if (action === 'browse_book') {
         currStatus = {
           ...this.lendingStatus,
           available_to_browse: false,
         };
-      } else if (context === 'borrow_book') {
+      } else if (action === 'borrow_book') {
         currStatus = {
           ...this.lendingStatus,
           available_to_borrow: false,
@@ -233,7 +232,7 @@ export default class IABookActions extends LitElement {
   }
 
   /* show error message if something went wrong */
-  async showErrorModal(errorMsg) {
+  async showErrorModal(errorMsg, action) {
     this.disableActionGroup = false;
 
     this.modal = document.querySelector('#action-bar-modal');
@@ -243,12 +242,27 @@ export default class IABookActions extends LitElement {
     }
     await document.body.appendChild(this.modal);
 
+    const modalConfig = new ModalConfig({
+      title: 'Lending error',
+      message: errorMsg,
+      headerColor: '#d9534f',
+    });
+
+    if (action === 'create_token') {
+      modalConfig.closeOnBackdropClick = false;
+      modalConfig.showCloseButton = false;
+      modalConfig.message = html` Uh oh, something went wrong trying to access
+        this book.<br />
+        Please <a href="/">refresh</a> to try again or send us an email to
+        <a
+          href="mailto:info@archive.org?subject=Help: cannot access my borrowed book: ${this
+            .identifier}"
+          >info@archive.org</a
+        >`;
+    }
+
     this.modal.showModal({
-      config: new ModalConfig({
-        title: 'Lending error',
-        message: errorMsg,
-        headerColor: '#d9534f',
-      }),
+      config: modalConfig,
     });
   }
 

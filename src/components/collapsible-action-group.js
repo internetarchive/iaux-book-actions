@@ -63,7 +63,11 @@ export class CollapsibleActionGroup extends ActionsHandler {
     }
   }
 
-  /* emit custom event to fetch loan token */
+  /**
+   * Handles events when user is borrowing book and wants to have access to read
+   *
+   * @fires CollapsibleActionGroup#enableBookAccess
+   */
   emitEnableBookAccess() {
     // send consecutiveLoanCounts for browsed books only.
     if (this.borrowType === 'browsing') {
@@ -222,11 +226,13 @@ export class CollapsibleActionGroup extends ActionsHandler {
   }
 
   /**
-   * Click handler to emit custom event on action click
-   * @param { string } eventName
-   * @param { object } gaEvent
+   * Handles click events when user click on action buttons
+   * @param { string } eventName - actions like 'browseBook', 'borrowBook' etc...
+   * @param { object } gaEvent - contains analytics event action and category
    *   @param { string } gaEvent.category
    *   @param { string } gaEvent.action
+   *
+   * @fires CollapsibleActionGroup#{eventName} - (will be browseBook, borrowBook etc...)
    */
   clickHandler(eventName, gaEvent) {
     this.dropdownState = 'close';

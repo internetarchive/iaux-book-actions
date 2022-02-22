@@ -14,7 +14,7 @@ export default class ActionsHandler extends LitElement {
   constructor(identifier) {
     super();
     this.identifier = identifier;
-    this.ajaxTimeout = 6000;
+    this.ajaxTimeout = 7000;
     this.loanTokenPollingDelay =
       window.location.pathname === '/demo/' ? 2000 : 120000; // 120000 ms = 2 min
     this.loanTokenInterval = undefined;
@@ -119,102 +119,102 @@ export default class ActionsHandler extends LitElement {
   }
 
   handleBrowseIt() {
-    const context = 'browse_book';
+    const action = 'browse_book';
     this.dispatchToggleActionGroup();
 
     ActionsHandlerService({
-      action: context,
+      action,
       identifier: this.identifier,
       success: () => {
         this.handleReadItNow();
       },
       error: data => {
-        this.dispatchActionError(context, data);
+        this.dispatchActionError(action, data);
       },
     });
   }
 
   handleReturnIt() {
-    const context = 'return_loan';
+    const action = 'return_loan';
     this.dispatchToggleActionGroup();
 
     ActionsHandlerService({
-      action: context,
+      action,
       identifier: this.identifier,
       success: () => {
         this.deleteLoanCookies();
         URLHelper.goToUrl(`/details/${this.identifier}`, true);
       },
       error: data => {
-        this.dispatchActionError(context, data);
+        this.dispatchActionError(action, data);
       },
     });
   }
 
   handleBorrowIt() {
-    const context = 'borrow_book';
+    const action = 'borrow_book';
     this.dispatchToggleActionGroup();
 
     ActionsHandlerService({
-      action: context,
+      action,
       identifier: this.identifier,
       success: () => {
         this.handleReadItNow();
       },
       error: data => {
-        this.dispatchActionError(context, data);
+        this.dispatchActionError(action, data);
       },
     });
   }
 
   handleReserveIt() {
-    const context = 'join_waitlist';
+    const action = 'join_waitlist';
     this.dispatchToggleActionGroup();
 
     ActionsHandlerService({
-      action: context,
+      action,
       identifier: this.identifier,
       success: () => {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
       },
       error: data => {
-        this.dispatchActionError(context, data);
+        this.dispatchActionError(action, data);
       },
     });
   }
 
   handleRemoveFromWaitingList() {
-    const context = 'leave_waitlist';
+    const action = 'leave_waitlist';
     this.dispatchToggleActionGroup();
 
     ActionsHandlerService({
-      action: context,
+      action,
       identifier: this.identifier,
       success: () => {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
       },
       error: data => {
-        this.dispatchActionError(context, data);
+        this.dispatchActionError(action, data);
       },
     });
   }
 
   handleLoanTokenPoller() {
-    const context = 'create_token';
+    const action = 'create_token';
     ActionsHandlerService({
       identifier: this.identifier,
-      action: context,
+      action,
       error: data => {
-        this.dispatchActionError(context, data);
+        this.dispatchActionError(action, data);
         clearInterval(this.loanTokenInterval); // stop token fetch api
       },
     });
   }
 
-  dispatchActionError(context, data = {}) {
+  dispatchActionError(action, data = {}) {
     this.dispatchEvent(
       new CustomEvent('lendingActionError', {
-        detail: { context, data },
+        detail: { action, data },
       })
     );
   }
