@@ -16,6 +16,11 @@ export default function ActionsHandlerService(options) {
   let baseHost = '/services/loans/loan';
   const location = window?.location;
 
+  // return intentional error on dev environment
+  const shouldReturnError =
+    location?.href?.indexOf('?error=true') !== -1 &&
+    location?.hostname !== 'archive.org';
+
   if (location?.pathname === '/demo/') baseHost = `/demo/`;
 
   let formData = new FormData();
@@ -27,12 +32,11 @@ export default function ActionsHandlerService(options) {
     body: formData,
   })
     .then(response => {
-      let shouldReturnError = location?.href?.indexOf('?error=true') !== -1;
       const tokenError = 'loan token not found. please try again later.';
       const borrowError =
         'This book is not available to borrow at this time. Please try again later.';
 
-      // return error reponse if query param has ?error=true param...
+      // return error reponse when not production and has ?error=true param...
       const erroneousActions = ['browse_book', 'borrow_book', 'create_token'];
       if (shouldReturnError && erroneousActions.includes(option?.action)) {
         return {

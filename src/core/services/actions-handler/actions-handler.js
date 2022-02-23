@@ -211,6 +211,15 @@ export default class ActionsHandler extends LitElement {
     });
   }
 
+  /**
+   * Dispatches event when an error occured on action
+   * Notes:- toggle <collapsible-action-group> visibility (enable/disable).
+   *
+   * @param { String } action - name of action like browse_book, borrow_book
+   * @param { Object } data - erroneous response from api call
+   *
+   * @fires ActionsHandler#lendingActionError
+   */
   dispatchActionError(action, data = {}) {
     this.dispatchEvent(
       new CustomEvent('lendingActionError', {
@@ -219,6 +228,12 @@ export default class ActionsHandler extends LitElement {
     );
   }
 
+  /**
+   * Dispatches event when patron is clicked on action buttons.
+   * Notes:- toggle <collapsible-action-group> disable/enable.
+   *
+   * @fires ActionsHandler#toggleActionGroup
+   */
   dispatchToggleActionGroup() {
     this.dispatchEvent(new CustomEvent('toggleActionGroup'));
   }

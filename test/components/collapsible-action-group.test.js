@@ -97,14 +97,14 @@ describe('fetch loan token and localStorage for browsed/borrowsed book', () => {
     });
   });
 
-  it('test localStorage function when borrowType is browsing', async () => {
-    await fixture(container({ borrowType: 'browsing' }));
+  it('test localStorage function when borrowType is browsed', async () => {
+    await fixture(container({ borrowType: 'browsed' }));
     expect(localStorage.getItem).to.be.calledOnce;
     expect(localStorage.getItem).to.be.calledWith('consecutive-loan-count');
   });
 
-  it('test localStorage function when borrowType is borrowing', async () => {
-    await fixture(container({ borrowType: 'borrowing' }));
+  it('test localStorage function when borrowType is borrowed', async () => {
+    await fixture(container({ borrowType: 'borrowed' }));
     expect(localStorage.getItem).to.not.be.calledOnce;
     expect(localStorage.getItem).to.not.be.calledWith('consecutive-loan-count');
   });

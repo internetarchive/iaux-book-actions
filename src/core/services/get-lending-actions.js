@@ -96,7 +96,7 @@ export default class GetLendingActions {
         this.actionsConfig.adminAccessConfig(),
         this.actionsConfig.purchaseConfig(),
       ],
-      borrowType: isBrowsing ? 'browsing' : 'borrowing',
+      borrowType: isBrowsing ? 'browsed' : 'borrowed',
     };
   }
 

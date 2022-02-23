@@ -64,7 +64,8 @@ export class CollapsibleActionGroup extends ActionsHandler {
   }
 
   /**
-   * Handles events when user is borrowing book and wants to have access to read
+   * Dispatches event when patron is borrowing book.
+   * Notes borrow type, and consecutive borrow counts
    *
    * @fires CollapsibleActionGroup#enableBookAccess
    */
@@ -226,7 +227,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
   }
 
   /**
-   * Handles click events when user click on action buttons
+   * Dispatches click events when patron clicks on action buttons
    * @param { string } eventName - actions like 'browseBook', 'borrowBook' etc...
    * @param { object } gaEvent - contains analytics event action and category
    *   @param { string } gaEvent.category

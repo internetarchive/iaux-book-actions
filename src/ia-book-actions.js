@@ -144,7 +144,7 @@ export default class IABookActions extends LitElement {
     });
 
     this.borrowType = actions.borrowType;
-    if (this.borrowType === 'browsing') {
+    if (this.borrowType === 'browsed') {
       // start timer for browsing.
       // when browse is completed, we shows browse-again button
       this.startBrowseTimer();
