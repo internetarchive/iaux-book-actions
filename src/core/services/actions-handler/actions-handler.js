@@ -1,4 +1,6 @@
 import { LitElement } from 'lit-element';
+import { get as indexedDBGet, set as indexedDBSet } from 'idb-keyval';
+
 import { URLHelper } from '../../config/url-helper.js';
 import ActionsHandlerService from './actions-handler-service.js';
 
@@ -271,19 +273,27 @@ export default class ActionsHandler extends LitElement {
   }
 
   // save consecutive loan count for borrow
-  setConsecutiveLoanCounts(action = '') {
-    const { localStorage } = window;
-    if (localStorage) {
+  async setConsecutiveLoanCounts(action = '') {
+    try {
       let newCount = 1;
       const storageKey = `consecutive-loan-count`;
-      const existingCount = Number(localStorage.getItem(storageKey));
+      const expireTime = new Date(
+        Date.now() + (1 / 12) * 24 * 60 * 60 * 1000
+      ).toString();
+      const existingCount = await indexedDBGet(storageKey);
 
-      // want to increase browse-count by 1 if,
-      // you consecutive reading a book.
-      if (action === 'browseAgain') {
-        newCount = existingCount ? existingCount + 1 : 1;
+      // increase browse-count by 1 when you consecutive reading a book.
+      if (action === 'browseAgain' && existingCount !== undefined) {
+        newCount = existingCount.value ? existingCount.value + 1 : 1;
       }
-      localStorage.setItem(storageKey, newCount);
+
+      // expire indexDB key-value after 2 hours.
+      await indexedDBSet(storageKey, {
+        value: newCount,
+        expire: expireTime,
+      });
+    } catch (error) {
+      console.log(error);
     }
   }
 

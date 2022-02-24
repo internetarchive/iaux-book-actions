@@ -2,6 +2,7 @@ import { html } from 'lit-element';
 import { nothing } from 'lit-html';
 import { classMap } from 'lit-html/directives/class-map';
 
+import { get as indexedDBGet } from 'idb-keyval';
 import ActionsHandler from '../core/services/actions-handler/actions-handler.js';
 
 import buttonBaseStyle from '../assets/styles/ia-button.js';
@@ -69,24 +70,31 @@ export class CollapsibleActionGroup extends ActionsHandler {
    *
    * @fires CollapsibleActionGroup#enableBookAccess
    */
-  emitEnableBookAccess() {
+  async emitEnableBookAccess() {
     // send consecutiveLoanCounts for browsed books only.
-    if (this.borrowType === 'browsing') {
-      this.consecutiveLoanCounts =
-        localStorage.getItem('consecutive-loan-count') ?? 1;
+    if (this.borrowType === 'browsed') {
+      try {
+        const existingCount =
+          (await indexedDBGet('consecutive-loan-count')) ?? 1;
+        if (existingCount !== undefined) {
+          this.consecutiveLoanCounts = existingCount.value ?? 1;
+        }
+      } catch (error) {
+        console.log(error);
+      }
     }
 
     // event category and action for browsing book access
     const eventCategory = `${this.borrowType}BookAccess`;
     const eventAction = `${
-      this.borrowType === 'browsing' ? 'BrowseCounts-' : 'Counts-'
+      this.borrowType === 'browsed' ? 'BrowseCounts-' : 'Counts-'
     }${this.consecutiveLoanCounts}`;
 
     this.dispatchEvent(
       new CustomEvent('enableBookAccess', {
         detail: {
           event: {
-            category: eventCategory, // brosingBookAccess | borrowingBookAccess
+            category: eventCategory, // browsedBookAccess | borrowedBookAccess
             action: eventAction, // (BrowseCounts-N|Counts-N)
           },
           borrowType: this.borrowType,
