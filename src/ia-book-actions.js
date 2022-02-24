@@ -24,6 +24,7 @@ export default class IABookActions extends LitElement {
       barType: { type: String },
       sharedObserver: { attribute: false },
       disableActionGroup: { type: Boolean },
+      modal: { Object },
     };
   }
 
@@ -37,12 +38,15 @@ export default class IABookActions extends LitElement {
     this.bwbPurchaseUrl = '';
     this.barType = 'action'; // 'title'|'action'
     this.sharedObserver = undefined;
+    this.disableActionGroup = false;
+    this.modal = undefined;
+
+    // private props
     this.primaryActions = [];
     this.primaryTitle = '';
     this.primaryColor = 'primary';
     this.secondaryActions = [];
     this.lendingOptions = {};
-    this.disableActionGroup = false;
   }
 
   disconnectedCallback() {
@@ -145,7 +149,7 @@ export default class IABookActions extends LitElement {
 
     this.borrowType = actions.borrowType;
     if (this.borrowType === 'browsed') {
-      // start timer for browsing.
+      // start timer for browsed.
       // when browse is completed, we shows browse-again button
       this.startBrowseTimer();
     }
@@ -235,11 +239,15 @@ export default class IABookActions extends LitElement {
   async showErrorModal(errorMsg, action) {
     this.disableActionGroup = false;
 
-    this.modal = document.querySelector('#action-bar-modal');
+    // check if this.modal passed as prop
     if (!this.modal) {
-      this.modal = document.createElement('modal-manager');
-      this.modal.id = 'action-bar-modal';
+      this.modal = document.querySelector('modal-manager');
+
+      // check the DOM if <modal-manager> already there
+      if (!this.modal) this.modal = document.createElement('modal-manager');
     }
+
+    this.modal.id = 'action-bar-modal';
     await document.body.appendChild(this.modal);
 
     const modalConfig = new ModalConfig({
@@ -253,7 +261,8 @@ export default class IABookActions extends LitElement {
       modalConfig.showCloseButton = false;
       modalConfig.message = html` Uh oh, something went wrong trying to access
         this book.<br />
-        Please <a href="/">refresh</a> to try again or send us an email to
+        Please <a href="${() => window.location.reload(true)}">refresh</a> to
+        try again or send us an email to
         <a
           href="mailto:info@archive.org?subject=Help: cannot access my borrowed book: ${this
             .identifier}"

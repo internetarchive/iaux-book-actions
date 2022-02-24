@@ -277,17 +277,18 @@ export default class ActionsHandler extends LitElement {
     try {
       let newCount = 1;
       const storageKey = `consecutive-loan-count`;
+      const existingCount = await indexedDBGet(storageKey);
+
+      // expire indexDB key-value after 2 hours
       const expireTime = new Date(
         Date.now() + (1 / 12) * 24 * 60 * 60 * 1000
       ).toString();
-      const existingCount = await indexedDBGet(storageKey);
 
       // increase browse-count by 1 when you consecutive reading a book.
       if (action === 'browseAgain' && existingCount !== undefined) {
         newCount = existingCount.value ? existingCount.value + 1 : 1;
       }
 
-      // expire indexDB key-value after 2 hours.
       await indexedDBSet(storageKey, {
         value: newCount,
         expire: expireTime,

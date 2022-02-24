@@ -74,8 +74,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
     // send consecutiveLoanCounts for browsed books only.
     if (this.borrowType === 'browsed') {
       try {
-        const existingCount =
-          (await indexedDBGet('consecutive-loan-count')) ?? 1;
+        const existingCount = await indexedDBGet('consecutive-loan-count');
         if (existingCount !== undefined) {
           this.consecutiveLoanCounts = existingCount.value ?? 1;
         }
