@@ -1,5 +1,5 @@
 import { LitElement } from 'lit-element';
-import { get as indexedDBGet, set as indexedDBSet } from 'idb-keyval';
+import { LocalCache } from '@internetarchive/local-cache';
 
 import { URLHelper } from '../../config/url-helper.js';
 import ActionsHandlerService from './actions-handler-service.js';
@@ -20,6 +20,7 @@ export default class ActionsHandler extends LitElement {
     this.loanTokenPollingDelay =
       window.location.pathname === '/demo/' ? 2000 : 120000; // 120000 ms = 2 min
     this.loanTokenInterval = undefined;
+    this.localCache = new LocalCache();
     this.bindEvents();
   }
 
@@ -277,21 +278,18 @@ export default class ActionsHandler extends LitElement {
     try {
       let newCount = 1;
       const storageKey = `consecutive-loan-count`;
-      const existingCount = await indexedDBGet(storageKey);
-
-      // expire indexDB key-value after 2 hours
-      const expireTime = new Date(
-        Date.now() + (1 / 12) * 24 * 60 * 60 * 1000
-      ).toString();
+      const existingCount = await this.localCache.get(storageKey);
 
       // increase browse-count by 1 when you consecutive reading a book.
       if (action === 'browseAgain' && existingCount !== undefined) {
-        newCount = existingCount.value ? existingCount.value + 1 : 1;
+        newCount = existingCount ? existingCount + 1 : 1;
       }
 
-      await indexedDBSet(storageKey, {
+      // set new value
+      await this.localCache.set({
+        key: storageKey,
         value: newCount,
-        expire: expireTime,
+        ttl: 7200, // 2 hours
       });
     } catch (error) {
       console.log(error);

@@ -2,7 +2,6 @@ import { html } from 'lit-element';
 import { nothing } from 'lit-html';
 import { classMap } from 'lit-html/directives/class-map';
 
-import { get as indexedDBGet } from 'idb-keyval';
 import ActionsHandler from '../core/services/actions-handler/actions-handler.js';
 
 import buttonBaseStyle from '../assets/styles/ia-button.js';
@@ -74,7 +73,9 @@ export class CollapsibleActionGroup extends ActionsHandler {
     // send consecutiveLoanCounts for browsed books only.
     if (this.borrowType === 'browsed') {
       try {
-        const existingCount = await indexedDBGet('consecutive-loan-count');
+        const existingCount = await this.localCache.get(
+          'consecutive-loan-count'
+        );
         if (existingCount !== undefined) {
           this.consecutiveLoanCounts = existingCount.value ?? 1;
         }
