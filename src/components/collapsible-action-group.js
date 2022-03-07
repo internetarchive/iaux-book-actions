@@ -63,23 +63,39 @@ export class CollapsibleActionGroup extends ActionsHandler {
     }
   }
 
-  /* emit custom event to fetch loan token */
-  emitEnableBookAccess() {
+  /**
+   * Dispatches event when patron is borrowing book.
+   * Notes borrow type, and consecutive borrow counts
+   *
+   * @fires CollapsibleActionGroup#enableBookAccess
+   */
+  async emitEnableBookAccess() {
     // send consecutiveLoanCounts for browsed books only.
-    // for borrowed books, we just send [Counts-1]
     if (this.borrowType === 'browsed') {
-      this.consecutiveLoanCounts =
-        localStorage.getItem('consecutive-loan-count') ?? 1;
+      try {
+        const existingCount = await this.localCache.get(
+          'consecutive-loan-count'
+        );
+        if (existingCount !== undefined) {
+          this.consecutiveLoanCounts = existingCount.value ?? 1;
+        }
+      } catch (error) {
+        console.log(error);
+      }
     }
+
+    // event category and action for browsing book access
+    const eventCategory = `${this.borrowType}BookAccess`;
+    const eventAction = `${
+      this.borrowType === 'browsed' ? 'BrowseCounts-' : 'Counts-'
+    }${this.consecutiveLoanCounts}`;
 
     this.dispatchEvent(
       new CustomEvent('enableBookAccess', {
         detail: {
           event: {
-            category: `${this.borrowType}BookAccess`, // browsedBookAccess | borrowedBookAccess
-            action: `${
-              this.borrowType === 'browsed' ? 'BrowseCounts-' : 'Counts-'
-            }${this.consecutiveLoanCounts}`, // (BrowseCounts-1|Counts-X)
+            category: eventCategory, // browsedBookAccess | borrowedBookAccess
+            action: eventAction, // (BrowseCounts-N|Counts-N)
           },
           borrowType: this.borrowType,
         },
@@ -219,11 +235,13 @@ export class CollapsibleActionGroup extends ActionsHandler {
   }
 
   /**
-   * Click handler to emit custom event on action click
-   * @param { string } eventName
-   * @param { object } gaEvent
+   * Dispatches click events when patron clicks on action buttons
+   * @param { string } eventName - actions like 'browseBook', 'borrowBook' etc...
+   * @param { object } gaEvent - contains analytics event action and category
    *   @param { string } gaEvent.category
    *   @param { string } gaEvent.action
+   *
+   * @fires CollapsibleActionGroup#{eventName} - (will be browseBook, borrowBook etc...)
    */
   clickHandler(eventName, gaEvent) {
     this.dropdownState = 'close';

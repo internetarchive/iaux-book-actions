@@ -13,12 +13,15 @@ export default function ActionsHandlerService(options) {
     ...options,
   };
 
-  let baseHost = '';
-  if (window.location.pathname === '/demo/') {
-    baseHost = `/demo/`;
-  } else {
-    baseHost = `/services/loans/loan`;
-  }
+  let baseHost = '/services/loans/loan';
+  const location = window?.location;
+
+  // return intentional error on dev environment
+  const shouldReturnError =
+    location?.href?.indexOf('?error=true') !== -1 &&
+    location?.hostname !== 'archive.org';
+
+  if (location?.pathname === '/demo/') baseHost = `/demo/`;
 
   let formData = new FormData();
   formData.append('action', option.action);
@@ -29,18 +32,16 @@ export default function ActionsHandlerService(options) {
     body: formData,
   })
     .then(response => {
-      let shouldReturnError =
-        window.location.href.indexOf('?error=true') !== -1;
       const tokenError = 'loan token not found. please try again later.';
       const borrowError =
         'This book is not available to borrow at this time. Please try again later.';
 
-      // return error reponse if query param has ?error=true param...
+      // return error reponse when not production and has ?error=true param...
       const erroneousActions = ['browse_book', 'borrow_book', 'create_token'];
-      if (shouldReturnError && erroneousActions.includes(option.action)) {
+      if (shouldReturnError && erroneousActions.includes(option?.action)) {
         return {
           success: false,
-          error: option.action === 'create_token' ? tokenError : borrowError,
+          error: option?.action === 'create_token' ? tokenError : borrowError,
         };
       }
 
@@ -58,7 +59,7 @@ export default function ActionsHandlerService(options) {
     })
     .then(data => {
       // `data` is the parsed version of the JSON returned from the above endpoint.
-      if (!data.error) {
+      if (!data?.error) {
         option?.success(data);
       } else {
         option?.error(data);

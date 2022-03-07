@@ -1,4 +1,6 @@
 import { LitElement } from 'lit-element';
+import { LocalCache } from '@internetarchive/local-cache';
+
 import { URLHelper } from '../../config/url-helper.js';
 import ActionsHandlerService from './actions-handler-service.js';
 
@@ -14,10 +16,11 @@ export default class ActionsHandler extends LitElement {
   constructor(identifier) {
     super();
     this.identifier = identifier;
-    this.ajaxTimeout = 6000;
+    this.ajaxTimeout = 7000;
     this.loanTokenPollingDelay =
       window.location.pathname === '/demo/' ? 2000 : 120000; // 120000 ms = 2 min
-    this.loanTokenInterval = null;
+    this.loanTokenInterval = undefined;
+    this.localCache = new LocalCache();
     this.bindEvents();
   }
 
@@ -105,8 +108,6 @@ export default class ActionsHandler extends LitElement {
 
       // fetch loan token for browsed/borrowed book and set an interval
       if (borrowType) {
-        console.log('token poll started...');
-
         this.loanTokenInterval = setInterval(() => {
           this.handleLoanTokenPoller();
         }, this.loanTokenPollingDelay);
@@ -121,104 +122,123 @@ export default class ActionsHandler extends LitElement {
   }
 
   handleBrowseIt() {
-    const context = 'browse_book';
-    this.ActionError(context);
+    const action = 'browse_book';
+    this.dispatchToggleActionGroup();
 
     ActionsHandlerService({
-      action: context,
+      action,
       identifier: this.identifier,
       success: () => {
         this.handleReadItNow();
       },
       error: data => {
-        this.ActionError(context, data);
+        this.dispatchActionError(action, data);
       },
     });
   }
 
   handleReturnIt() {
-    const context = 'return_loan';
-    this.ActionError(context);
+    const action = 'return_loan';
+    this.dispatchToggleActionGroup();
 
     ActionsHandlerService({
-      action: context,
+      action,
       identifier: this.identifier,
       success: () => {
         this.deleteLoanCookies();
         URLHelper.goToUrl(`/details/${this.identifier}`, true);
       },
       error: data => {
-        this.ActionError(context, data);
+        this.dispatchActionError(action, data);
       },
     });
   }
 
   handleBorrowIt() {
-    const context = 'borrow_book';
-    this.ActionError(context);
+    const action = 'borrow_book';
+    this.dispatchToggleActionGroup();
 
     ActionsHandlerService({
-      action: context,
+      action,
       identifier: this.identifier,
       success: () => {
         this.handleReadItNow();
       },
       error: data => {
-        this.ActionError(context, data);
+        this.dispatchActionError(action, data);
       },
     });
   }
 
   handleReserveIt() {
-    const context = 'join_waitlist';
-    this.ActionError(context);
+    const action = 'join_waitlist';
+    this.dispatchToggleActionGroup();
 
     ActionsHandlerService({
-      action: context,
+      action,
       identifier: this.identifier,
       success: () => {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
       },
       error: data => {
-        this.ActionError(context, data);
+        this.dispatchActionError(action, data);
       },
     });
   }
 
   handleRemoveFromWaitingList() {
-    const context = 'leave_waitlist';
-    this.ActionError(context);
+    const action = 'leave_waitlist';
+    this.dispatchToggleActionGroup();
 
     ActionsHandlerService({
-      action: context,
+      action,
       identifier: this.identifier,
       success: () => {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
       },
       error: data => {
-        this.ActionError(context, data);
+        this.dispatchActionError(action, data);
       },
     });
   }
 
   handleLoanTokenPoller() {
-    const context = 'create_token';
+    const action = 'create_token';
     ActionsHandlerService({
       identifier: this.identifier,
-      action: context,
+      action,
       error: data => {
-        this.ActionError(context, data);
+        this.dispatchActionError(action, data);
         clearInterval(this.loanTokenInterval); // stop token fetch api
       },
     });
   }
 
-  ActionError(context, data = {}) {
+  /**
+   * Dispatches event when an error occured on action
+   * Notes:- toggle <collapsible-action-group> visibility (enable/disable).
+   *
+   * @param { String } action - name of action like browse_book, borrow_book
+   * @param { Object } data - erroneous response from api call
+   *
+   * @fires ActionsHandler#lendingActionError
+   */
+  dispatchActionError(action, data = {}) {
     this.dispatchEvent(
       new CustomEvent('lendingActionError', {
-        detail: { context, data },
+        detail: { action, data },
       })
     );
+  }
+
+  /**
+   * Dispatches event when patron is clicked on action buttons.
+   * Notes:- toggle <collapsible-action-group> disable/enable.
+   *
+   * @fires ActionsHandler#toggleActionGroup
+   */
+  dispatchToggleActionGroup() {
+    this.dispatchEvent(new CustomEvent('toggleActionGroup'));
   }
 
   handleLoginOk() {
@@ -254,19 +274,25 @@ export default class ActionsHandler extends LitElement {
   }
 
   // save consecutive loan count for borrow
-  setConsecutiveLoanCounts(action = '') {
-    const { localStorage } = window;
-    if (localStorage) {
+  async setConsecutiveLoanCounts(action = '') {
+    try {
       let newCount = 1;
       const storageKey = `consecutive-loan-count`;
-      const existingCount = Number(localStorage.getItem(storageKey));
+      const existingCount = await this.localCache.get(storageKey);
 
-      // want to increase browse-count by 1 if,
-      // you consecutive reading a book.
-      if (action === 'browseAgain') {
+      // increase browse-count by 1 when you consecutive reading a book.
+      if (action === 'browseAgain' && existingCount !== undefined) {
         newCount = existingCount ? existingCount + 1 : 1;
       }
-      localStorage.setItem(storageKey, newCount);
+
+      // set new value
+      await this.localCache.set({
+        key: storageKey,
+        value: newCount,
+        ttl: 7200, // 2 hours
+      });
+    } catch (error) {
+      console.log(error);
     }
   }
 

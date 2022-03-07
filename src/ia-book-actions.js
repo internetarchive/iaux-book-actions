@@ -24,7 +24,7 @@ export default class IABookActions extends LitElement {
       barType: { type: String },
       sharedObserver: { attribute: false },
       disableActionGroup: { type: Boolean },
-      modalConfig: { type: Object },
+      modal: { Object },
     };
   }
 
@@ -38,13 +38,15 @@ export default class IABookActions extends LitElement {
     this.bwbPurchaseUrl = '';
     this.barType = 'action'; // 'title'|'action'
     this.sharedObserver = undefined;
+    this.disableActionGroup = false;
+    this.modal = undefined;
+
+    // private props
     this.primaryActions = [];
     this.primaryTitle = '';
     this.primaryColor = 'primary';
     this.secondaryActions = [];
     this.lendingOptions = {};
-    this.disableActionGroup = false;
-    this.modalConfig = {};
   }
 
   disconnectedCallback() {
@@ -57,10 +59,6 @@ export default class IABookActions extends LitElement {
       this.setupResizeObserver();
     }
 
-    if (!Object.keys(this.modalConfig).length) {
-      this.modalConfig = new ModalConfig();
-      this.modalConfig.headerColor = '#d9534f';
-    }
     this.setupLendingToolbarActions();
   }
 
@@ -185,6 +183,7 @@ export default class IABookActions extends LitElement {
         ?hasAdminAccess=${this.hasAdminAccess}
         ?disabled=${this.disableActionGroup}
         @lendingActionError=${this.handleLendingActionError}
+        @toggleActionGroup=${this.handleToggleActionGroup}
       >
       </collapsible-action-group>
       ${this.textGroupTemplate} ${this.infoIconTemplate}
@@ -192,27 +191,41 @@ export default class IABookActions extends LitElement {
   }
 
   /*
-   * handle lending errors occure on different operation like
-   * browse book, borrow book, borrowed book token etc...
+   * custom event handler to toggle action group visibility
+   *
+   * @event IABookActions#toggleActionGroup
    */
-  handleLendingActionError(e) {
-    // toggle activity loader
+  handleToggleActionGroup() {
     this.disableActionGroup = !this.disableActionGroup;
+  }
 
-    const context = e?.detail?.context;
-    const errorMsg = e?.detail?.data?.error;
+  /*
+   * handle lending errors occure during different operation like
+   * browse book, borrow book, borrowed book token etc...
+   *
+   * @event IABookActions#lendingActionError
+   * @param {Object} event - The employee who is responsible for the project
+   *  @param {string} event.detail.action - action when error occurred like 'browseBook', 'borrowBook'
+   *  @param {string} event.detail.data.error - error message
+   */
+  handleLendingActionError(event) {
+    // toggle activity loader
+    this.handleToggleActionGroup();
 
-    if (errorMsg) this.showErrorModal(context, errorMsg);
+    const action = event?.detail?.action;
+    const errorMsg = event?.detail?.data?.error;
+
+    if (errorMsg) this.showErrorModal(errorMsg, action);
 
     // update action bar state if book is not available to browse or borrow.
     if (errorMsg && errorMsg.match(/not available to borrow/gm)) {
       let currStatus = this.lendingStatus;
-      if (context === 'browse_book') {
+      if (action === 'browse_book') {
         currStatus = {
           ...this.lendingStatus,
           available_to_browse: false,
         };
-      } else if (context === 'borrow_book') {
+      } else if (action === 'borrow_book') {
         currStatus = {
           ...this.lendingStatus,
           available_to_borrow: false,
@@ -223,24 +236,42 @@ export default class IABookActions extends LitElement {
   }
 
   /* show error message if something went wrong */
-  async showErrorModal(context, errorMsg) {
-    // add modal-manager in DOM to show alert message
-    this.modal = document.createElement('modal-manager');
+  async showErrorModal(errorMsg, action) {
+    this.disableActionGroup = false;
+
+    // check if this.modal passed as prop
+    if (!this.modal) {
+      this.modal = document.querySelector('modal-manager');
+
+      // check the DOM if <modal-manager> already there
+      if (!this.modal) this.modal = document.createElement('modal-manager');
+    }
+
     this.modal.id = 'action-bar-modal';
     await document.body.appendChild(this.modal);
 
-    // fallback if <modal-manager> is not found!
-    if (!this.modal) {
-      alert(errorMsg);
-      return;
+    const modalConfig = new ModalConfig({
+      title: 'Lending error',
+      message: errorMsg,
+      headerColor: '#d9534f',
+    });
+
+    if (action === 'create_token') {
+      modalConfig.closeOnBackdropClick = false;
+      modalConfig.showCloseButton = false;
+      modalConfig.message = html` Uh oh, something went wrong trying to access
+        this book.<br />
+        Please <a href="${() => window.location.reload(true)}">refresh</a> to
+        try again or send us an email to
+        <a
+          href="mailto:info@archive.org?subject=Help: cannot access my borrowed book: ${this
+            .identifier}"
+          >info@archive.org</a
+        >`;
     }
 
-    this.disableActionGroup = false;
-    this.modalConfig.title = 'Lending error';
-    this.modalConfig.message = errorMsg;
-
     this.modal.showModal({
-      config: this.modalConfig,
+      config: modalConfig,
     });
   }
 

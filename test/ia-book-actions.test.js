@@ -122,7 +122,7 @@ describe('Borrow status actions', () => {
     el.addEventListener('lendingActionError', () => {
       el.handleLendingActionError({
         detail: {
-          context: 'browse_book',
+          action: 'browse_book',
           data: { error: 'not available to borrow' },
         },
       });
@@ -151,7 +151,7 @@ describe('Borrow status actions', () => {
     el.addEventListener('lendingActionError', () => {
       el.handleLendingActionError({
         detail: {
-          context: 'borrow_book',
+          action: 'borrow_book',
           data: { error: 'not available to borrow' },
         },
       });
