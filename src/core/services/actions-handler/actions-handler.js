@@ -108,6 +108,9 @@ export default class ActionsHandler extends LitElement {
 
       // fetch loan token for browsed/borrowed book and set an interval
       if (borrowType) {
+        // Do an initial token, then set an interval
+        this.handleLoanTokenPoller();
+
         this.loanTokenInterval = setInterval(() => {
           this.handleLoanTokenPoller();
         }, this.loanTokenPollingDelay);
