@@ -50,16 +50,16 @@ export class CollapsibleActionGroup extends ActionsHandler {
     this.consecutiveLoanCounts = 1; // consecutive loan count
   }
 
-  updated(changed) {
-    if (changed.has('width')) {
-      if (this.isBelowTabletContainer) {
-        this.resetActions();
-      }
-    }
-
+  firstUpdated() {
     // this is execute to fetch loan token
-    if (changed.has('borrowType')) {
+    if (this.borrowType) {
       this.emitEnableBookAccess();
+    }
+  }
+
+  updated(changed) {
+    if (changed.has('width') && this.isBelowTabletContainer) {
+      this.resetActions();
     }
   }
 
