@@ -12,7 +12,7 @@ export class LoanTokenPoller extends LitElement {
   constructor() {
     super();
     this.identifier = '';
-    this.callback = () => {};
+    this.callback = () => {}; // callback function to be called after loan token is created
     this.loanTokenPollingDelay =
       window.location.pathname === '/demo/' ? 2000 : 120000; // 120000 ms = 2 min
     this.loanTokenInterval = undefined;
@@ -53,7 +53,7 @@ export class LoanTokenPoller extends LitElement {
       const action = `${
         borrowType === 'browsed' ? 'BrowseCounts-' : 'Counts-'
       }${consecutiveLoanCounts}`;
-      console.log(consecutiveLoanCounts);
+
       this.sendEvent(category, action);
     } else {
       // if book is not browsed, just clear token polling interval
@@ -73,8 +73,6 @@ export class LoanTokenPoller extends LitElement {
 
   async handleLoanTokenPoller() {
     const action = 'create_token';
-    // await new Promise(r => setTimeout(r, 3000));
-    console.log(this.callback);
     ActionsHandlerService({
       identifier: this.identifier,
       action,
@@ -97,10 +95,9 @@ export class LoanTokenPoller extends LitElement {
    * @param { String } action - name of action like browse_book, borrow_book
    * @param { Object } data - erroneous response from api call
    *
-   * @fires ActionsHandler#lendingActionError
+   * @fires LoanTokenPoller#lendingActionError
    */
   dispatchActionError(action, data = {}) {
-    console.log('disptaced');
     this.dispatchEvent(
       new CustomEvent('lendingActionError', {
         detail: { action, data },

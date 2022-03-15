@@ -66,9 +66,7 @@ export default class IABookActions extends LoanTokenPoller {
   }
 
   updated(changed) {
-    // console.log(changed)
     if (changed.has('lendingStatus') || changed.has('bwbPurchaseUrl')) {
-      console.log('jere');
       this.setupLendingToolbarActions();
       this.update();
     }
@@ -159,22 +157,19 @@ export default class IABookActions extends LoanTokenPoller {
       this.startBrowseTimer();
     }
 
-    console.log('this.borrowType', this.borrowType);
-
     /**
+     * enable access of borrowed/browsed books
+     *
      * this.lendingBarPostInit() callback function use to:-
      * - disptach lendingFlow::PostInit event
      * - initialize bookreader using br.init()
      */
-    if (this.borrowType) {
-      // enable access of borrowed/browsed books
+    if (this.barType === 'action') {
       this.enableBookAccess(
         this.identifier,
         this.borrowType,
         this.lendingBarPostInit
       );
-    } else {
-      this.lendingBarPostInit();
     }
   }
 
