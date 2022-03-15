@@ -104,14 +104,20 @@
     const modalConfig = new ModalConfig();
     modalConfig.headerColor = '#d9534f';
 
+    let lendingBarPostInit = function lendingBarPostInit() {
+      setTimeout(function() {
+        console.log('executed', 'br.init()');
+      }, 100);
+    }
     // set defaultLendingStatus for unavailable (without borrowables) book
     iaBookActions.userid = userid;
     iaBookActions.identifier = identifier;
     iaBookActions.bookTitle = 'Contemporary Black biography. Volume 39 : profiles from the interContemporary Black biography. Volume 39';
-    iaBookActions.lendingStatus = canBrowseAndBorrow;
-    iaBookActions.bwbPurchaseUrl = '';
-    iaBookActions.barType = '';
-    iaBookActions.modalConfig = modalConfig;
+    // iaBookActions.lendingStatus = canBrowseAndBorrow;
+    // iaBookActions.bwbPurchaseUrl = '';
+    iaBookActions.barType = 'title';
+    // iaBookActions.modalConfig = modalConfig;
+    // iaBookActions.lendingBarPostInit = lendingBarPostInit;
 
     let lendingStatus1 = iaBookActions.lendingStatus;
 

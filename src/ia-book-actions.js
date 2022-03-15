@@ -1,5 +1,5 @@
 /* eslint-disable camelcase */
-import { html, css, LitElement } from 'lit-element';
+import { html, css } from 'lit-element';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
 import { ModalConfig } from '@internetarchive/modal-manager';
@@ -11,8 +11,9 @@ import './components/info-icon.js';
 
 import GetLendingActions from './core/services/get-lending-actions.js';
 import { mobileContainerWidth } from './core/config/constants.js';
+import { LoanTokenPoller } from './core/services/loan-token-poller.js';
 
-export default class IABookActions extends LitElement {
+export default class IABookActions extends LoanTokenPoller {
   static get properties() {
     return {
       userid: { type: String },
@@ -21,6 +22,7 @@ export default class IABookActions extends LitElement {
       lendingStatus: { type: Object },
       width: { type: Number },
       bwbPurchaseUrl: { type: String },
+      lendingBarPostInit: { type: Function },
       barType: { type: String },
       sharedObserver: { attribute: false },
       disableActionGroup: { type: Boolean },
@@ -36,6 +38,7 @@ export default class IABookActions extends LitElement {
     this.lendingStatus = {};
     this.width = 0;
     this.bwbPurchaseUrl = '';
+    this.lendingBarPostInit = () => {};
     this.barType = 'action'; // 'title'|'action'
     this.sharedObserver = undefined;
     this.disableActionGroup = false;
@@ -47,6 +50,8 @@ export default class IABookActions extends LitElement {
     this.primaryColor = 'primary';
     this.secondaryActions = [];
     this.lendingOptions = {};
+    this.borrowType = ''; // (browsed|borrowed)
+    this.consecutiveLoanCounts = 1; // consecutive loan count
   }
 
   disconnectedCallback() {
@@ -58,12 +63,12 @@ export default class IABookActions extends LitElement {
       this.sharedObserver = new SharedResizeObserver();
       this.setupResizeObserver();
     }
-
-    this.setupLendingToolbarActions();
   }
 
   updated(changed) {
+    // console.log(changed)
     if (changed.has('lendingStatus') || changed.has('bwbPurchaseUrl')) {
+      console.log('jere');
       this.setupLendingToolbarActions();
       this.update();
     }
@@ -153,14 +158,36 @@ export default class IABookActions extends LitElement {
       // when browse is completed, we shows browse-again button
       this.startBrowseTimer();
     }
+
+    console.log('this.borrowType', this.borrowType);
+
+    /**
+     * this.lendingBarPostInit() callback function use to:-
+     * - disptach lendingFlow::PostInit event
+     * - initialize bookreader using br.init()
+     */
+    if (this.borrowType) {
+      // enable access of borrowed/browsed books
+      this.enableBookAccess(
+        this.identifier,
+        this.borrowType,
+        this.lendingBarPostInit
+      );
+    } else {
+      this.lendingBarPostInit();
+    }
   }
 
   render() {
-    return html`
-      <section class="lending-wrapper">
-        ${this.barType === 'title' ? this.bookTitleBar : this.bookActionBar}
-      </section>
-    `;
+    if (this.barType === 'title') {
+      return html`<section class="lending-wrapper">
+        ${this.bookTitleBar}
+      </section>`;
+    }
+
+    return html`<section class="lending-wrapper">
+      ${this.bookActionBar}
+    </section>`;
   }
 
   get bookTitleBar() {
