@@ -283,8 +283,7 @@ export default class IABookActions extends LoanTokenPoller {
       modalConfig.showCloseButton = false;
       modalConfig.message = html` Uh oh, something went wrong trying to access
         this book.<br />
-        Please <a href="${() => window.location.reload(true)}">refresh</a> to
-        try again or send us an email to
+        Please <a href="/">refresh</a> to try again or send us an email to
         <a
           href="mailto:info@archive.org?subject=Help: cannot access my borrowed book: ${this
             .identifier}"

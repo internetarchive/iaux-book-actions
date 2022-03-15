@@ -77,7 +77,6 @@ export class LoanTokenPoller extends LitElement {
       identifier: this.identifier,
       action,
       error: data => {
-        console.log('error', data);
         this.handleLendingActionError({ detail: { action, data } });
         clearInterval(this.loanTokenInterval); // stop token fetch api
         this.callback();
@@ -86,22 +85,5 @@ export class LoanTokenPoller extends LitElement {
         this.callback();
       },
     });
-  }
-
-  /**
-   * Dispatches event when an error occured on action
-   * Notes:- toggle <collapsible-action-group> visibility (enable/disable).
-   *
-   * @param { String } action - name of action like browse_book, borrow_book
-   * @param { Object } data - erroneous response from api call
-   *
-   * @fires LoanTokenPoller#lendingActionError
-   */
-  dispatchActionError(action, data = {}) {
-    this.dispatchEvent(
-      new CustomEvent('lendingActionError', {
-        detail: { action, data },
-      })
-    );
   }
 }
