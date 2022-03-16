@@ -1,6 +1,4 @@
-import { LitElement } from 'lit-element';
 import { LocalCache } from '@internetarchive/local-cache';
-
 import ActionsHandlerService from './actions-handler/actions-handler-service.js';
 
 /**
@@ -8,29 +6,30 @@ import ActionsHandlerService from './actions-handler/actions-handler-service.js'
  *
  * ActionsHandlerService is a function being used to execute
  */
-export class LoanTokenPoller extends LitElement {
-  constructor() {
-    super();
-    this.identifier = '';
-    this.callback = () => {}; // callback function to be called after loan token is created
-    this.loanTokenPollingDelay =
-      window.location.pathname === '/demo/' ? 2000 : 120000; // 120000 ms = 2 min
+export class LoanTokenPoller {
+  constructor(id, borrowType, successCallback, errorCallback, pollerDelay) {
+    this.identifier = id;
+    this.borrowType = borrowType;
+    this.successCallback = successCallback; // callback function to be called after loan token is created
+    this.errorCallback = errorCallback; // callback function to be called after loan token is created
+    this.pollerDelay = pollerDelay; // valeu in ms (1000 ms = 1 sec)
+
     this.loanTokenInterval = undefined;
     this.localCache = new LocalCache();
+    this.enableBookAccess();
   }
 
-  disconnectedCallback() {
+  disconnectedInterval() {
+    clearInterval(this.loanTokenInterval);
     this.loanTokenInterval = undefined;
   }
 
-  async enableBookAccess(identifier, borrowType, callback) {
-    this.identifier = identifier;
-    this.callback = callback;
+  async enableBookAccess() {
     let consecutiveLoanCounts = 1;
 
-    if (borrowType) {
+    if (this.borrowType) {
       // send consecutiveLoanCounts for browsed books only.
-      if (borrowType === 'browsed') {
+      if (this.borrowType === 'browsed') {
         try {
           const existingCount = await this.localCache.get(
             'consecutive-loan-count'
@@ -42,22 +41,22 @@ export class LoanTokenPoller extends LitElement {
       }
 
       // Do an initial token, then set an interval
-      this.handleLoanTokenPoller();
+      this.handleLoanTokenPoller(true);
 
       this.loanTokenInterval = setInterval(() => {
         this.handleLoanTokenPoller();
-      }, this.loanTokenPollingDelay);
+      }, this.pollerDelay);
 
       // event category and action for browsing book access
-      const category = `${borrowType}BookAccess`;
+      const category = `${this.borrowType}BookAccess`;
       const action = `${
-        borrowType === 'browsed' ? 'BrowseCounts-' : 'Counts-'
+        this.borrowType === 'browsed' ? 'BrowseCounts-' : 'Counts-'
       }${consecutiveLoanCounts}`;
 
       this.sendEvent(category, action);
     } else {
       // if book is not browsed, just clear token polling interval
-      clearInterval(this.loanTokenInterval);
+      this.disconnectedInterval(); // stop token fetch api
     }
   }
 
@@ -71,18 +70,17 @@ export class LoanTokenPoller extends LitElement {
     );
   }
 
-  async handleLoanTokenPoller() {
+  async handleLoanTokenPoller(isInitial = false) {
     const action = 'create_token';
     ActionsHandlerService({
       identifier: this.identifier,
       action,
       error: data => {
-        this.handleLendingActionError({ detail: { action, data } });
-        clearInterval(this.loanTokenInterval); // stop token fetch api
-        this.callback();
+        this.disconnectedInterval(); // stop token fetch api
+        this.errorCallback({ detail: { action, data } });
       },
       success: () => {
-        this.callback();
+        if (isInitial) this.successCallback();
       },
     });
   }
