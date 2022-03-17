@@ -11,7 +11,7 @@ describe('Get Loan Token', () => {
 
     const tokenPoller = new LoanTokenPoller(
       'identifier1',
-      'browsded',
+      'browsed',
       () => {
         console.log('success callback is executed!');
       },
@@ -20,11 +20,15 @@ describe('Get Loan Token', () => {
       },
       2000 // 2 minutes'
     );
+    const successCallbackSpy = Sinon.stub(tokenPoller, 'successCallback');
+    successCallbackSpy();
+    expect(successCallbackSpy.callCount).to.equal(1);
+
     localCacheGetSpy();
+    expect(localCacheGetSpy.callCount).to.equal(1);
 
     expect(tokenPoller.localCache.namespace).to.equal('LocalCache');
     expect(tokenPoller.localCache.get).to.be.a('function');
-    expect(localCacheGetSpy.callCount).to.equal(1);
 
     tokenPoller.disconnectedInterval(); // clear token poller interval
     expect(tokenPoller.loanTokenInterval).to.equal(undefined);

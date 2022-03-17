@@ -12,7 +12,7 @@ export class LoanTokenPoller {
     this.borrowType = borrowType;
     this.successCallback = successCallback; // callback function to be called after loan token is created
     this.errorCallback = errorCallback; // callback function to be called after loan token is created
-    this.pollerDelay = pollerDelay; // valeu in ms (1000 ms = 1 sec)
+    this.pollerDelay = pollerDelay; // value in ms (1000 ms = 1 sec)
 
     this.loanTokenInterval = undefined;
     this.localCache = new LocalCache();
@@ -32,7 +32,7 @@ export class LoanTokenPoller {
       if (this.borrowType === 'browsed') {
         try {
           const existingCount = await this.localCache.get(
-            'consecutive-loan-count'
+            `loan-count-${this.identifier}`
           );
           consecutiveLoanCounts = existingCount ?? 1;
         } catch (error) {

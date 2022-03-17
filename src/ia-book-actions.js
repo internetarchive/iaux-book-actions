@@ -22,11 +22,15 @@ export default class IABookActions extends LitElement {
       lendingStatus: { type: Object },
       width: { type: Number },
       bwbPurchaseUrl: { type: String },
-      lendingBarPostInit: { type: Function },
+      lendingBarPostInit: {
+        type: Function,
+        attribute: false,
+      },
       barType: { type: String },
       sharedObserver: { attribute: false },
       disableActionGroup: { type: Boolean },
       modal: { Object },
+      tokenDelay: { type: Number },
     };
   }
 
@@ -43,6 +47,7 @@ export default class IABookActions extends LitElement {
     this.sharedObserver = undefined;
     this.disableActionGroup = false;
     this.modal = undefined;
+    this.tokenDelay = 120000; // 2 minutes
 
     // private props
     this.primaryActions = [];
@@ -187,7 +192,7 @@ export default class IABookActions extends LitElement {
         this.borrowType,
         successCallback,
         errorCallback,
-        120000 // 2 minutes
+        this.tokenDelay // 1000 ms = 1 sec
       );
     }
   }

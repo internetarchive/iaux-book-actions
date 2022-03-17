@@ -241,7 +241,7 @@ export default class ActionsHandler extends LitElement {
   async setConsecutiveLoanCounts(action = '') {
     try {
       let newCount = 1;
-      const storageKey = `consecutive-loan-count`;
+      const storageKey = `loan-count-${this.identifier}`;
       const existingCount = await this.localCache.get(storageKey);
 
       // increase browse-count by 1 when you consecutive reading a book.
