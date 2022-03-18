@@ -162,39 +162,13 @@ export default class IABookActions extends LitElement {
       this.startBrowseTimer();
     }
 
-    /**
-     * enable access of borrowed/browsed books
-     *
-     * LoanTokenPoller is a class that polls the loan token
-     * it takes 5 params
-     * 1. this.identifier
-     * 2. this.borrowType
-     * 3. successCallback - it used to
-     *    - disptach lendingFlow::PostInit event
-     *    - initialize bookreader using br.init()
-     * 4. errorCallback
-     * 5. tokenPollerDelay
-     */
-    if (this.barType === 'action') {
-      if (this.tokenPoller) {
-        this.tokenPoller.disconnectedInterval();
-      }
-
-      const successCallback = () => {
-        this.lendingBarPostInit();
-      };
-      const errorCallback = eventObj => {
-        this.handleLendingActionError(eventObj);
-      };
-
-      this.tokenPoller = new LoanTokenPoller(
-        this.identifier,
-        this.borrowType,
-        successCallback,
-        errorCallback,
-        this.tokenDelay // 1000 ms = 1 sec
-      );
+    // early return if not borrowed or no action-bar
+    if (!this.borrowType || this.barType === 'title') {
+      this.lendingBarPostInit();
+      return;
     }
+
+    this.startLoanTokenPoller();
   }
 
   render() {
@@ -234,6 +208,40 @@ export default class IABookActions extends LitElement {
       </collapsible-action-group>
       ${this.textGroupTemplate} ${this.infoIconTemplate}
     `;
+  }
+
+  /**
+   * enable access of borrowed/browsed books
+   */
+  startLoanTokenPoller() {
+    if (this.tokenPoller) {
+      this.tokenPoller.disconnectedInterval();
+    }
+    const successCallback = () => {
+      this.lendingBarPostInit();
+    };
+    const errorCallback = eventObj => {
+      this.handleLendingActionError(eventObj);
+    };
+
+    /**
+     * LoanTokenPoller is a class that polls the loan token
+     * it takes 5 params
+     * 1. this.identifier
+     * 2. this.borrowType
+     * 3. successCallback - it used to
+     *    - disptach lendingFlow::PostInit event
+     *    - initialize bookreader using br.init()
+     * 4. errorCallback
+     * 5. tokenPollerDelay
+     */
+    this.tokenPoller = new LoanTokenPoller(
+      this.identifier,
+      this.borrowType,
+      successCallback,
+      errorCallback,
+      this.tokenDelay // 1000 ms = 1 sec
+    );
   }
 
   /*
