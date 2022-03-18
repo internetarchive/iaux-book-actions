@@ -27,7 +27,6 @@ export class CollapsibleActionGroup extends ActionsHandler {
       hasAdminAccess: { type: Boolean },
       dropdownArrow: { type: String },
       disabled: { type: Boolean },
-      borrowType: { type: String },
     };
   }
 
@@ -46,61 +45,12 @@ export class CollapsibleActionGroup extends ActionsHandler {
     this.title = '';
     this.loaderIcon = 'https://archive.org/upload/images/tree/loading.gif';
     this.disabled = false;
-    this.borrowType = ''; // (browsed|borrowed)
-    this.consecutiveLoanCounts = 1; // consecutive loan count
-  }
-
-  firstUpdated() {
-    // this is execute to fetch loan token
-    if (this.borrowType) {
-      this.emitEnableBookAccess();
-    }
   }
 
   updated(changed) {
     if (changed.has('width') && this.isBelowTabletContainer) {
       this.resetActions();
     }
-  }
-
-  /**
-   * Dispatches event when patron is borrowing book.
-   * Notes borrow type, and consecutive borrow counts
-   *
-   * @fires CollapsibleActionGroup#enableBookAccess
-   */
-  async emitEnableBookAccess() {
-    // send consecutiveLoanCounts for browsed books only.
-    if (this.borrowType === 'browsed') {
-      try {
-        const existingCount = await this.localCache.get(
-          'consecutive-loan-count'
-        );
-        if (existingCount !== undefined) {
-          this.consecutiveLoanCounts = existingCount.value ?? 1;
-        }
-      } catch (error) {
-        console.log(error);
-      }
-    }
-
-    // event category and action for browsing book access
-    const eventCategory = `${this.borrowType}BookAccess`;
-    const eventAction = `${
-      this.borrowType === 'browsed' ? 'BrowseCounts-' : 'Counts-'
-    }${this.consecutiveLoanCounts}`;
-
-    this.dispatchEvent(
-      new CustomEvent('enableBookAccess', {
-        detail: {
-          event: {
-            category: eventCategory, // browsedBookAccess | borrowedBookAccess
-            action: eventAction, // (BrowseCounts-N|Counts-N)
-          },
-          borrowType: this.borrowType,
-        },
-      })
-    );
   }
 
   /**

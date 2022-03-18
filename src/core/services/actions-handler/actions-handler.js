@@ -16,16 +16,9 @@ export default class ActionsHandler extends LitElement {
   constructor(identifier) {
     super();
     this.identifier = identifier;
-    this.ajaxTimeout = 7000;
-    this.loanTokenPollingDelay =
-      window.location.pathname === '/demo/' ? 2000 : 120000; // 120000 ms = 2 min
-    this.loanTokenInterval = undefined;
+    this.ajaxTimeout = 6000;
     this.localCache = new LocalCache();
     this.bindEvents();
-  }
-
-  disconnectedCallback() {
-    this.loanTokenInterval = undefined;
   }
 
   sendEvent(eventCategory, eventAction) {
@@ -101,26 +94,6 @@ export default class ActionsHandler extends LitElement {
     this.addEventListener('bookTitleBar', ({ detail }) => {
       const { category, action } = detail.event;
       this.sendEvent(category, action);
-    });
-
-    this.addEventListener('enableBookAccess', ({ detail }) => {
-      const borrowType = detail?.borrowType;
-
-      // fetch loan token for browsed/borrowed book and set an interval
-      if (borrowType) {
-        // Do an initial token, then set an interval
-        this.handleLoanTokenPoller();
-
-        this.loanTokenInterval = setInterval(() => {
-          this.handleLoanTokenPoller();
-        }, this.loanTokenPollingDelay);
-
-        const { category, action } = detail?.event;
-        this.sendEvent(category, action);
-      } else {
-        // if book is not browsed, just clear token polling interval
-        clearInterval(this.loanTokenInterval);
-      }
     });
   }
 
@@ -205,18 +178,6 @@ export default class ActionsHandler extends LitElement {
     });
   }
 
-  handleLoanTokenPoller() {
-    const action = 'create_token';
-    ActionsHandlerService({
-      identifier: this.identifier,
-      action,
-      error: data => {
-        this.dispatchActionError(action, data);
-        clearInterval(this.loanTokenInterval); // stop token fetch api
-      },
-    });
-  }
-
   /**
    * Dispatches event when an error occured on action
    * Notes:- toggle <collapsible-action-group> visibility (enable/disable).
@@ -280,7 +241,7 @@ export default class ActionsHandler extends LitElement {
   async setConsecutiveLoanCounts(action = '') {
     try {
       let newCount = 1;
-      const storageKey = `consecutive-loan-count`;
+      const storageKey = `loan-count-${this.identifier}`;
       const existingCount = await this.localCache.get(storageKey);
 
       // increase browse-count by 1 when you consecutive reading a book.

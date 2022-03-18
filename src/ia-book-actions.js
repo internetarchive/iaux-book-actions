@@ -11,6 +11,7 @@ import './components/info-icon.js';
 
 import GetLendingActions from './core/services/get-lending-actions.js';
 import { mobileContainerWidth } from './core/config/constants.js';
+import { LoanTokenPoller } from './core/services/loan-token-poller.js';
 
 export default class IABookActions extends LitElement {
   static get properties() {
@@ -21,10 +22,15 @@ export default class IABookActions extends LitElement {
       lendingStatus: { type: Object },
       width: { type: Number },
       bwbPurchaseUrl: { type: String },
+      lendingBarPostInit: {
+        type: Function,
+        attribute: false,
+      },
       barType: { type: String },
       sharedObserver: { attribute: false },
       disableActionGroup: { type: Boolean },
       modal: { Object },
+      tokenDelay: { type: Number },
     };
   }
 
@@ -36,10 +42,12 @@ export default class IABookActions extends LitElement {
     this.lendingStatus = {};
     this.width = 0;
     this.bwbPurchaseUrl = '';
+    this.lendingBarPostInit = () => {};
     this.barType = 'action'; // 'title'|'action'
     this.sharedObserver = undefined;
     this.disableActionGroup = false;
     this.modal = undefined;
+    this.tokenDelay = 120000; // 2 minutes
 
     // private props
     this.primaryActions = [];
@@ -47,6 +55,8 @@ export default class IABookActions extends LitElement {
     this.primaryColor = 'primary';
     this.secondaryActions = [];
     this.lendingOptions = {};
+    this.borrowType = ''; // (browsed|borrowed)
+    this.consecutiveLoanCounts = 1; // consecutive loan count
   }
 
   disconnectedCallback() {
@@ -58,8 +68,6 @@ export default class IABookActions extends LitElement {
       this.sharedObserver = new SharedResizeObserver();
       this.setupResizeObserver();
     }
-
-    this.setupLendingToolbarActions();
   }
 
   updated(changed) {
@@ -153,14 +161,52 @@ export default class IABookActions extends LitElement {
       // when browse is completed, we shows browse-again button
       this.startBrowseTimer();
     }
+
+    /**
+     * enable access of borrowed/browsed books
+     *
+     * LoanTokenPoller is a class that polls the loan token
+     * it takes 5 params
+     * 1. this.identifier
+     * 2. this.borrowType
+     * 3. successCallback - it used to
+     *    - disptach lendingFlow::PostInit event
+     *    - initialize bookreader using br.init()
+     * 4. errorCallback
+     * 5. tokenPollerDelay
+     */
+    if (this.barType === 'action') {
+      if (this.tokenPoller) {
+        this.tokenPoller.disconnectedInterval();
+      }
+
+      const successCallback = () => {
+        this.lendingBarPostInit();
+      };
+      const errorCallback = eventObj => {
+        this.handleLendingActionError(eventObj);
+      };
+
+      this.tokenPoller = new LoanTokenPoller(
+        this.identifier,
+        this.borrowType,
+        successCallback,
+        errorCallback,
+        this.tokenDelay // 1000 ms = 1 sec
+      );
+    }
   }
 
   render() {
-    return html`
-      <section class="lending-wrapper">
-        ${this.barType === 'title' ? this.bookTitleBar : this.bookActionBar}
-      </section>
-    `;
+    if (this.barType === 'title') {
+      return html`<section class="lending-wrapper">
+        ${this.bookTitleBar}
+      </section>`;
+    }
+
+    return html`<section class="lending-wrapper">
+      ${this.bookActionBar}
+    </section>`;
   }
 
   get bookTitleBar() {
@@ -257,12 +303,18 @@ export default class IABookActions extends LitElement {
     });
 
     if (action === 'create_token') {
+      const refreshButton = html`<button
+        style="background:none;font-size:inherit;border:0;padding:0;color:#0000ee;cursor:pointer;text-decoration:underline"
+        @click=${() => window.location.reload(true)}
+      >
+        refresh
+      </button>`;
+
       modalConfig.closeOnBackdropClick = false;
       modalConfig.showCloseButton = false;
       modalConfig.message = html` Uh oh, something went wrong trying to access
         this book.<br />
-        Please <a href="${() => window.location.reload(true)}">refresh</a> to
-        try again or send us an email to
+        Please ${refreshButton} to try again or send us an email to
         <a
           href="mailto:info@archive.org?subject=Help: cannot access my borrowed book: ${this
             .identifier}"
