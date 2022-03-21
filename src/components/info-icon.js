@@ -13,7 +13,7 @@ export class InfoIcon extends LitElement {
     super();
     this.iconClass = '';
     this.helpURL =
-      'https://help.archive.org/hc/en-us/articles/360016554912-Borrowing-From-The-Lending-Library-A-Basic-Guide';
+      'https://help.archive.org/help/borrowing-from-the-lending-library';
   }
 
   render() {
