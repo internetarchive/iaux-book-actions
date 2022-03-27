@@ -256,7 +256,7 @@ export default class ActionsHandler extends LitElement {
         ttl: 7200, // 2 hours
       });
     } catch (error) {
-      console.log(error);
+      this.sendEvent('indexedDB-Error-Actions', error);
     }
   }
 

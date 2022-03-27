@@ -36,7 +36,7 @@ export class LoanTokenPoller {
           );
           consecutiveLoanCounts = existingCount ?? 1;
         } catch (error) {
-          console.log(error);
+          this.sendEvent('indexedDB-Error-Token', error);
         }
       }
 
