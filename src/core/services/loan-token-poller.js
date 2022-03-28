@@ -1,5 +1,5 @@
-import { LocalCache } from '@internetarchive/local-cache';
 import ActionsHandlerService from './actions-handler/actions-handler-service.js';
+import 'js-cookie';
 
 /**
  * This class is used to create loan token for borrowed books
@@ -15,7 +15,6 @@ export class LoanTokenPoller {
     this.pollerDelay = pollerDelay; // value in ms (1000 ms = 1 sec)
 
     this.loanTokenInterval = undefined;
-    this.localCache = new LocalCache();
     this.enableBookAccess();
   }
 
@@ -31,12 +30,11 @@ export class LoanTokenPoller {
       // send consecutiveLoanCounts for browsed books only.
       if (this.borrowType === 'browsed') {
         try {
-          const existingCount = await this.localCache.get(
-            `loan-count-${this.identifier}`
-          );
+          /* eslint-disable no-undef */
+          const existingCount = Cookies.get(`loan-count-${this.identifier}`);
           consecutiveLoanCounts = existingCount ?? 1;
         } catch (error) {
-          this.sendEvent('indexedDB-Error-Token', error);
+          this.sendEvent('Cookies-Error-Token', error);
         }
       }
 

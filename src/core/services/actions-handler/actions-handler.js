@@ -1,8 +1,8 @@
 import { LitElement } from 'lit-element';
-import { LocalCache } from '@internetarchive/local-cache';
 
 import { URLHelper } from '../../config/url-helper.js';
 import ActionsHandlerService from './actions-handler-service.js';
+import 'js-cookie';
 
 /**
  * These are callback functions calling from actions-config.js file.
@@ -17,7 +17,6 @@ export default class ActionsHandler extends LitElement {
     super();
     this.identifier = identifier;
     this.ajaxTimeout = 6000;
-    this.localCache = new LocalCache();
     this.bindEvents();
   }
 
@@ -242,21 +241,22 @@ export default class ActionsHandler extends LitElement {
     try {
       let newCount = 1;
       const storageKey = `loan-count-${this.identifier}`;
-      const existingCount = await this.localCache.get(storageKey);
+      /* eslint-disable no-undef */
+      const existingCount = Cookies.get(storageKey);
 
       // increase browse-count by 1 when you consecutive reading a book.
       if (action === 'browseAgain' && existingCount !== undefined) {
-        newCount = existingCount ? existingCount + 1 : 1;
+        newCount = existingCount ? Number(existingCount) + 1 : 1;
       }
 
+      const date = new Date();
+      date.setHours(date.getHours() + 2);
+
       // set new value
-      await this.localCache.set({
-        key: storageKey,
-        value: newCount,
-        ttl: 7200, // 2 hours
-      });
+      /* eslint-disable no-undef */
+      Cookies.set(storageKey, newCount, { expires: date, path: '/' });
     } catch (error) {
-      this.sendEvent('indexedDB-Error-Actions', error);
+      this.sendEvent('Cookies-Error-Actions', error);
     }
   }
 
