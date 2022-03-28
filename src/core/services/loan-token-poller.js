@@ -1,5 +1,5 @@
 import ActionsHandlerService from './actions-handler/actions-handler-service.js';
-import 'js-cookie';
+import * as Cookies from './doc-cookies.js';
 
 /**
  * This class is used to create loan token for borrowed books
@@ -30,8 +30,9 @@ export class LoanTokenPoller {
       // send consecutiveLoanCounts for browsed books only.
       if (this.borrowType === 'browsed') {
         try {
-          /* eslint-disable no-undef */
-          const existingCount = Cookies.get(`loan-count-${this.identifier}`);
+          const existingCount = Cookies.getItem(
+            `loan-count-${this.identifier}`
+          );
           consecutiveLoanCounts = existingCount ?? 1;
         } catch (error) {
           this.sendEvent('Cookies-Error-Token', error);

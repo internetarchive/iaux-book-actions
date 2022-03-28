@@ -2,7 +2,7 @@ import { LitElement } from 'lit-element';
 
 import { URLHelper } from '../../config/url-helper.js';
 import ActionsHandlerService from './actions-handler-service.js';
-import 'js-cookie';
+import * as Cookies from '../doc-cookies.js';
 
 /**
  * These are callback functions calling from actions-config.js file.
@@ -241,8 +241,7 @@ export default class ActionsHandler extends LitElement {
     try {
       let newCount = 1;
       const storageKey = `loan-count-${this.identifier}`;
-      /* eslint-disable no-undef */
-      const existingCount = Cookies.get(storageKey);
+      const existingCount = Cookies.getItem(storageKey);
 
       // increase browse-count by 1 when you consecutive reading a book.
       if (action === 'browseAgain' && existingCount !== undefined) {
@@ -250,11 +249,10 @@ export default class ActionsHandler extends LitElement {
       }
 
       const date = new Date();
-      date.setHours(date.getHours() + 2);
+      date.setHours(date.getHours() + 2); // 2 hours
 
       // set new value
-      /* eslint-disable no-undef */
-      Cookies.set(storageKey, newCount, { expires: date, path: '/' });
+      Cookies.setItem(storageKey, newCount, date, '/');
     } catch (error) {
       this.sendEvent('Cookies-Error-Actions', error);
     }
@@ -263,15 +261,20 @@ export default class ActionsHandler extends LitElement {
   deleteLoanCookies() {
     const date = new Date();
     date.setTime(date.getTime() - 24 * 60 * 60 * 1000); // one day ago
-    const expiry = date.toGMTString();
-    let cookie = `loan-${this.identifier}=""`;
-    cookie += `; expires=${expiry}`;
-    cookie += '; path=/; domain=.archive.org;';
-    document.cookie = cookie;
 
-    cookie = `br-loan-${this.identifier}=""`;
-    cookie += `; expires=${expiry}`;
-    cookie += '; path=/; domain=.archive.org;';
-    document.cookie = cookie;
+    Cookies.setItem(
+      `loan-${this.identifier}=""`,
+      '',
+      date,
+      '/',
+      '.archive.org'
+    );
+    Cookies.setItem(
+      `br-loan-${this.identifier}=""`,
+      '',
+      date,
+      '/',
+      '.archive.org'
+    );
   }
 }
