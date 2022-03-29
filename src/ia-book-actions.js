@@ -156,6 +156,15 @@ export default class IABookActions extends LitElement {
     });
 
     this.borrowType = actions.borrowType;
+
+    const hasExpired =
+      'browsingExpired' in this.lendingStatus &&
+      this.lendingStatus?.browsingExpired;
+    if (hasExpired) {
+      this.tokenPoller?.disconnectedInterval();
+      return;
+    }
+
     if (this.borrowType === 'browsed') {
       // start timer for browsed.
       // when browse is completed, we shows browse-again button
@@ -308,6 +317,7 @@ export default class IABookActions extends LitElement {
       title: 'Lending error',
       message: errorMsg,
       headerColor: '#d9534f',
+      showCloseButton: true,
     });
 
     if (action === 'create_token') {
@@ -318,8 +328,6 @@ export default class IABookActions extends LitElement {
         refresh
       </button>`;
 
-      modalConfig.closeOnBackdropClick = false;
-      modalConfig.showCloseButton = false;
       modalConfig.message = html` Uh oh, something went wrong trying to access
         this book.<br />
         Please ${refreshButton} to try again or send us an email to
