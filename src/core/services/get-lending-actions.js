@@ -144,6 +144,7 @@ export default class GetLendingActions {
       primaryTitle: 'Book available to patrons with print disabilities.',
       primaryActions: [unavailable],
       primaryColor: 'primary',
+      secondaryActions: [],
     };
   }
 
