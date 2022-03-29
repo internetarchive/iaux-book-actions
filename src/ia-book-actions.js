@@ -308,6 +308,7 @@ export default class IABookActions extends LitElement {
       title: 'Lending error',
       message: errorMsg,
       headerColor: '#d9534f',
+      showCloseButton: true,
     });
 
     if (action === 'create_token') {
@@ -318,8 +319,6 @@ export default class IABookActions extends LitElement {
         refresh
       </button>`;
 
-      modalConfig.closeOnBackdropClick = false;
-      modalConfig.showCloseButton = false;
       modalConfig.message = html` Uh oh, something went wrong trying to access
         this book.<br />
         Please ${refreshButton} to try again or send us an email to
