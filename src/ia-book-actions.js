@@ -94,7 +94,6 @@ export default class IABookActions extends LitElement {
       secondsLeftOnLoan,
     } = this.lendingStatus;
     if (!user_has_browsed || browsingExpired) {
-      this.tokenPoller?.disconnectedInterval();
       return;
     }
 
@@ -157,6 +156,15 @@ export default class IABookActions extends LitElement {
     });
 
     this.borrowType = actions.borrowType;
+
+    const hasExpired =
+      'browsingExpired' in this.lendingStatus &&
+      this.lendingStatus?.browsingExpired;
+    if (hasExpired) {
+      this.tokenPoller?.disconnectedInterval();
+      return;
+    }
+
     if (this.borrowType === 'browsed') {
       // start timer for browsed.
       // when browse is completed, we shows browse-again button

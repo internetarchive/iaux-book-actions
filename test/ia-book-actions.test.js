@@ -251,10 +251,41 @@ describe('Browsing expired status', () => {
     );
 
     await aTimeout(1500); // wait for 1.5 second
-    el.updateComplete;
+    await el.updateComplete;
 
     expect(el.primaryTitle).contains('Your loan has expired.');
     expect(el.primaryActions[0].text).to.equal('Borrow again');
+  });
+
+  it('Expiring book cancels interval', async () => {
+    const baseStatus = {
+      is_lendable: true,
+      user_has_browsed: false,
+      browseHasExpired: false,
+      secondsLeftOnLoan: 1,
+    };
+    const el = await fixture(
+      container({
+        userid: '@userid',
+        lendingStatus: baseStatus,
+      })
+    );
+    const browsingStatus = { ...baseStatus, user_has_browsed: true };
+    el.lendingStatus = browsingStatus;
+    await el.updateComplete;
+
+    expect(el.primaryTitle).contains('Borrow ends at ');
+    expect(el.primaryActions[0].text).to.equal('Return now');
+    expect(el.tokenPoller.loanTokenInterval).to.not.equal(undefined);
+
+    const expiredStatus = { ...browsingStatus, browsingExpired: true };
+    el.lendingStatus = expiredStatus;
+    await el.updateComplete;
+    await aTimeout(1500); // wait for 1.5 sec
+
+    expect(el.primaryTitle).contains('Your loan has expired.');
+    expect(el.primaryActions[0].text).to.equal('Borrow again');
+    expect(el.tokenPoller.loanTokenInterval).to.equal(undefined);
   });
 });
 
