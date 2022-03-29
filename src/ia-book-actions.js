@@ -168,7 +168,10 @@ export default class IABookActions extends LitElement {
       return;
     }
 
-    this.startLoanTokenPoller();
+    const hasExpired = !this.lendingStatus?.browsingExpired;
+    if (!hasExpired) {
+      this.startLoanTokenPoller();
+    }
   }
 
   render() {
