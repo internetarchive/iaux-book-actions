@@ -94,6 +94,7 @@ export default class IABookActions extends LitElement {
       secondsLeftOnLoan,
     } = this.lendingStatus;
     if (!user_has_browsed || browsingExpired) {
+      this.tokenPoller?.disconnectedInterval();
       return;
     }
 
@@ -165,14 +166,6 @@ export default class IABookActions extends LitElement {
     // early return if not borrowed or no action-bar
     if (!this.borrowType || this.barType === 'title') {
       this.lendingBarPostInit();
-      return;
-    }
-
-    const hasExpired =
-      'browsingExpired' in this.lendingStatus &&
-      this.lendingStatus?.browsingExpired;
-    if (hasExpired) {
-      this.tokenPoller?.disconnectedInterval();
       return;
     }
 
