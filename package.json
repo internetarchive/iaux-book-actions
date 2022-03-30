@@ -13,9 +13,9 @@
     "start": "web-dev-server",
     "lint": "eslint --ext .js,.html . --ignore-path .gitignore && prettier \"**/*.js\" --check --ignore-path .gitignore",
     "format": "eslint --ext .js,.html . --fix --ignore-path .gitignore && prettier \"**/*.js\" --write --ignore-path .gitignore",
-    "test": "yarn run lint && web-test-runner --coverage",
-    "test:fast": "web-test-runner --coverage --node-resolve --playwright --browsers chromium firefox webkit",
-    "test:watch": "web-test-runner --watch"
+    "test": "yarn run lint && yarn test:fast",
+    "test:fast": "web-test-runner --coverage --playwright --browsers chromium firefox webkit",
+    "test:watch": "web-test-runner --watch --playwright --browsers chromium firefox webkit"
   },
   "dependencies": {
     "@internetarchive/ia-icons": "^1.2.2",
