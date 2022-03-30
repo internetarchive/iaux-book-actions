@@ -257,12 +257,10 @@ describe('Browsing expired status', () => {
     expect(el.primaryActions[0].text).to.equal('Borrow again');
   });
 
-  it('Expiring book cancels interval', async () => {
+  it('Expiring book cancels interval & emits event', async () => {
     const baseStatus = {
       is_lendable: true,
       user_has_browsed: false,
-      browseHasExpired: false,
-      secondsLeftOnLoan: 1,
     };
     const el = await fixture(
       container({
@@ -270,6 +268,13 @@ describe('Browsing expired status', () => {
         lendingStatus: baseStatus,
       })
     );
+
+    let eventReceived = false;
+    const listener = () => {
+      eventReceived = true;
+    };
+    el.addEventListener('IABookReader:BrowsingHasExpired', listener);
+
     const browsingStatus = { ...baseStatus, user_has_browsed: true };
     el.lendingStatus = browsingStatus;
     await el.updateComplete;
@@ -283,6 +288,7 @@ describe('Browsing expired status', () => {
     await el.updateComplete;
     await aTimeout(1500); // wait for 1.5 sec
 
+    expect(eventReceived).to.equal(true);
     expect(el.primaryTitle).contains('Your loan has expired.');
     expect(el.primaryActions[0].text).to.equal('Borrow again');
     expect(el.tokenPoller.loanTokenInterval).to.equal(undefined);
