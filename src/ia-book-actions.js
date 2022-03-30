@@ -147,11 +147,11 @@ export default class IABookActions extends LitElement {
     if (!actions) return;
 
     this.primaryTitle = actions.primaryTitle;
-    this.primaryActions = actions.primaryActions.filter(action => {
+    this.primaryActions = actions.primaryActions?.filter(action => {
       return action != null;
     });
     this.primaryColor = actions.primaryColor;
-    this.secondaryActions = actions.secondaryActions.filter(action => {
+    this.secondaryActions = actions.secondaryActions?.filter(action => {
       return action != null;
     });
 
