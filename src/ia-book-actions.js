@@ -89,15 +89,6 @@ export default class IABookActions extends LitElement {
   browseHasExpired() {
     const currStatus = { ...this.lendingStatus, browsingExpired: true };
     this.lendingStatus = currStatus;
-
-    /** Global event - always fire */
-    this.dispatchEvent(
-      new Event(events.browseExpired, {
-        bubbles: true,
-        cancelable: false,
-        composed: true,
-      })
-    );
   }
 
   startBrowseTimer() {
@@ -175,6 +166,14 @@ export default class IABookActions extends LitElement {
       this.lendingStatus?.browsingExpired;
     if (hasExpired) {
       this.tokenPoller?.disconnectedInterval();
+      /** Global event - always fire */
+      this.dispatchEvent(
+        new Event(events.browseExpired, {
+          bubbles: true,
+          cancelable: false,
+          composed: true,
+        })
+      );
       return;
     }
 
