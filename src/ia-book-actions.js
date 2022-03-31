@@ -13,6 +13,10 @@ import GetLendingActions from './core/services/get-lending-actions.js';
 import { mobileContainerWidth } from './core/config/constants.js';
 import { LoanTokenPoller } from './core/services/loan-token-poller.js';
 
+export const events = {
+  browseExpired: 'IABookReader:BrowsingHasExpired',
+};
+
 export default class IABookActions extends LitElement {
   static get properties() {
     return {
@@ -162,6 +166,14 @@ export default class IABookActions extends LitElement {
       this.lendingStatus?.browsingExpired;
     if (hasExpired) {
       this.tokenPoller?.disconnectedInterval();
+      /** Global event - always fire */
+      this.dispatchEvent(
+        new Event(events.browseExpired, {
+          bubbles: true,
+          cancelable: false,
+          composed: true,
+        })
+      );
       return;
     }
 
