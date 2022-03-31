@@ -24,6 +24,7 @@ export default class IABookActions extends LitElement {
       identifier: { type: String },
       bookTitle: { type: String },
       lendingStatus: { type: Object },
+      returnUrl: { type: String },
       width: { type: Number },
       bwbPurchaseUrl: { type: String },
       lendingBarPostInit: {
@@ -43,6 +44,7 @@ export default class IABookActions extends LitElement {
     this.userid = '';
     this.identifier = '';
     this.bookTitle = '';
+    this.returnUrl = '';
     this.lendingStatus = {};
     this.width = 0;
     this.bwbPurchaseUrl = '';
@@ -221,6 +223,7 @@ export default class IABookActions extends LitElement {
         .secondaryActions=${this.secondaryActions}
         .width=${this.width}
         .borrowType=${this.borrowType}
+        .returnUrl=${this.returnUrl}
         ?hasAdminAccess=${this.hasAdminAccess}
         ?disabled=${this.disableActionGroup}
         @lendingActionError=${this.handleLendingActionError}
