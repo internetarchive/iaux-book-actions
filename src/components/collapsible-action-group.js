@@ -27,7 +27,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
       hasAdminAccess: { type: Boolean },
       dropdownArrow: { type: String },
       disabled: { type: Boolean },
-      loansUrl: { type: String },
+      returnUrl: { type: String },
     };
   }
 
@@ -46,7 +46,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
     this.title = '';
     this.loaderIcon = 'https://archive.org/upload/images/tree/loading.gif';
     this.disabled = false;
-    this.loansUrl = '';
+    this.returnUrl = '';
   }
 
   updated(changed) {

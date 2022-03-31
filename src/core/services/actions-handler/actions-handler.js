@@ -15,7 +15,7 @@ import * as Cookies from '../doc-cookies.js';
 export default class ActionsHandler extends LitElement {
   static properties() {
     return {
-      loansUrl: { type: String },
+      returnUrl: { type: String },
     };
   }
 
@@ -24,7 +24,7 @@ export default class ActionsHandler extends LitElement {
     this.identifier = identifier;
     this.ajaxTimeout = 6000;
     this.bindEvents();
-    this.loansUrl = '';
+    this.returnUrl = '';
   }
 
   sendEvent(eventCategory, eventAction) {
@@ -128,7 +128,7 @@ export default class ActionsHandler extends LitElement {
       identifier: this.identifier,
       success: () => {
         this.deleteLoanCookies();
-        URLHelper.goToUrl(this.loansUrl, true);
+        URLHelper.goToUrl(this.returnUrl, true);
       },
       error: data => {
         this.dispatchActionError(action, data);

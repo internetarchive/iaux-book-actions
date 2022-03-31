@@ -29,7 +29,7 @@ const container = ({
     .primaryActions=${primaryActions}
     .secondaryActions=${secondaryActions}
     .borrowType=${borrowType}
-    .loansUrl=${'https://openlibrary.org'}
+    .returnUrl=${'https://openlibrary.org'}
   ></collapsible-action-group>`;
 
 describe('<collapsible-action-group>', () => {
@@ -86,6 +86,6 @@ describe('<collapsible-action-group>', () => {
   });
   it('receives `loanUrl`', async () => {
     const el = await fixture(container());
-    expect(el.loansUrl).to.equal('https://openlibrary.org');
+    expect(el.returnUrl).to.equal('https://openlibrary.org');
   });
 });
