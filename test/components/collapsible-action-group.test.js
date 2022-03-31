@@ -29,6 +29,7 @@ const container = ({
     .primaryActions=${primaryActions}
     .secondaryActions=${secondaryActions}
     .borrowType=${borrowType}
+    .loansUrl=${'https://openlibrary.org'}
   ></collapsible-action-group>`;
 
 describe('<collapsible-action-group>', () => {
@@ -82,5 +83,9 @@ describe('<collapsible-action-group>', () => {
     expect(eName).to.equal('browseBook');
     expect(eAnalytics.category).to.equal('Lending');
     expect(eAnalytics.action).to.equal('Browse');
+  });
+  it('receives `loanUrl`', async () => {
+    const el = await fixture(container());
+    expect(el.loansUrl).to.equal('https://openlibrary.org');
   });
 });
