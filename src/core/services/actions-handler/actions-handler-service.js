@@ -25,7 +25,7 @@ export default async function ActionsHandlerService(options) {
     location?.href?.indexOf('?error=true') !== -1 &&
     location?.hostname !== 'archive.org';
 
-  if (location?.pathname === '/demo1/') baseHost = `/demo/`;
+  if (location?.pathname === '/demo/') baseHost = `/demo/`;
 
   let formData = new FormData();
   formData.append('action', option.action);
