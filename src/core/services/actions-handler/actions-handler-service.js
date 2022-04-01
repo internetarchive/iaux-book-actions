@@ -15,7 +15,6 @@ export default async function ActionsHandlerService(options) {
 
   let baseHost = '/services/loans/loan';
   const location = window?.location;
-  if (location?.pathname === '/demo1/') baseHost = `/demo/`;
 
   // return error reponse when not production and has ?error=true param...
   const tokenError = 'loan token not found. please try again later.';
@@ -25,6 +24,8 @@ export default async function ActionsHandlerService(options) {
   const shouldReturnError =
     location?.href?.indexOf('?error=true') !== -1 &&
     location?.hostname !== 'archive.org';
+
+  if (location?.pathname === '/demo1/') baseHost = `/demo/`;
 
   let formData = new FormData();
   formData.append('action', option.action);
