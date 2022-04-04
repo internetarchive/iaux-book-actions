@@ -16,6 +16,8 @@ export default async function ActionsHandlerService(options) {
   let baseHost = '/services/loans/loan';
   const location = window?.location;
 
+  console.log('failed-to-fecth-loan-data fix is here');
+
   // return error reponse when not production and has ?error=true param...
   const tokenError = 'loan token not found. please try again later.';
   const borrowError =
