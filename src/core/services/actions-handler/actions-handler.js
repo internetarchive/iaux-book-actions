@@ -194,6 +194,10 @@ export default class ActionsHandler extends LitElement {
    * @fires ActionsHandler#lendingActionError
    */
   dispatchActionError(action, data = {}) {
+    console.log('LendingServiceError');
+    // send LendingServiceError to GA
+    this.sendEvent('LendingServiceError', action || 'unknown_action');
+
     this.dispatchEvent(
       new CustomEvent('lendingActionError', {
         detail: { action, data },
