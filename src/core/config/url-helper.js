@@ -1,4 +1,4 @@
-import { nothing } from 'lit-html';
+import { nothing } from 'lit/html.js';
 
 export class URLHelper {
   /**
