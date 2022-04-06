@@ -13,15 +13,9 @@ import * as Cookies from '../doc-cookies.js';
  */
 
 export default class ActionsHandler extends LitElement {
-  static properties() {
-    return {
-      returnUrl: { type: String },
-    };
-  }
-
-  constructor(identifier) {
+  constructor() {
     super();
-    this.identifier = identifier;
+    this.identifier = '';
     this.ajaxTimeout = 6000;
     this.bindEvents();
     this.returnUrl = '';
