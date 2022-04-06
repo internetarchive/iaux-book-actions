@@ -1,5 +1,5 @@
 /* eslint-disable camelcase */
-import { html, css, LitElement } from 'lit-element';
+import { html, css, LitElement } from 'lit';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
 import { ModalConfig } from '@internetarchive/modal-manager';

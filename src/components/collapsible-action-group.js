@@ -1,6 +1,6 @@
-import { html } from 'lit-element';
-import { nothing } from 'lit-html';
-import { classMap } from 'lit-html/directives/class-map';
+import { html } from 'lit';
+import { nothing } from 'lit/html.js';
+import { classMap } from 'lit/directives/class-map.js';
 
 import ActionsHandler from '../core/services/actions-handler/actions-handler.js';
 

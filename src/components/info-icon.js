@@ -1,5 +1,5 @@
-import { html, css, LitElement, svg } from 'lit-element';
-import { unsafeHTML } from 'lit-html/directives/unsafe-html';
+import { html, css, LitElement, svg } from 'lit';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import '@internetarchive/icon-info/icon-info.js';
 
 export class InfoIcon extends LitElement {
