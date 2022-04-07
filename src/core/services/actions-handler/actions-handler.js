@@ -1,4 +1,4 @@
-import { LitElement } from 'lit-element';
+import { LitElement } from 'lit';
 
 import { URLHelper } from '../../config/url-helper.js';
 import ActionsHandlerService from './actions-handler-service.js';
@@ -13,15 +13,9 @@ import * as Cookies from '../doc-cookies.js';
  */
 
 export default class ActionsHandler extends LitElement {
-  static properties() {
-    return {
-      returnUrl: { type: String },
-    };
-  }
-
-  constructor(identifier) {
+  constructor() {
     super();
-    this.identifier = identifier;
+    this.identifier = '';
     this.ajaxTimeout = 6000;
     this.bindEvents();
     this.returnUrl = '';
@@ -194,6 +188,9 @@ export default class ActionsHandler extends LitElement {
    * @fires ActionsHandler#lendingActionError
    */
   dispatchActionError(action, data = {}) {
+    // send LendingServiceError to GA
+    this.sendEvent('LendingServiceError', action);
+
     this.dispatchEvent(
       new CustomEvent('lendingActionError', {
         detail: { action, data },
