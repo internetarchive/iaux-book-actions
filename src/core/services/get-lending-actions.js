@@ -75,9 +75,9 @@ export default class GetLendingActions {
     const disableBorrow = lendingStatus.loanCount >= lendingStatus.maxLoans;
 
     let primaryTitleText = '';
-    let isBrowsed =
+    let isBrowsing =
       lendingStatus.user_has_browsed && !lendingStatus.browsingExpired;
-    if (isBrowsed) {
+    if (isBrowsing) {
       primaryTitleText = this.getBrowseCountdownTitle();
     } else {
       primaryTitleText = `Your loan of this book has ${lendingStatus.daysLeftOnLoan} days left.`;
@@ -96,7 +96,7 @@ export default class GetLendingActions {
         this.actionsConfig.adminAccessConfig(),
         this.actionsConfig.purchaseConfig(),
       ],
-      borrowType: isBrowsed ? 'browsed' : 'borrowed',
+      borrowType: isBrowsing ? 'browsed' : 'borrowed',
     };
   }
 
@@ -144,6 +144,7 @@ export default class GetLendingActions {
       primaryTitle: 'Book available to patrons with print disabilities.',
       primaryActions: [unavailable],
       primaryColor: 'primary',
+      secondaryActions: [],
     };
   }
 

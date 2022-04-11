@@ -1,6 +1,5 @@
 import { html, fixture, expect } from '@open-wc/testing';
 import '../../src/components/collapsible-action-group.js';
-import Sinon from 'sinon';
 
 const container = ({
   primaryActions = [
@@ -30,6 +29,7 @@ const container = ({
     .primaryActions=${primaryActions}
     .secondaryActions=${secondaryActions}
     .borrowType=${borrowType}
+    .returnUrl=${'https://openlibrary.org'}
   ></collapsible-action-group>`;
 
 describe('<collapsible-action-group>', () => {
@@ -84,28 +84,8 @@ describe('<collapsible-action-group>', () => {
     expect(eAnalytics.category).to.equal('Lending');
     expect(eAnalytics.action).to.equal('Browse');
   });
-});
-
-describe('fetch loan token and localStorage for browsed/borrowsed book', () => {
-  beforeEach(() => {
-    const localStorageMock = {
-      getItem: Sinon.spy(),
-      setItem: Sinon.spy(),
-    };
-    Object.defineProperty(window, 'localStorage', {
-      value: localStorageMock,
-    });
-  });
-
-  it('test localStorage function when borrowType is browsed', async () => {
-    await fixture(container({ borrowType: 'browsed' }));
-    expect(localStorage.getItem).to.be.calledOnce;
-    expect(localStorage.getItem).to.be.calledWith('consecutive-loan-count');
-  });
-
-  it('test localStorage function when borrowType is borrowed', async () => {
-    await fixture(container({ borrowType: 'borrowed' }));
-    expect(localStorage.getItem).to.not.be.calledOnce;
-    expect(localStorage.getItem).to.not.be.calledWith('consecutive-loan-count');
+  it('receives `loanUrl`', async () => {
+    const el = await fixture(container());
+    expect(el.returnUrl).to.equal('https://openlibrary.org');
   });
 });

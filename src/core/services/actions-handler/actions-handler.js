@@ -1,6 +1,8 @@
-import { LitElement } from 'lit-element';
+import { LitElement } from 'lit';
+
 import { URLHelper } from '../../config/url-helper.js';
 import ActionsHandlerService from './actions-handler-service.js';
+import * as Cookies from '../doc-cookies.js';
 
 /**
  * These are callback functions calling from actions-config.js file.
@@ -11,18 +13,12 @@ import ActionsHandlerService from './actions-handler-service.js';
  */
 
 export default class ActionsHandler extends LitElement {
-  constructor(identifier) {
+  constructor() {
     super();
-    this.identifier = identifier;
+    this.identifier = '';
     this.ajaxTimeout = 6000;
-    this.loanTokenPollingDelay =
-      window.location.pathname === '/demo/' ? 2000 : 120000; // 120000 ms = 2 min
-    this.loanTokenInterval = null;
     this.bindEvents();
-  }
-
-  disconnectedCallback() {
-    this.loanTokenInterval = undefined;
+    this.returnUrl = '';
   }
 
   sendEvent(eventCategory, eventAction) {
@@ -99,126 +95,117 @@ export default class ActionsHandler extends LitElement {
       const { category, action } = detail.event;
       this.sendEvent(category, action);
     });
-
-    this.addEventListener('enableBookAccess', ({ detail }) => {
-      const borrowType = detail?.borrowType;
-
-      // fetch loan token for browsed/borrowed book and set an interval
-      if (borrowType) {
-        console.log('token poll started...');
-
-        this.loanTokenInterval = setInterval(() => {
-          this.handleLoanTokenPoller();
-        }, this.loanTokenPollingDelay);
-
-        const { category, action } = detail?.event;
-        this.sendEvent(category, action);
-      } else {
-        // if book is not browsed, just clear token polling interval
-        clearInterval(this.loanTokenInterval);
-      }
-    });
   }
 
   handleBrowseIt() {
-    const context = 'browse_book';
-    this.ActionError(context);
+    const action = 'browse_book';
+    this.dispatchToggleActionGroup();
 
     ActionsHandlerService({
-      action: context,
+      action,
       identifier: this.identifier,
       success: () => {
         this.handleReadItNow();
       },
       error: data => {
-        this.ActionError(context, data);
+        this.dispatchActionError(action, data);
       },
     });
   }
 
   handleReturnIt() {
-    const context = 'return_loan';
-    this.ActionError(context);
+    const action = 'return_loan';
+    this.dispatchToggleActionGroup();
 
     ActionsHandlerService({
-      action: context,
+      action,
       identifier: this.identifier,
       success: () => {
         this.deleteLoanCookies();
-        URLHelper.goToUrl(`/details/${this.identifier}`, true);
+        URLHelper.goToUrl(this.returnUrl, true);
       },
       error: data => {
-        this.ActionError(context, data);
+        this.dispatchActionError(action, data);
       },
     });
   }
 
   handleBorrowIt() {
-    const context = 'borrow_book';
-    this.ActionError(context);
+    const action = 'borrow_book';
+    this.dispatchToggleActionGroup();
 
     ActionsHandlerService({
-      action: context,
+      action,
       identifier: this.identifier,
       success: () => {
         this.handleReadItNow();
       },
       error: data => {
-        this.ActionError(context, data);
+        this.dispatchActionError(action, data);
       },
     });
   }
 
   handleReserveIt() {
-    const context = 'join_waitlist';
-    this.ActionError(context);
+    const action = 'join_waitlist';
+    this.dispatchToggleActionGroup();
 
     ActionsHandlerService({
-      action: context,
+      action,
       identifier: this.identifier,
       success: () => {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
       },
       error: data => {
-        this.ActionError(context, data);
+        this.dispatchActionError(action, data);
       },
     });
   }
 
   handleRemoveFromWaitingList() {
-    const context = 'leave_waitlist';
-    this.ActionError(context);
+    const action = 'leave_waitlist';
+    this.dispatchToggleActionGroup();
 
     ActionsHandlerService({
-      action: context,
+      action,
       identifier: this.identifier,
       success: () => {
         URLHelper.goToUrl(URLHelper.getRedirectUrl(), true);
       },
       error: data => {
-        this.ActionError(context, data);
+        this.dispatchActionError(action, data);
       },
     });
   }
 
-  handleLoanTokenPoller() {
-    const context = 'create_token';
-    ActionsHandlerService({
-      identifier: this.identifier,
-      action: context,
-      error: data => {
-        this.ActionError(context, data);
-        clearInterval(this.loanTokenInterval); // stop token fetch api
-      },
-    });
-  }
+  /**
+   * Dispatches event when an error occured on action
+   * Notes:- toggle <collapsible-action-group> visibility (enable/disable).
+   *
+   * @param { String } action - name of action like browse_book, borrow_book
+   * @param { Object } data - erroneous response from api call
+   *
+   * @fires ActionsHandler#lendingActionError
+   */
+  dispatchActionError(action, data = {}) {
+    // send LendingServiceError to GA
+    this.sendEvent('LendingServiceError', action);
 
-  ActionError(context, data = {}) {
     this.dispatchEvent(
       new CustomEvent('lendingActionError', {
-        detail: { context, data },
+        detail: { action, data },
       })
     );
+  }
+
+  /**
+   * Dispatches event when patron is clicked on action buttons.
+   * Notes:- toggle <collapsible-action-group> disable/enable.
+   *
+   * @fires ActionsHandler#toggleActionGroup
+   */
+  dispatchToggleActionGroup() {
+    this.dispatchEvent(new CustomEvent('toggleActionGroup'));
   }
 
   handleLoginOk() {
@@ -254,34 +241,44 @@ export default class ActionsHandler extends LitElement {
   }
 
   // save consecutive loan count for borrow
-  setConsecutiveLoanCounts(action = '') {
-    const { localStorage } = window;
-    if (localStorage) {
+  async setConsecutiveLoanCounts(action = '') {
+    try {
       let newCount = 1;
-      const storageKey = `consecutive-loan-count`;
-      const existingCount = Number(localStorage.getItem(storageKey));
+      const storageKey = `loan-count-${this.identifier}`;
+      const existingCount = Cookies.getItem(storageKey);
 
-      // want to increase browse-count by 1 if,
-      // you consecutive reading a book.
-      if (action === 'browseAgain') {
-        newCount = existingCount ? existingCount + 1 : 1;
+      // increase browse-count by 1 when you consecutive reading a book.
+      if (action === 'browseAgain' && existingCount !== undefined) {
+        newCount = existingCount ? Number(existingCount) + 1 : 1;
       }
-      localStorage.setItem(storageKey, newCount);
+
+      const date = new Date();
+      date.setHours(date.getHours() + 2); // 2 hours
+
+      // set new value
+      Cookies.setItem(storageKey, newCount, date, '/');
+    } catch (error) {
+      this.sendEvent('Cookies-Error-Actions', error);
     }
   }
 
   deleteLoanCookies() {
     const date = new Date();
     date.setTime(date.getTime() - 24 * 60 * 60 * 1000); // one day ago
-    const expiry = date.toGMTString();
-    let cookie = `loan-${this.identifier}=""`;
-    cookie += `; expires=${expiry}`;
-    cookie += '; path=/; domain=.archive.org;';
-    document.cookie = cookie;
 
-    cookie = `br-loan-${this.identifier}=""`;
-    cookie += `; expires=${expiry}`;
-    cookie += '; path=/; domain=.archive.org;';
-    document.cookie = cookie;
+    Cookies.setItem(
+      `loan-${this.identifier}=""`,
+      '',
+      date,
+      '/',
+      '.archive.org'
+    );
+    Cookies.setItem(
+      `br-loan-${this.identifier}=""`,
+      '',
+      date,
+      '/',
+      '.archive.org'
+    );
   }
 }

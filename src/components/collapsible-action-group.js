@@ -1,6 +1,6 @@
-import { html } from 'lit-element';
-import { nothing } from 'lit-html';
-import { classMap } from 'lit-html/directives/class-map';
+import { html } from 'lit';
+import { nothing } from 'lit/html.js';
+import { classMap } from 'lit/directives/class-map.js';
 
 import ActionsHandler from '../core/services/actions-handler/actions-handler.js';
 
@@ -27,7 +27,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
       hasAdminAccess: { type: Boolean },
       dropdownArrow: { type: String },
       disabled: { type: Boolean },
-      borrowType: { type: String },
+      returnUrl: { type: String },
     };
   }
 
@@ -46,45 +46,13 @@ export class CollapsibleActionGroup extends ActionsHandler {
     this.title = '';
     this.loaderIcon = 'https://archive.org/upload/images/tree/loading.gif';
     this.disabled = false;
-    this.borrowType = ''; // (browsed|borrowed)
-    this.consecutiveLoanCounts = 1; // consecutive loan count
+    this.returnUrl = '';
   }
 
   updated(changed) {
-    if (changed.has('width')) {
-      if (this.isBelowTabletContainer) {
-        this.resetActions();
-      }
+    if (changed.has('width') && this.isBelowTabletContainer) {
+      this.resetActions();
     }
-
-    // this is execute to fetch loan token
-    if (changed.has('borrowType')) {
-      this.emitEnableBookAccess();
-    }
-  }
-
-  /* emit custom event to fetch loan token */
-  emitEnableBookAccess() {
-    // send consecutiveLoanCounts for browsed books only.
-    // for borrowed books, we just send [Counts-1]
-    if (this.borrowType === 'browsed') {
-      this.consecutiveLoanCounts =
-        localStorage.getItem('consecutive-loan-count') ?? 1;
-    }
-
-    this.dispatchEvent(
-      new CustomEvent('enableBookAccess', {
-        detail: {
-          event: {
-            category: `${this.borrowType}BookAccess`, // browsedBookAccess | borrowedBookAccess
-            action: `${
-              this.borrowType === 'browsed' ? 'BrowseCounts-' : 'Counts-'
-            }${this.consecutiveLoanCounts}`, // (BrowseCounts-1|Counts-X)
-          },
-          borrowType: this.borrowType,
-        },
-      })
-    );
   }
 
   /**
@@ -219,11 +187,13 @@ export class CollapsibleActionGroup extends ActionsHandler {
   }
 
   /**
-   * Click handler to emit custom event on action click
-   * @param { string } eventName
-   * @param { object } gaEvent
+   * Dispatches click events when patron clicks on action buttons
+   * @param { string } eventName - actions like 'browseBook', 'borrowBook' etc...
+   * @param { object } gaEvent - contains analytics event action and category
    *   @param { string } gaEvent.category
    *   @param { string } gaEvent.action
+   *
+   * @fires CollapsibleActionGroup#{eventName} - (will be browseBook, borrowBook etc...)
    */
   clickHandler(eventName, gaEvent) {
     this.dropdownState = 'close';

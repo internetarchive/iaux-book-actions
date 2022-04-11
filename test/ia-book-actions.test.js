@@ -122,7 +122,7 @@ describe('Borrow status actions', () => {
     el.addEventListener('lendingActionError', () => {
       el.handleLendingActionError({
         detail: {
-          context: 'browse_book',
+          action: 'browse_book',
           data: { error: 'not available to borrow' },
         },
       });
@@ -151,7 +151,7 @@ describe('Borrow status actions', () => {
     el.addEventListener('lendingActionError', () => {
       el.handleLendingActionError({
         detail: {
-          context: 'borrow_book',
+          action: 'borrow_book',
           data: { error: 'not available to borrow' },
         },
       });
@@ -251,10 +251,47 @@ describe('Browsing expired status', () => {
     );
 
     await aTimeout(1500); // wait for 1.5 second
-    el.updateComplete;
+    await el.updateComplete;
 
     expect(el.primaryTitle).contains('Your loan has expired.');
     expect(el.primaryActions[0].text).to.equal('Borrow again');
+  });
+
+  it('Expiring book cancels interval & emits event', async () => {
+    const baseStatus = {
+      is_lendable: true,
+      user_has_browsed: false,
+    };
+    const el = await fixture(
+      container({
+        userid: '@userid',
+        lendingStatus: baseStatus,
+      })
+    );
+
+    let eventReceived = false;
+    const listener = () => {
+      eventReceived = true;
+    };
+    el.addEventListener('IABookReader:BrowsingHasExpired', listener);
+
+    const browsingStatus = { ...baseStatus, user_has_browsed: true };
+    el.lendingStatus = browsingStatus;
+    await el.updateComplete;
+
+    expect(el.primaryTitle).contains('Borrow ends at ');
+    expect(el.primaryActions[0].text).to.equal('Return now');
+    expect(el.tokenPoller.loanTokenInterval).to.not.equal(undefined);
+
+    const expiredStatus = { ...browsingStatus, browsingExpired: true };
+    el.lendingStatus = expiredStatus;
+    await el.updateComplete;
+    await aTimeout(1500); // wait for 1.5 sec
+
+    expect(eventReceived).to.equal(true);
+    expect(el.primaryTitle).contains('Your loan has expired.');
+    expect(el.primaryActions[0].text).to.equal('Borrow again');
+    expect(el.tokenPoller.loanTokenInterval).to.equal(undefined);
   });
 });
 
