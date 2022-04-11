@@ -21,6 +21,8 @@ export default css`
     outline-color: var(--primaryTextColor, #fff);
     outline-offset: -4px;
     user-select: none;
+    text-decoration: none;
+    width: fit-content;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
