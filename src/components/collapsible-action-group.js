@@ -110,6 +110,9 @@ export class CollapsibleActionGroup extends ActionsHandler {
         <section class="action-buttons secondary">
           ${this.renderSecondaryActions}
         </section>
+        <section class="action-buttons secondary purchase">
+          ${this.renderPurchaseAction}
+        </section>
       </div>
     `;
   }
@@ -147,13 +150,27 @@ export class CollapsibleActionGroup extends ActionsHandler {
     return this.secondaryActions.map(action => this.renderActionLink(action));
   }
 
+  get renderPurchaseAction() {
+    if (!this.secondaryActions.length) return nothing;
+
+    if (this.secondaryActions.length === 2) {
+      return this.renderActionLink(this.secondaryActions[1], true);
+    }
+    if (this.secondaryActions[0].id === 'purchaseBook') {
+      return this.renderActionLink(this.secondaryActions[0], true);
+    }
+    return nothing;
+  }
+
   /**
-   * Render action as a link for secondary actions like admin, purchase, printdisability links.
+   * Render action as a link for secondary actions like admin, printdisability links.
    * @param { Object } action
    * @param { Boolean } initialButton
    * @returns { HTMLElement }
    */
   renderActionLink(action, initialButton = false) {
+    if (!initialButton && action?.id === 'purchaseBook') return nothing; // handle purchase action differerntly
+
     return html`<a
       class="ia-button ${action.className} ${initialButton ? 'initial' : ''}"
       href="${action.url}"

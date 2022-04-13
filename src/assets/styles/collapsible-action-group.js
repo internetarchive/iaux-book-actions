@@ -14,12 +14,15 @@ export default css`
     align-items: center;
   }
   .action-buttons .ia-button {
-    margin: 0 3px;
+    margin: 0;
     height: 3.5rem;
   }
   .primary,
   .secondary {
     position: relative;
+    background: var(--white);
+    border-radius: 5px;
+    margin: 0 3px;
   }
   .primary .initial {
     border-radius: 0.4rem 0 0 0.4rem;
