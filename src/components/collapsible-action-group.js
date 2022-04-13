@@ -50,7 +50,10 @@ export class CollapsibleActionGroup extends ActionsHandler {
   }
 
   updated(changed) {
-    if (changed.has('width') && this.isBelowTabletContainer) {
+    if (
+      (changed.has('width') && this.isBelowTabletContainer) ||
+      changed.has('disabled')
+    ) {
       this.resetActions();
     }
   }
