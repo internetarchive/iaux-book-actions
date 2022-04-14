@@ -20,7 +20,7 @@ export default css`
   .primary,
   .secondary {
     position: relative;
-    background: var(--white);
+    background-color: var(--white, #fff);
     border-radius: 5px;
     margin: 0 3px;
   }
@@ -114,6 +114,9 @@ export default css`
     position: relative;
     display: inline-block;
     vertical-align: middle;
+  }
+  .secondary .ia-button.exit-admin {
+    background-color: var(--primaryBGColor);
   }
   .purchase small {
     display: block;
