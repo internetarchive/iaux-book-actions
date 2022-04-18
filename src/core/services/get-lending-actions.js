@@ -53,7 +53,7 @@ export const bookTitles = {
   unavailable: 'This book is not available at this time.',
 };
 
-export default class GetLendingActions {
+export class GetLendingActions {
   constructor(userid, identifier, lendingStatus, bwbPurchaseUrl) {
     this.userid = userid;
     this.identifier = identifier;
@@ -160,7 +160,7 @@ export default class GetLendingActions {
       ? this.actionsConfig.unavailableBookConfig()
       : [];
     return {
-      primaryTitle: bookTitles.pd_available,
+      primaryTitle: bookTitles.available_pd,
       primaryActions: [unavailable],
       primaryColor: 'primary',
       secondaryActions: [],
