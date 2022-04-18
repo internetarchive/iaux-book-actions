@@ -22,8 +22,6 @@ export default class ActionsHandler extends LitElement {
   }
 
   sendEvent(eventCategory, eventAction) {
-    // eslint-disable-next-line no-console
-    console?.log('Book action: ', { eventCategory, eventAction });
     window?.archive_analytics?.send_event_no_sampling(
       eventCategory,
       eventAction,

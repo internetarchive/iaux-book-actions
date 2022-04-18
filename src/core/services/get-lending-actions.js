@@ -419,8 +419,6 @@ export default class GetLendingActions {
       lendingActions = this.restrictedAction();
     }
 
-    // debugging console
-    console.log(lendingActions.primaryTitle);
     return lendingActions;
   }
 }
