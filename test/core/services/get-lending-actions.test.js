@@ -1,5 +1,8 @@
 import { expect } from '@open-wc/testing';
-import GetLendingActions from '../../../src/core/services/get-lending-actions.js';
+import {
+  GetLendingActions,
+  bookTitles,
+} from '../../../src/core/services/get-lending-actions.js';
 
 describe('Get Lending Actions', () => {
   it('Browsable and Borrowable with purchase link', async () => {
@@ -15,9 +18,7 @@ describe('Get Lending Actions', () => {
     );
     const actions = lendingOptions.getCurrentLendingActions();
 
-    expect(actions.primaryTitle).to.equal(
-      'Renewable every hour, pending availability.'
-    );
+    expect(actions.primaryTitle).to.equal(bookTitles.available_1hr);
     expect(actions.primaryActions.length).to.equal(3);
     expect(actions.primaryActions[0].text).to.equal('Borrow for 1 hour');
     expect(actions.primaryActions[1].text).to.equal('Borrow for 14 days');
@@ -37,9 +38,7 @@ describe('Get Lending Actions', () => {
     const actions = lendingOptions.getCurrentLendingActions();
 
     expect(actions.primaryActions.length).to.equal(2);
-    expect(actions.primaryTitle).to.equal(
-      'This book can be borrowed for 14 days.'
-    );
+    expect(actions.primaryTitle).to.equal(bookTitles.available_14d);
     expect(actions.primaryActions[0].text).to.equal('Log In and Borrow');
   });
 
@@ -77,9 +76,7 @@ describe('Get Lending Actions', () => {
     );
     const actions = lendingOptions.getCurrentLendingActions();
 
-    expect(actions.primaryTitle).to.equal(
-      'You are at the top of the waitlist for this book'
-    );
+    expect(actions.primaryTitle).to.equal(bookTitles.claim_waitlist);
     expect(actions.primaryActions.length).to.equal(2);
     expect(actions.primaryActions[0].text).to.equal('Borrow for 14 days');
   });
@@ -99,9 +96,7 @@ describe('Get Lending Actions', () => {
     const actions = lendingOptions.getCurrentLendingActions();
 
     // in-case of print-disabled, we show 14 days borrow
-    expect(actions.primaryTitle).to.equal(
-      'You are eligible for print-disabled access.'
-    );
+    expect(actions.primaryTitle).to.equal(bookTitles.eligible_pd);
     expect(actions.primaryActions.length).to.equal(1);
     expect(actions.primaryActions[0].text).to.equal('Borrow for 14 days');
   });
@@ -117,9 +112,7 @@ describe('Get Lending Actions', () => {
     );
     const actions = lendingOptions.getCurrentLendingActions();
 
-    expect(actions.primaryTitle).to.equal(
-      'Book available to patrons with print disabilities.'
-    );
+    expect(actions.primaryTitle).to.equal(bookTitles.available_pd);
     expect(actions.primaryActions.length).to.equal(1);
     expect(actions.primaryActions[0].text).to.equal('Borrow Unavailable');
   });
@@ -136,9 +129,7 @@ describe('Get Lending Actions', () => {
     );
     const actions = lendingOptions.getCurrentLendingActions();
 
-    expect(actions.primaryTitle).to.equal(
-      'You are on the waitlist for this book.'
-    );
+    expect(actions.primaryTitle).to.equal(bookTitles.on_waitlist);
     expect(actions.primaryActions.length).to.equal(2);
     expect(actions.primaryActions[0].text).to.equal('Leave Waitlist');
   });
@@ -147,9 +138,7 @@ describe('Get Lending Actions', () => {
     const lendingOptions = new GetLendingActions('@user', 'identifier', {}, '');
     const actions = lendingOptions.getCurrentLendingActions();
 
-    expect(actions.primaryTitle).to.equal(
-      'This book is not available at this time.'
-    );
+    expect(actions.primaryTitle).to.equal(bookTitles.unavailable);
     expect(actions.primaryActions.length).to.equal(1);
     expect(actions.primaryActions[0].text).to.equal('Borrow Unavailable');
   });

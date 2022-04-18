@@ -9,7 +9,7 @@ import './components/book-title-bar.js';
 import './components/text-group.js';
 import './components/info-icon.js';
 
-import GetLendingActions from './core/services/get-lending-actions.js';
+import { GetLendingActions } from './core/services/get-lending-actions.js';
 import { mobileContainerWidth } from './core/config/constants.js';
 import { LoanTokenPoller } from './core/services/loan-token-poller.js';
 
