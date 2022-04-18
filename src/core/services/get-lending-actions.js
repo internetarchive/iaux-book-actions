@@ -119,7 +119,7 @@ export class GetLendingActions {
     };
   }
 
-  leaveWaitlistAction() {
+  claimWaitlistAction() {
     const lendingStatus = this.lendingStatus || {};
 
     const leaveWaitlist = this.actionsConfig.leaveWaitlistConfig();
@@ -128,12 +128,13 @@ export class GetLendingActions {
       ? this.actionsConfig.firstBrowseConfig()
       : null;
 
-    const dropdownOptions = browseBook ? [browseBook, borrowBook] : [];
-    const actions = !browseBook ? [borrowBook, leaveWaitlist] : [leaveWaitlist];
+    let actions = [borrowBook];
+    if (browseBook) actions.push(browseBook);
+    actions.push(leaveWaitlist);
 
     return {
       primaryTitle: bookTitles.claim_waitlist,
-      primaryActions: actions.concat(dropdownOptions),
+      primaryActions: actions,
       primaryColor: 'primary',
       footer: 'printDisabilityLine()',
       secondaryActions: [
@@ -425,7 +426,7 @@ export class GetLendingActions {
     } else if (patronIsReading) {
       lendingActions = this.patronIsReadingAction();
     } else if (lendingStatus.user_can_claim_waitlist) {
-      lendingActions = this.leaveWaitlistAction();
+      lendingActions = this.claimWaitlistAction();
     } else if (userCanAccessPrintDisabled) {
       lendingActions = this.borrowPrintDisabledAction();
     } else if (canBorrow || lendingStatus.browsingExpired) {
