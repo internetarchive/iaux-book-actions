@@ -259,27 +259,26 @@
   "resolved" "https://registry.npmjs.org/@humanwhocodes/object-schema/-/object-schema-1.2.0.tgz"
   "version" "1.2.0"
 
-"@internetarchive/ia-activity-indicator@0.0.1":
-  "integrity" "sha512-+l7p1v4QuojgvQwFaIVnHOq9WfeARv9+jBbY/xmj6S8v1QTxW8+OwOkx8GaNuLN57e09uYTlo+EPP7BScOc+tA=="
-  "resolved" "https://registry.npmjs.org/@internetarchive/ia-activity-indicator/-/ia-activity-indicator-0.0.1.tgz"
-  "version" "0.0.1"
+"@internetarchive/ia-activity-indicator@^0.0.2":
+  "integrity" "sha512-PHSTn8LJyozrVcMj6eMQKqBJD+029YhxffbW+oLKGAfmS5tAkpl2LfHlFcLCozT5e9e+KECCq2m2UeUyPYPjcw=="
+  "resolved" "https://registry.npmjs.org/@internetarchive/ia-activity-indicator/-/ia-activity-indicator-0.0.2.tgz"
+  "version" "0.0.2"
   dependencies:
-    "lit-element" "^2.2.1"
-    "lit-html" "^1.1.2"
+    "lit" "^2.0.2"
 
-"@internetarchive/icon-close@^0.4.0":
-  "integrity" "sha512-HYEtptGAcIic4/m1T4Xx+qR/FPLdl4nP1/xGmrnrCXDQhBq25bmFPaZvGRu4vKq2ghlMchD0nhVDYJNoRIPFsQ=="
-  "resolved" "https://registry.npmjs.org/@internetarchive/icon-close/-/icon-close-0.4.0.tgz"
-  "version" "0.4.0"
+"@internetarchive/icon-close@^1.3.2":
+  "integrity" "sha512-4QhM/MDC1IsWQZoE3lt7A4l3/VOopJta+xVnDLqsbA3OW2sT+ilm/mUiP4l4Lm/NzdbQQwhnQMOZPcQvllxkzA=="
+  "resolved" "https://registry.npmjs.org/@internetarchive/icon-close/-/icon-close-1.3.2.tgz"
+  "version" "1.3.2"
   dependencies:
-    "lit-html" "^1.2.1"
+    "lit" "^2.0.2"
 
-"@internetarchive/icon-ia-logo@^0.4.0":
-  "integrity" "sha512-teHOXsIa/tHaSwlwqjfpmxSXUfF23/iggT86J8fJiCfHALCQlk2/zh2n46ynn2vS7jAWfo/QDWcli56AdR4LEA=="
-  "resolved" "https://registry.npmjs.org/@internetarchive/icon-ia-logo/-/icon-ia-logo-0.4.0.tgz"
-  "version" "0.4.0"
+"@internetarchive/icon-ia-logo@^1.3.2":
+  "integrity" "sha512-lDZdaqj7A6nv5dJPaes6UZwDqlr3yMgaKJZSuMTqMUpjaZ0bcfDIoDFO4y2YjQ2uUHoRIgRNqyZVMSNJMowXzQ=="
+  "resolved" "https://registry.npmjs.org/@internetarchive/icon-ia-logo/-/icon-ia-logo-1.3.2.tgz"
+  "version" "1.3.2"
   dependencies:
-    "lit-html" "^1.2.1"
+    "lit" "^2.0.2"
 
 "@internetarchive/icon-info@^1.2.6":
   "integrity" "sha512-drkJWwFV4S9AH+/vkh8O5k+XclWxTqZoo/ELwt5dEsf7YiZKr5z80IetEZN5JeYh4OqoJJQfIJ81ZnjxJMlVzw=="
@@ -288,12 +287,12 @@
   dependencies:
     "lit" "^2.0.2"
 
-"@internetarchive/icon-user@^0.4.0":
-  "integrity" "sha512-Fk+MJs2Da8uOlF6OQua54TmJrMHiwNo4imxrHcfIgD7lkqn8WscRsgasaSza2wohiq/4Jc181avPMXi6ZrakDg=="
-  "resolved" "https://registry.npmjs.org/@internetarchive/icon-user/-/icon-user-0.4.0.tgz"
-  "version" "0.4.0"
+"@internetarchive/icon-user@^1.3.2":
+  "integrity" "sha512-A5fCby40AEWWbrSSgGzhcSVDfL9M+S/Zl1oPTid/+mBuZPik0KPS5xoMBkT/952/ujbnLLR9URemzfPdSeBx+Q=="
+  "resolved" "https://registry.npmjs.org/@internetarchive/icon-user/-/icon-user-1.3.2.tgz"
+  "version" "1.3.2"
   dependencies:
-    "lit-html" "^1.2.1"
+    "lit" "^2.0.2"
 
 "@internetarchive/local-cache@^0.2.0":
   "integrity" "sha512-0zuXgoAtchZtpkTFK59mhyUketo2FgTTotwqUxRsyasTfYlYZG0D+trtXD1mBHUn/MV+1z12vp4GjdXSqiEqBQ=="
@@ -302,17 +301,16 @@
   dependencies:
     "idb-keyval" "^5.0.4"
 
-"@internetarchive/modal-manager@^0.1.0":
-  "integrity" "sha512-udlvq8kzbxdPsZlN9P7Tgdj4LlGCR+6DL7EJr0EVM9BUPSY6AlB9Iase+UhUIDL3dfHxlWkiUN+lj/vaMDuIhA=="
-  "resolved" "https://registry.npmjs.org/@internetarchive/modal-manager/-/modal-manager-0.1.0.tgz"
-  "version" "0.1.0"
+"@internetarchive/modal-manager@^0.2.1":
+  "integrity" "sha512-ULac71ZxwWNzsy9mY0R19CeaJsAIW6fvqgRQdbjMG3u2trH6XH+GTJLhxVl1QKTQQwIkaowxiGPS+GTRz+eaGA=="
+  "resolved" "https://registry.npmjs.org/@internetarchive/modal-manager/-/modal-manager-0.2.1.tgz"
+  "version" "0.2.1"
   dependencies:
-    "@internetarchive/ia-activity-indicator" "0.0.1"
-    "@internetarchive/icon-close" "^0.4.0"
-    "@internetarchive/icon-ia-logo" "^0.4.0"
-    "@internetarchive/icon-user" "^0.4.0"
-    "lit-element" "^2.2.1"
-    "lit-html" "^1.1.2"
+    "@internetarchive/ia-activity-indicator" "^0.0.2"
+    "@internetarchive/icon-close" "^1.3.2"
+    "@internetarchive/icon-ia-logo" "^1.3.2"
+    "@internetarchive/icon-user" "^1.3.2"
+    "lit" "^2.0.2"
     "throttle-debounce" "^2.2.1"
 
 "@internetarchive/shared-resize-observer@^0.2.0":
@@ -3182,7 +3180,7 @@
     "@lit/reactive-element" "^1.3.0"
     "lit-html" "^2.2.0"
 
-"lit-html@^1.0.0", "lit-html@^1.1.1", "lit-html@^1.1.2", "lit-html@^1.2.1":
+"lit-html@^1.0.0", "lit-html@^1.1.1":
   "integrity" "sha512-0Q1bwmaFH9O14vycPHw8C/IeHMk/uSDldVLIefu/kfbTBGIc44KGH6A8p1bDfxUfHdc8q6Ct7kQklWoHgr4t1Q=="
   "resolved" "https://registry.npmjs.org/lit-html/-/lit-html-1.3.0.tgz"
   "version" "1.3.0"
