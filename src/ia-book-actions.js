@@ -167,6 +167,7 @@ export default class IABookActions extends LitElement {
       'browsingExpired' in this.lendingStatus &&
       this.lendingStatus?.browsingExpired;
     if (hasExpired) {
+      window?.Sentry?.captureMessage('setupLendingToolbarActions hasExpired');
       this.tokenPoller?.disconnectedInterval();
       /** Global event - always fire */
       this.dispatchEvent(
@@ -239,6 +240,7 @@ export default class IABookActions extends LitElement {
    */
   startLoanTokenPoller() {
     if (this.tokenPoller) {
+      window?.Sentry?.captureMessage('startLoanTokenPoller clearing interval');
       this.tokenPoller.disconnectedInterval();
     }
     const successCallback = () => {

@@ -258,6 +258,7 @@ export default class ActionsHandler extends LitElement {
       // set new value
       Cookies.setItem(storageKey, newCount, date, '/');
     } catch (error) {
+      window?.Sentry?.captureException(error);
       this.sendEvent('Cookies-Error-Actions', error);
     }
   }

@@ -21,6 +21,9 @@ export class LoanTokenPoller {
   disconnectedInterval() {
     clearInterval(this.loanTokenInterval);
     this.loanTokenInterval = undefined;
+    if (window.Sentry) {
+      window?.Sentry?.captureMessage('loan token interval cleared');
+    }
   }
 
   async enableBookAccess() {
@@ -35,6 +38,7 @@ export class LoanTokenPoller {
           );
           consecutiveLoanCounts = existingCount ?? 1;
         } catch (error) {
+          window?.Sentry?.captureException(error);
           this.sendEvent('Cookies-Error-Token', error);
         }
       }
@@ -54,6 +58,7 @@ export class LoanTokenPoller {
 
       this.sendEvent(category, action);
     } else {
+      window?.Sentry?.captureMessage('enableBookAccess error');
       // if book is not browsed, just clear token polling interval
       this.disconnectedInterval(); // stop token fetch api
     }
@@ -75,6 +80,7 @@ export class LoanTokenPoller {
       identifier: this.identifier,
       action,
       error: data => {
+        window?.Sentry?.captureMessage('handleLoanTokenPoller error');
         this.disconnectedInterval(); // stop token fetch api
         this.errorCallback({ detail: { action, data } });
       },

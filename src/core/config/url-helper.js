@@ -8,6 +8,7 @@ export class URLHelper {
     try {
       return window.self !== window.top;
     } catch (e) {
+      window?.Sentry?.captureException(e);
       return true;
     }
   }
