@@ -1,8 +1,13 @@
 import { expect } from '@open-wc/testing';
+import sinon from 'sinon';
 import {
   GetLendingActions,
   bookTitles,
 } from '../../../src/core/services/get-lending-actions.js';
+
+afterEach(() => {
+  sinon.restore();
+});
 
 describe('Get Lending Actions', () => {
   it('Browsable and Borrowable with purchase link', async () => {
@@ -63,22 +68,104 @@ describe('Get Lending Actions', () => {
     expect(actions.primaryActions[0].text).to.equal('Return now');
   });
 
-  it('Reedem borrow action', async () => {
-    const lendingOptions = new GetLendingActions(
-      '@user',
-      'identifier',
-      {
-        is_lendable: true,
-        available_to_borrow: true,
-        user_can_claim_waitlist: true,
-      },
-      ''
-    );
-    const actions = lendingOptions.getCurrentLendingActions();
+  describe('WAITLIST', () => {
+    describe('`user_can_claim_waitlist = true`', () => {
+      it('top of waitlist & cannot browse', async () => {
+        const lendingOptions = new GetLendingActions(
+          '@user',
+          'identifier',
+          {
+            is_lendable: true,
+            available_to_borrow: true,
+            user_can_claim_waitlist: true,
+          },
+          ''
+        );
 
-    expect(actions.primaryTitle).to.equal(bookTitles.claim_waitlist);
-    expect(actions.primaryActions.length).to.equal(2);
-    expect(actions.primaryActions[0].text).to.equal('Borrow for 14 days');
+        const spy = sinon.spy(lendingOptions, 'claimWaitlistAction');
+        const actions = lendingOptions.getCurrentLendingActions();
+
+        expect(actions.primaryTitle).to.equal(bookTitles.claim_waitlist);
+        expect(actions.primaryActions.length).to.equal(2);
+        expect(actions.primaryActions[0].text).to.equal('Borrow for 14 days');
+        expect(actions.primaryActions[1].text).to.equal('Leave Waitlist');
+
+        expect(spy.called).to.be.true;
+      });
+      it('top of waitlist & can browse', async () => {
+        const lendingOptions = new GetLendingActions(
+          '@user',
+          'identifier',
+          {
+            is_lendable: true,
+            available_to_borrow: true,
+            available_to_browse: true,
+            user_can_claim_waitlist: true,
+          },
+          ''
+        );
+
+        const spy = sinon.spy(lendingOptions, 'claimWaitlistAction');
+        const actions = lendingOptions.getCurrentLendingActions();
+
+        expect(actions.primaryTitle).to.equal(bookTitles.claim_waitlist);
+        expect(actions.primaryActions.length).to.equal(3);
+        expect(actions.primaryActions[0].text).to.equal('Borrow for 14 days');
+        expect(actions.primaryActions[1].text).to.equal('Borrow for 1 hour');
+        expect(actions.primaryActions[2].text).to.equal('Leave Waitlist');
+        expect(spy.called).to.be.true;
+      });
+    });
+    describe('`user_on_waitlist = true`', () => {
+      it('on waitlist && cannot browse', async () => {
+        const lendingOptions = new GetLendingActions(
+          '@user',
+          'identifier',
+          {
+            is_lendable: true,
+            available_to_borrow: false,
+            available_to_browse: false,
+            user_can_claim_waitlist: false,
+            user_on_waitlist: true,
+          },
+          ''
+        );
+
+        const claimSpy = sinon.spy(lendingOptions, 'claimWaitlistAction');
+        const waitlistSpy = sinon.spy(lendingOptions, 'onWaitlistAction');
+        const actions = lendingOptions.getCurrentLendingActions();
+
+        expect(actions.primaryTitle).to.equal(bookTitles.on_waitlist);
+        expect(actions.primaryActions.length).to.equal(2);
+        expect(actions.primaryActions[0].text).to.equal('Leave Waitlist');
+        expect(actions.primaryActions[1].text).to.equal('Borrow for 1 hour');
+        expect(claimSpy.called).to.be.false;
+        expect(waitlistSpy.called).to.be.true;
+      });
+      it('on waitlist && can browse', async () => {
+        const lendingOptions = new GetLendingActions(
+          '@user',
+          'identifier',
+          {
+            is_lendable: true,
+            available_to_borrow: false,
+            available_to_browse: true,
+            user_can_claim_waitlist: false,
+            user_on_waitlist: true,
+          },
+          ''
+        );
+
+        const waitlistSpy = sinon.spy(lendingOptions, 'onWaitlistAction');
+        const actions = lendingOptions.getCurrentLendingActions();
+
+        expect(actions.primaryTitle).to.equal(bookTitles.on_waitlist);
+        expect(actions.primaryActions.length).to.equal(2);
+        expect(actions.primaryActions[0].text).to.equal('Leave Waitlist');
+        expect(actions.primaryActions[1].text).to.equal('Borrow for 1 hour');
+        expect(waitlistSpy.called).to.be.true;
+      });
+    });
   });
 
   it('User can access print disabled', async () => {
@@ -115,23 +202,6 @@ describe('Get Lending Actions', () => {
     expect(actions.primaryTitle).to.equal(bookTitles.available_pd);
     expect(actions.primaryActions.length).to.equal(1);
     expect(actions.primaryActions[0].text).to.equal('Borrow Unavailable');
-  });
-
-  it('If user is on waitlist', async () => {
-    const lendingOptions = new GetLendingActions(
-      '@user',
-      'identifier',
-      {
-        user_on_waitlist: true,
-        user_can_claim_waitlist: false,
-      },
-      ''
-    );
-    const actions = lendingOptions.getCurrentLendingActions();
-
-    expect(actions.primaryTitle).to.equal(bookTitles.on_waitlist);
-    expect(actions.primaryActions.length).to.equal(2);
-    expect(actions.primaryActions[0].text).to.equal('Leave Waitlist');
   });
 
   it('If book borrow is not available', async () => {
