@@ -138,7 +138,10 @@ export default class ActionsConfig {
     // early exit if
     // - not available for waitlist
     // - book is available for borrow (14 days borrow)
-    if (!lendingStatus.available_to_waitlist) {
+    if (
+      !lendingStatus.available_to_waitlist ||
+      lendingStatus.available_to_borrow
+    ) {
       return null;
     }
 
