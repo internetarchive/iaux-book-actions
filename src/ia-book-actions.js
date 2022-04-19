@@ -66,6 +66,8 @@ export default class IABookActions extends LitElement {
   }
 
   disconnectedCallback() {
+    this.tokenPoller?.disconnectedInterval();
+    window?.Sentry?.captureMessage('disconnectedCallback');
     this.disconnectResizeObserver();
   }
 
