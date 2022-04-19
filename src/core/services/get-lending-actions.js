@@ -102,14 +102,20 @@ export class GetLendingActions {
       primaryTitleText = `Your loan of this book has ${lendingStatus.daysLeftOnLoan} days left.`;
     }
 
+    const waitlistConfig = lendingStatus.user_on_waitlist
+      ? this.actionsConfig.leaveWaitlistConfig()
+      : this.actionsConfig.waitlistConfig();
+
+    const primaryActions = [
+      this.actionsConfig.returnBookConfig(),
+      this.actionsConfig.borrowBookConfig(disableBorrow),
+      waitlistConfig,
+      this.actionsConfig.printDisabilityConfig(),
+    ].filter(a => !!a);
+
     return {
       primaryTitle: primaryTitleText,
-      primaryActions: [
-        this.actionsConfig.returnBookConfig(),
-        this.actionsConfig.borrowBookConfig(disableBorrow),
-        this.actionsConfig.waitlistConfig(),
-        this.actionsConfig.printDisabilityConfig(),
-      ],
+      primaryActions,
       primaryColor: 'danger',
       secondaryActions: [
         this.actionsConfig.adminAccessConfig(),

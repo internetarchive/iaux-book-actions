@@ -47,7 +47,7 @@ describe('Get Lending Actions', () => {
     expect(actions.primaryActions[0].text).to.equal('Log In and Borrow');
   });
 
-  it('Borrowing action', async () => {
+  it('Borrowing 14 day', async () => {
     const lendingOptions = new GetLendingActions(
       '@user',
       'identifier',
@@ -64,8 +64,54 @@ describe('Get Lending Actions', () => {
     expect(actions.primaryTitle).to.equal(
       'Your loan of this book has 4 days left.'
     );
-    expect(actions.primaryActions.length).to.equal(4);
+    expect(actions.primaryActions.length).to.equal(2);
     expect(actions.primaryActions[0].text).to.equal('Return now');
+    expect(actions.primaryActions[1].text).to.equal('Print Disability Access');
+  });
+
+  describe('Browsing 1 hour', () => {
+    it('can join waitlist', async () => {
+      const lendingOptions = new GetLendingActions(
+        '@user',
+        'identifier',
+        {
+          is_lendable: true,
+          user_has_browsed: true,
+          secondsLeftOnLoan: 120,
+          available_to_waitlist: true,
+        },
+        ''
+      );
+      const actions = lendingOptions.getCurrentLendingActions();
+      expect(actions.primaryTitle).to.contains('Borrow ends at');
+      expect(actions.primaryActions.length).to.equal(3);
+      expect(actions.primaryActions[0].text).to.equal('Return now');
+      expect(actions.primaryActions[1].text).to.equal('Join Waitlist');
+      expect(actions.primaryActions[2].text).to.equal(
+        'Print Disability Access'
+      );
+    });
+    it('can leave waitlist', async () => {
+      const lendingOptions = new GetLendingActions(
+        '@user',
+        'identifier',
+        {
+          is_lendable: true,
+          user_has_browsed: true,
+          secondsLeftOnLoan: 120,
+          user_on_waitlist: true,
+        },
+        ''
+      );
+      const actions = lendingOptions.getCurrentLendingActions();
+      expect(actions.primaryTitle).to.contains('Borrow ends at');
+      expect(actions.primaryActions.length).to.equal(3);
+      expect(actions.primaryActions[0].text).to.equal('Return now');
+      expect(actions.primaryActions[1].text).to.equal('Leave Waitlist');
+      expect(actions.primaryActions[2].text).to.equal(
+        'Print Disability Access'
+      );
+    });
   });
 
   describe('WAITLIST', () => {
