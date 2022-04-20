@@ -28,7 +28,7 @@ export default css`
     -ms-user-select: none;
     -o-user-select: none;
   }
-  .ia-button:is(:focus-visible) {
+  .ia-button:focus-visible {
     outline-style: double;
   }
 
@@ -50,13 +50,13 @@ export default css`
     background-color: var(--primaryCTAFill, #194880);
     border-color: #c5d1df;
   }
-  .ia-button.primary:is(:hover) {
+  .ia-button.primary:hover {
     background-color: rgba(27, 72, 128, 0.9);
   }
-  .ia-button.primary:is(:focus-visible) {
+  .ia-button.primary:focus-visible {
     background-color: rgba(27, 72, 128, 0.8);
   }
-  .ia-button.primary:is(:active) {
+  .ia-button.primary:active {
     background-color: rgba(27, 72, 128, 0.7);
   }
 
@@ -64,13 +64,13 @@ export default css`
     background-color: var(--primaryErrorCTAFill, #e51c26);
     border-color: #d43f3a;
   }
-  .ia-button.danger:is(:hover) {
+  .ia-button.danger:hover {
     background-color: rgba(229, 28, 38, 0.9);
   }
-  .ia-button.danger:is(:focus-visible) {
+  .ia-button.danger:focus-visible {
     background-color: rgba(229, 28, 38, 0.8);
   }
-  .ia-button.danger:is(:active) {
+  .ia-button.danger:active {
     background-color: rgba(229, 28, 38, 0.7);
   }
 
@@ -78,13 +78,13 @@ export default css`
     background-color: var(--secondaryCTAFill, #333);
     border-color: #979797;
   }
-  .ia-button.dark:is(:hover) {
+  .ia-button.dark:hover {
     background-color: rgba(51, 51, 51, 0.9);
   }
-  .ia-button.dark:is(:focus-visible) {
+  .ia-button.dark:focus-visible {
     background-color: rgba(51, 51, 51, 0.8);
   }
-  .ia-button.dark:is(:active) {
+  .ia-button.dark:active {
     background-color: rgba(51, 51, 51, 0.7);
   }
 `;
