@@ -64,5 +64,7 @@ export default async function ActionsHandlerService(options) {
           option?.error(data);
         }
       });
-  } catch (err) {}
+  } catch (err) {
+    window?.Sentry?.captureException(err);
+  }
 }

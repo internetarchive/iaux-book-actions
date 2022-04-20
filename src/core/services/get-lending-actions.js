@@ -34,7 +34,26 @@ import ActionsConfig from './actions-config.js';
  *    The action buttons configuration is coming from ActionsConfig class.
  */
 
-export default class GetLendingActions {
+/**
+ * Enum: Book Titles
+ * @readonly
+ * @enum {string}
+ */
+export const bookTitles = {
+  available_1hr: 'Renewable every hour, pending availability.',
+  available_14d: 'This book can be borrowed for 14 days.',
+  available_pd: 'Book available to patrons with print disabilities.',
+  available_waitlist: 'A waitlist is available.',
+  admin_access: 'You have administrative privileges to read this book.',
+  claim_waitlist: 'You are at the top of the waitlist for this book.',
+  being_borrowed: 'Another patron is using this book. Please check back later.',
+  eligible_pd: 'You are eligible for print-disabled access.',
+  on_waitlist: 'You are on the waitlist for this book.',
+  session_expired: 'Your loan has expired.',
+  unavailable: 'This book is not available at this time.',
+};
+
+export class GetLendingActions {
   constructor(userid, identifier, lendingStatus, bwbPurchaseUrl) {
     this.userid = userid;
     this.identifier = identifier;
@@ -52,7 +71,7 @@ export default class GetLendingActions {
 
   onlyAdminAction() {
     return {
-      primaryTitle: 'You have administrative privileges to read this book.',
+      primaryTitle: bookTitles.admin_access,
       primaryActions: [],
       primaryColor: 'primary',
       secondaryActions: [
@@ -100,7 +119,7 @@ export default class GetLendingActions {
     };
   }
 
-  leaveWaitlistAction() {
+  claimWaitlistAction() {
     const lendingStatus = this.lendingStatus || {};
 
     const leaveWaitlist = this.actionsConfig.leaveWaitlistConfig();
@@ -109,12 +128,13 @@ export default class GetLendingActions {
       ? this.actionsConfig.firstBrowseConfig()
       : null;
 
-    const dropdownOptions = browseBook ? [browseBook, borrowBook] : [];
-    const actions = !browseBook ? [borrowBook, leaveWaitlist] : [leaveWaitlist];
+    let actions = [borrowBook];
+    if (browseBook) actions.push(browseBook);
+    actions.push(leaveWaitlist);
 
     return {
-      primaryTitle: 'You are at the top of the waitlist for this book',
-      primaryActions: actions.concat(dropdownOptions),
+      primaryTitle: bookTitles.claim_waitlist,
+      primaryActions: actions,
       primaryColor: 'primary',
       footer: 'printDisabilityLine()',
       secondaryActions: [
@@ -126,7 +146,7 @@ export default class GetLendingActions {
 
   borrowPrintDisabledAction() {
     return {
-      primaryTitle: 'You are eligible for print-disabled access.',
+      primaryTitle: bookTitles.eligible_pd,
       primaryActions: [this.actionsConfig.borrowBookConfig()],
       primaryColor: 'primary',
       secondaryActions: [
@@ -141,7 +161,7 @@ export default class GetLendingActions {
       ? this.actionsConfig.unavailableBookConfig()
       : [];
     return {
-      primaryTitle: 'Book available to patrons with print disabilities.',
+      primaryTitle: bookTitles.available_pd,
       primaryActions: [unavailable],
       primaryColor: 'primary',
       secondaryActions: [],
@@ -150,7 +170,7 @@ export default class GetLendingActions {
 
   onWaitlistAction() {
     return {
-      primaryTitle: 'You are on the waitlist for this book.',
+      primaryTitle: bookTitles.on_waitlist,
       primaryActions: [
         this.actionsConfig.leaveWaitlistConfig(),
         this.actionsConfig.firstBrowseConfig(),
@@ -170,8 +190,8 @@ export default class GetLendingActions {
       lendingStatus.max_browsable_copies &&
       !lendingStatus.available_lendable_copies;
     const title = anotherPatronUsing
-      ? 'Another patron is using this book. Please check back later.'
-      : 'This book is not available at this time.';
+      ? bookTitles.being_borrowed
+      : bookTitles.unavailable;
 
     return {
       primaryTitle: title,
@@ -210,10 +230,10 @@ export default class GetLendingActions {
     });
 
     const title = lendingStatus.available_to_browse
-      ? 'Renewable every hour, pending availability.'
+      ? bookTitles.available_1hr
       : lendingStatus.available_to_borrow
-      ? 'This book can be borrowed for 14 days.'
-      : 'Another patron is using this book.';
+      ? bookTitles.available_14d
+      : bookTitles.unavailable;
 
     return {
       primaryTitle: title,
@@ -260,12 +280,12 @@ export default class GetLendingActions {
     // end config
 
     const title = browsingHasExpired
-      ? possibleTitles.session_expired
+      ? bookTitles.session_expired
       : !canBrowse && allBrowsableCopiesTaken
-      ? possibleTitles.session_tryagain
+      ? bookTitles.being_borrowed
       : !canBrowse && lendingStatus.available_to_waitlist
-      ? possibleTitles.waitlist
-      : possibleTitles.one_hour;
+      ? bookTitles.available_waitlist
+      : bookTitles.available_1hr;
 
     // one hour borrow config
     const oneHrBorrow = browsingHasExpired
@@ -332,7 +352,7 @@ export default class GetLendingActions {
     });
 
     return {
-      primaryTitle: waitlist ? 'Another patron is using this book.' : '',
+      primaryTitle: waitlist ? bookTitles.being_borrowed : '',
       primaryActions: actions,
       primaryColor: 'primary',
       secondaryActions: [
@@ -406,7 +426,7 @@ export default class GetLendingActions {
     } else if (patronIsReading) {
       lendingActions = this.patronIsReadingAction();
     } else if (lendingStatus.user_can_claim_waitlist) {
-      lendingActions = this.leaveWaitlistAction();
+      lendingActions = this.claimWaitlistAction();
     } else if (userCanAccessPrintDisabled) {
       lendingActions = this.borrowPrintDisabledAction();
     } else if (canBorrow || lendingStatus.browsingExpired) {

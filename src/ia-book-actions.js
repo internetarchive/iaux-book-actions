@@ -9,7 +9,7 @@ import './components/book-title-bar.js';
 import './components/text-group.js';
 import './components/info-icon.js';
 
-import GetLendingActions from './core/services/get-lending-actions.js';
+import { GetLendingActions } from './core/services/get-lending-actions.js';
 import { mobileContainerWidth } from './core/config/constants.js';
 import { LoanTokenPoller } from './core/services/loan-token-poller.js';
 
@@ -66,6 +66,8 @@ export default class IABookActions extends LitElement {
   }
 
   disconnectedCallback() {
+    this.tokenPoller?.disconnectedInterval();
+    window?.Sentry?.captureMessage('disconnectedCallback');
     this.disconnectResizeObserver();
   }
 
@@ -167,6 +169,7 @@ export default class IABookActions extends LitElement {
       'browsingExpired' in this.lendingStatus &&
       this.lendingStatus?.browsingExpired;
     if (hasExpired) {
+      window?.Sentry?.captureMessage('setupLendingToolbarActions hasExpired');
       this.tokenPoller?.disconnectedInterval();
       /** Global event - always fire */
       this.dispatchEvent(
@@ -239,6 +242,7 @@ export default class IABookActions extends LitElement {
    */
   startLoanTokenPoller() {
     if (this.tokenPoller) {
+      window?.Sentry?.captureMessage('startLoanTokenPoller clearing interval');
       this.tokenPoller.disconnectedInterval();
     }
     const successCallback = () => {
