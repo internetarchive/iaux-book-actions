@@ -259,12 +259,12 @@
   "resolved" "https://registry.npmjs.org/@humanwhocodes/object-schema/-/object-schema-1.2.0.tgz"
   "version" "1.2.0"
 
-"@internetarchive/ia-activity-indicator@^0.0.2":
-  "integrity" "sha512-PHSTn8LJyozrVcMj6eMQKqBJD+029YhxffbW+oLKGAfmS5tAkpl2LfHlFcLCozT5e9e+KECCq2m2UeUyPYPjcw=="
-  "resolved" "https://registry.npmjs.org/@internetarchive/ia-activity-indicator/-/ia-activity-indicator-0.0.2.tgz"
-  "version" "0.0.2"
+"@internetarchive/ia-activity-indicator@^0.0.3":
+  "integrity" "sha512-82Otj9Qs6uXQkfl+r2hsrnZd8R0hcpGK6FJ7hPbnZKwcHGuuvF6EJYnR2soN7P8S7OUUtmygUgx5G4lV7gwh9w=="
+  "resolved" "https://registry.npmjs.org/@internetarchive/ia-activity-indicator/-/ia-activity-indicator-0.0.3.tgz"
+  "version" "0.0.3"
   dependencies:
-    "lit" "^2.0.2"
+    "lit" "^2.2.2"
 
 "@internetarchive/icon-close@^1.3.2":
   "integrity" "sha512-4QhM/MDC1IsWQZoE3lt7A4l3/VOopJta+xVnDLqsbA3OW2sT+ilm/mUiP4l4Lm/NzdbQQwhnQMOZPcQvllxkzA=="
@@ -301,16 +301,16 @@
   dependencies:
     "idb-keyval" "^5.0.4"
 
-"@internetarchive/modal-manager@^0.2.1":
-  "integrity" "sha512-ULac71ZxwWNzsy9mY0R19CeaJsAIW6fvqgRQdbjMG3u2trH6XH+GTJLhxVl1QKTQQwIkaowxiGPS+GTRz+eaGA=="
-  "resolved" "https://registry.npmjs.org/@internetarchive/modal-manager/-/modal-manager-0.2.1.tgz"
-  "version" "0.2.1"
+"@internetarchive/modal-manager@^0.2.2":
+  "integrity" "sha512-HEqrA8My+YFsqBtVA9GSnJvErvLJM8KREBFACCVvw5liAAcA08+OKHEusKO917Go5t2c48qTWDBgFH8o6GwVRg=="
+  "resolved" "https://registry.npmjs.org/@internetarchive/modal-manager/-/modal-manager-0.2.2.tgz"
+  "version" "0.2.2"
   dependencies:
-    "@internetarchive/ia-activity-indicator" "^0.0.2"
+    "@internetarchive/ia-activity-indicator" "^0.0.3"
     "@internetarchive/icon-close" "^1.3.2"
     "@internetarchive/icon-ia-logo" "^1.3.2"
     "@internetarchive/icon-user" "^1.3.2"
-    "lit" "^2.0.2"
+    "lit" "^2.2.2"
     "throttle-debounce" "^2.2.1"
 
 "@internetarchive/shared-resize-observer@^0.2.0":
@@ -2374,11 +2374,6 @@
   "resolved" "https://registry.npmjs.org/fs.realpath/-/fs.realpath-1.0.0.tgz"
   "version" "1.0.0"
 
-"fsevents@~2.3.1", "fsevents@~2.3.2":
-  "integrity" "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA=="
-  "resolved" "https://registry.npmjs.org/fsevents/-/fsevents-2.3.2.tgz"
-  "version" "2.3.2"
-
 "function-bind@^1.1.1":
   "integrity" "sha512-yIovAzMX49sF8Yl58fSCWJ5svSLuaibPxXQJFLmBObTuCr0Mf1KiPopGM9NiFjiYBCbfaa2Fh6breQ6ANVTI0A=="
   "resolved" "https://registry.npmjs.org/function-bind/-/function-bind-1.1.1.tgz"
@@ -3192,10 +3187,10 @@
   dependencies:
     "@types/trusted-types" "^2.0.2"
 
-"lit@^2.0.2", "lit@^2.2.1":
-  "integrity" "sha512-dSe++R50JqrvNGXmI9OE13de1z5U/Y3J2dTm/9GC86vedI8ILoR8ZGnxfThFpvQ9m0lR0qRnIR4IiKj/jDCfYw=="
-  "resolved" "https://registry.npmjs.org/lit/-/lit-2.2.1.tgz"
-  "version" "2.2.1"
+"lit@^2.0.2", "lit@^2.2.2":
+  "integrity" "sha512-eN3+2QRHn/erxYB88AXiiRgQA6RltE9MhzySCwX+ACOxA/MLWN3VdXvcbZD9PN09zmUwlgzDvW3T84YWj2Sa0A=="
+  "resolved" "https://registry.npmjs.org/lit/-/lit-2.2.2.tgz"
+  "version" "2.2.2"
   dependencies:
     "@lit/reactive-element" "^1.3.0"
     "lit-element" "^3.2.0"
