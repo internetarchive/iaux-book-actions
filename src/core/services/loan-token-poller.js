@@ -46,6 +46,9 @@ export class LoanTokenPoller {
       // Do an initial token, then set an interval
       this.handleLoanTokenPoller(true);
 
+      // if `this.borrowType` = adminBorrowed, early return
+      if (this.borrowType === 'adminBorrowed') return;
+
       this.loanTokenInterval = setInterval(() => {
         this.handleLoanTokenPoller();
       }, this.pollerDelay);

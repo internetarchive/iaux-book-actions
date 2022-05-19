@@ -86,6 +86,7 @@ export class GetLendingActions {
       primaryTitle: '',
       primaryActions: [],
       secondaryActions: [this.actionsConfig.adminOrPrintDisabledExitConfig()],
+      borrowType: 'adminBorrowed',
     };
   }
 
