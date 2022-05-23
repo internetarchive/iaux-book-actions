@@ -30,12 +30,8 @@ describe('Get Loan Token', () => {
     const tokenPoller = new LoanTokenPoller(
       'identifier1',
       'adminBorrowed',
-      () => {
-        console.log('success callback is executed!');
-      },
-      () => {
-        console.log('error callback is executed!');
-      },
+      () => {},
+      () => {},
       2000 // 2 minutes'
     );
 
