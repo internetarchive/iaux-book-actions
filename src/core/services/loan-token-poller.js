@@ -46,12 +46,14 @@ export class LoanTokenPoller {
       // Do an initial token, then set an interval
       this.handleLoanTokenPoller(true);
 
-      // if `this.borrowType` = adminBorrowed, early return
-      if (this.borrowType === 'adminBorrowed') return;
-
-      this.loanTokenInterval = setInterval(() => {
-        this.handleLoanTokenPoller();
-      }, this.pollerDelay);
+      // if this.borrowType = adminBorrowed,
+      // - we don't want to fetch token on interval
+      // - the initial token is enough to set cookies for reading book and readaloud features
+      if (this.borrowType !== 'adminBorrowed') {
+        this.loanTokenInterval = setInterval(() => {
+          this.handleLoanTokenPoller();
+        }, this.pollerDelay);
+      }
 
       // event category and action for browsing book access
       const category = `${this.borrowType}BookAccess`;
