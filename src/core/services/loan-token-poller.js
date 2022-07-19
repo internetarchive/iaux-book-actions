@@ -1,5 +1,6 @@
 import ActionsHandlerService from './actions-handler/actions-handler-service.js';
 import * as Cookies from './doc-cookies.js';
+import { analyticsCategories } from '../config/analytics-event-and-category.js';
 
 /**
  * This class is used to create loan token for borrowed books
@@ -13,6 +14,7 @@ export class LoanTokenPoller {
     this.successCallback = successCallback; // callback function to be called after loan token is created
     this.errorCallback = errorCallback; // callback function to be called after loan token is created
     this.pollerDelay = pollerDelay; // value in ms (1000 ms = 1 sec)
+    this.analyticsCategories = analyticsCategories;
 
     this.loanTokenInterval = undefined;
     this.enableBookAccess();
@@ -69,13 +71,14 @@ export class LoanTokenPoller {
     }
   }
 
-  sendEvent(eventCategory, eventAction) {
+  sendEvent(eventCategory, eventAction, extraParams = {}) {
     // eslint-disable-next-line no-console
-    console?.log('Book action: ', { eventCategory, eventAction });
+    console?.log('Book action: ', { eventCategory, eventAction, extraParams });
     window?.archive_analytics?.send_event_no_sampling(
       eventCategory,
       eventAction,
-      `identifier=${this.identifier}`
+      `identifier=${this.identifier}`,
+      extraParams
     );
   }
 
@@ -85,7 +88,15 @@ export class LoanTokenPoller {
       identifier: this.identifier,
       action,
       error: data => {
-        window?.Sentry?.captureMessage('handleLoanTokenPoller error');
+        window?.Sentry?.captureMessage(`
+          handleLoanTokenPoller error, identifier:${this.identifier}, borrowType:${this.borrowType}, interval:${this.loanTokenInterval}
+        `);
+        this.sendEvent(this.analyticsCategories.browse, 'LoanTokenError', {
+          identifier: this.identifier,
+          isInitial: isInitial,
+          borrowType: this.borrowType,
+          interval: this.loanTokenInterval,
+        });
         this.disconnectedInterval(); // stop token fetch api
         this.errorCallback({ detail: { action, data } });
       },

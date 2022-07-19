@@ -93,7 +93,7 @@ export default css`
   }
   .open {
     display: block;
-    z-index: 2;
+    z-index: 4;
   }
   .visible {
     display: inline-block;
