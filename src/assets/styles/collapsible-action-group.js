@@ -17,10 +17,22 @@ export default css`
     margin: 0;
     height: 3.5rem;
   }
+  .action-buttons .desktop {
+    background-color: var(--white, #fff);
+    border-radius: 10px;
+  }
+  .action-buttons .desktop.purchase {
+    margin-left: 5px;
+  }
+  .action-buttons .mobile.purchase.dark {
+    padding-left: 0;
+  }
+  .primary {
+    background-color: var(--white, #fff);
+  }
   .primary,
   .secondary {
     position: relative;
-    background-color: var(--white, #fff);
     border-radius: 5px;
     margin: 0 3px;
   }
@@ -42,7 +54,7 @@ export default css`
     transform: translateX(-50%);
   }
   .dropdown-content li {
-    color: var(--primaryBGColor);
+    color: var(--primaryBGColor, #000);
     list-style: none;
     height: 3rem;
   }
@@ -65,7 +77,7 @@ export default css`
     border-radius: 0;
   }
   .dropdown-content li .ia-button:hover {
-    background: var(--primaryTextColor);
+    background: var(--primaryTextColor, #fff);
     color: rgb(45, 45, 45);
   }
   .dropdown-content li:first-child .ia-button {
@@ -100,7 +112,7 @@ export default css`
   }
   .btn:hover,
   .dropdown:hover .btn {
-    background-color: var(--primaryTextColor);
+    background-color: var(--primaryTextColor, #fff);
   }
 
   a {
@@ -116,7 +128,7 @@ export default css`
     vertical-align: middle;
   }
   .secondary .ia-button.exit-admin {
-    background-color: var(--primaryBGColor);
+    background-color: var(--primaryBGColor, #000);
   }
   .purchase small {
     display: block;
