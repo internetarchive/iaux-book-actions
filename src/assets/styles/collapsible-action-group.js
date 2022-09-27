@@ -1,5 +1,9 @@
 import { css } from 'lit';
 
+const whiteColor = css`var(--white, #fff)`;
+const blackColor = css`var(--primaryBGColor, #000)`;
+const dropdownBGColor = css`var(--iaBookActionsDropdownBGColor, #2d2d2d)`;
+
 export default css`
   :host {
     display: inline-flex;
@@ -14,30 +18,54 @@ export default css`
     align-items: center;
   }
   .action-buttons .ia-button {
-    display: inline-flex;
-    align-items: center;
-    vertical-align: middle;
+    margin: 0;
     height: 3.5rem;
-    transition: all 0.1s ease 0s;
-    vertical-align: middle;
-    padding: 0 1rem;
-    margin: 0 3px;
+  }
+  .action-buttons .desktop {
+    background-color: ${whiteColor};
+    border-radius: 10px;
+  }
+  .action-buttons .desktop.purchase {
+    margin-left: 5px;
+  }
+  .action-buttons .mobile.purchase.dark {
+    padding-left: 0;
+  }
+  .primary {
+    background-color: ${whiteColor};
   }
   .primary,
   .secondary {
     position: relative;
+    border-radius: 5px;
+    margin: 0 3px;
   }
   .primary .initial {
-    border-radius: 0.4rem 0 0 0.4rem;
+    border-radius: 4px 0 0 4px;
     margin-right: 0;
   }
+  .primary svg {
+    vertical-align: middle;
+  }
+
+  .secondary .ia-button.purchase {
+    padding: 2px 10px 2px 35px;
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  .secondary .ia-button.exit-admin {
+    background-color: ${blackColor};
+    border: 1px solid ${whiteColor};
+  }
+
   .dropdown-content {
     position: absolute;
     min-width: 14rem;
     margin: 0;
     padding: 0;
-    background: #2d2d2d;
-    border-radius: 0.4rem;
+    background: ${dropdownBGColor};
+    border-radius: 4px;
     border: 1px solid var(--primaryCTABorder);
     top: 3.4rem;
     left: 50%;
@@ -45,15 +73,15 @@ export default css`
     transform: translateX(-50%);
   }
   .dropdown-content li {
-    color: var(--primaryBGColor);
+    color: ${blackColor};
     list-style: none;
     height: 3rem;
   }
   .dropdown-content .ia-button {
     background: none;
+    color: ${whiteColor};
     border: none;
     box-sizing: border-box;
-    display: block;
     width: 100%;
     text-align: left;
     height: 3rem;
@@ -61,11 +89,14 @@ export default css`
     padding: 0.6rem 1.2rem;
     margin: 0;
   }
+  .dropdown-content .ia-button:is(:focus-visible, :hover) {
+    background: unset;
+  }
   .dropdown-content li .ia-button {
     border-radius: 0;
   }
   .dropdown-content li .ia-button:hover {
-    background: var(--primaryTextColor);
+    background: ${whiteColor};
     color: rgb(45, 45, 45);
   }
   .dropdown-content li:first-child .ia-button {
@@ -78,6 +109,15 @@ export default css`
   .dropdown-content .purchase:hover svg g {
     fill: black;
   }
+  .dropdown-content .purchase {
+    padding-left: 35px;
+    margin: 0;
+  }
+  .dropdown-content .purchase small {
+    display: initial;
+    font-size: 1.4rem;
+  }
+
   .ia-button.down-arrow {
     border-radius: 0 0.4rem 0.4rem 0;
     padding: 0 0.6rem;
@@ -100,20 +140,10 @@ export default css`
   }
   .btn:hover,
   .dropdown:hover .btn {
-    background-color: var(--primaryTextColor);
+    background-color: ${whiteColor};
   }
-
   a {
     text-decoration: none;
-  }
-  .primary svg {
-    vertical-align: middle;
-  }
-  .secondary .ia-button.purchase {
-    padding: 2px 10px 2px 35px;
-    position: relative;
-    display: inline-block;
-    vertical-align: middle;
   }
   .purchase small {
     display: block;
@@ -124,19 +154,10 @@ export default css`
     left: 10px;
     top: 20%;
   }
-  .dropdown-content .purchase {
-    padding-left: 35px;
-    margin: 0;
-  }
-  .dropdown-content .purchase small {
-    display: initial;
-    font-size: 1.4rem;
-  }
   .unavailable {
     opacity: 0.7;
     pointer-events: none;
   }
-
   .disabled {
     opacity: 0.8;
     pointer-events: none;

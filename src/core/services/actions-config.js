@@ -226,7 +226,7 @@ export default class ActionsConfig {
       text: message,
       url: URLHelper.getBackHref(),
       target: '_self',
-      className: 'ia-button',
+      className: 'exit-admin',
       analyticsEvent: {
         category: this.analyticsCategories.adminAccess,
         action: this.analyticsActions.doneBorrowing,

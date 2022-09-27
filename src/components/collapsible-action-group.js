@@ -50,7 +50,10 @@ export class CollapsibleActionGroup extends ActionsHandler {
   }
 
   updated(changed) {
-    if (changed.has('width') && this.isBelowTabletContainer) {
+    if (
+      (changed.has('width') || changed.has('disabled')) &&
+      this.isBelowTabletContainer
+    ) {
       this.resetActions();
     }
   }
@@ -148,23 +151,25 @@ export class CollapsibleActionGroup extends ActionsHandler {
   }
 
   /**
-   * Render action as a link for secondary actions like admin, purchase, printdisability links.
+   * Render action as a link for secondary actions like admin, printdisability links.
    * @param { Object } action
    * @param { Boolean } initialButton
    * @returns { HTMLElement }
    */
   renderActionLink(action, initialButton = false) {
-    return html`<a
-      class="ia-button ${action.className} ${initialButton ? 'initial' : ''}"
-      href="${action.url}"
-      target=${action.target}
-      @click=${() => {
-        this.clickHandler(action.id, action.analyticsEvent);
-      }}
-    >
-      ${action.id === 'purchaseBook' ? purchaseIcon : ''} ${action.text}
-      <small>${action.subText}</small>
-    </a>`;
+    return html`<span class="${this.getDeviceType} ${action.className}">
+      <a
+        class="ia-button ${action.className} ${initialButton ? 'initial' : ''}"
+        href="${action.url}"
+        target=${action.target}
+        @click=${() => {
+          this.clickHandler(action.id, action.analyticsEvent);
+        }}
+      >
+        ${action.id === 'purchaseBook' ? purchaseIcon : ''} ${action.text}
+        <small>${action.subText}</small>
+      </a>
+    </span>`;
   }
 
   /**
@@ -253,6 +258,14 @@ export class CollapsibleActionGroup extends ActionsHandler {
    */
   get isBelowTabletContainer() {
     return this.width <= tabletContainerWidth;
+  }
+
+  /**
+   * get device type as per container width
+   * @returns { String } mobile | desktop
+   */
+  get getDeviceType() {
+    return this.isBelowTabletContainer ? 'mobile' : 'desktop';
   }
 
   /**
