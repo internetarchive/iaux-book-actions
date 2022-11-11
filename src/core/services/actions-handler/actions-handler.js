@@ -22,7 +22,7 @@ export default class ActionsHandler extends LitElement {
   }
 
   sendEvent(eventCategory, eventAction) {
-    window?.archive_analytics?.send_event_no_sampling(
+    window?.archive_analytics?.send_event(
       eventCategory,
       eventAction,
       `identifier=${this.identifier}`
