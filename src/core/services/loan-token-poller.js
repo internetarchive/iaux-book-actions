@@ -83,7 +83,10 @@ export class LoanTokenPoller {
       identifier: this.identifier,
       action,
       error: data => {
-        window?.Sentry?.captureMessage('handleLoanTokenPoller error');
+        window?.Sentry?.captureMessage(
+          'handleLoanTokenPoller error',
+          JSON.stringify(data)
+        );
         this.disconnectedInterval(); // stop token fetch api
         this.errorCallback({ detail: { action, data } });
         // send LendingServiceError to GA
