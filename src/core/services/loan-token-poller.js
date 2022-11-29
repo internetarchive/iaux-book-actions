@@ -21,9 +21,14 @@ export class LoanTokenPoller {
   disconnectedInterval() {
     clearInterval(this.loanTokenInterval);
     this.loanTokenInterval = undefined;
-    if (window.Sentry) {
-      window?.Sentry?.captureMessage('loan token interval cleared');
-    }
+
+    // temporary disabling sentry notice
+    // as message is informational, not critical nor an error.
+    // also, as of 11/28/2022, JS build maps are not working properly on petabox
+    // and as a result, this comment is not properly grouped.
+    // if (window.Sentry) {
+    //   window?.Sentry?.captureMessage('loan token interval cleared');
+    // }
   }
 
   async enableBookAccess() {
