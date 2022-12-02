@@ -169,7 +169,11 @@ export default class IABookActions extends LitElement {
       'browsingExpired' in this.lendingStatus &&
       this.lendingStatus?.browsingExpired;
     if (hasExpired) {
-      window?.Sentry?.captureMessage('setupLendingToolbarActions hasExpired');
+      if (!this.tokenPoller.disconnectedInterval) {
+        window?.Sentry?.captureMessage(
+          'setupLendingToolbarActions hasExpired - no tokenPoller'
+        );
+      }
       this.tokenPoller?.disconnectedInterval();
       /** Global event - always fire */
       this.dispatchEvent(
