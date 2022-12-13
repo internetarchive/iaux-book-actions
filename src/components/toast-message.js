@@ -1,0 +1,60 @@
+import { html, css, LitElement, nothing } from 'lit';
+
+export class ToastMessage extends LitElement {
+  static get properties() {
+    return {
+      texts: { type: String },
+      dismisOnClick: { type: Function },
+      hideToast: { type: Boolean },
+    };
+  }
+
+  constructor() {
+    super();
+    this.texts = '';
+    this.textClass = '';
+    this.hideToast = false;
+  }
+
+  render() {
+    return !this.hideToast
+      ? html`
+          <span class="toast-message ${this.textClass}">${this.texts}</span>
+        `
+      : nothing;
+  }
+
+  static get styles() {
+    const heightFromTop = css`var(--messageHeightFromTop, 15%)`;
+
+    return css`
+      :host {
+        display: inline-block;
+      }
+      .toast-message {
+        z-index: 2;
+        position: absolute;
+        top: ${heightFromTop};
+        font-size: 1.4rem;
+        color: #fff;
+        left: 50%;
+        right: 50%;
+        background: #333;
+        border: 1px solid #fff;
+        border-radius: 5px;
+        box-shadow: 1px 1px 2px;
+        padding: 10px;
+        width: fit-content;
+        transform: translate(-50%, -50%);
+      }
+      .hidden {
+        display: none;
+      }
+      .visible {
+        display: inline-block;
+      }
+    `;
+  }
+}
+
+window.customElements.define('toast-message', ToastMessage);

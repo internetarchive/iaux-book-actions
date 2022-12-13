@@ -55,7 +55,7 @@ export class InfoIcon extends LitElement {
       .more-info-icon.mobile {
         position: absolute;
         top: 4px;
-        right: 10px;
+        right: 55px;
         margin-top: 15px;
       }
       .hidden {

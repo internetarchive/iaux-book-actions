@@ -1,5 +1,5 @@
 /* eslint-disable camelcase */
-import { html, css, LitElement } from 'lit';
+import { html, css, LitElement, nothing } from 'lit';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
 import { ModalConfig } from '@internetarchive/modal-manager';
@@ -8,10 +8,13 @@ import './components/collapsible-action-group.js';
 import './components/book-title-bar.js';
 import './components/text-group.js';
 import './components/info-icon.js';
+import './components/timer-countdown.js';
+import './components/toast-message.js';
 
 import { GetLendingActions } from './core/services/get-lending-actions.js';
 import { mobileContainerWidth } from './core/config/constants.js';
 import { LoanTokenPoller } from './core/services/loan-token-poller.js';
+import { OneHourAutoRenew } from './core/services/one-hour-auto-renew.js';
 
 export const events = {
   browseExpired: 'IABookReader:BrowsingHasExpired',
@@ -32,10 +35,17 @@ export default class IABookActions extends LitElement {
         attribute: false,
       },
       barType: { type: String },
+      autoRenew: { type: Boolean },
       sharedObserver: { attribute: false },
       disableActionGroup: { type: Boolean },
       modal: { Object },
       tokenDelay: { type: Number },
+      toastTexts: { type: String },
+      remainingTime: { type: Number },
+      resetTimerCountdown: { type: Boolean },
+      localCache: { type: Object },
+      autoRenewTimeConfig: { type: Object },
+      browseAgainNow: { type: Boolean },
     };
   }
 
@@ -50,10 +60,13 @@ export default class IABookActions extends LitElement {
     this.bwbPurchaseUrl = '';
     this.lendingBarPostInit = () => {};
     this.barType = 'action'; // 'title'|'action'
+    this.autoRenew = false;
     this.sharedObserver = undefined;
     this.disableActionGroup = false;
     this.modal = undefined;
     this.tokenDelay = 120000; // 2 minutes
+    this.localCache = {},
+    this.autoRenewTimeConfig = {},
 
     // private props
     this.primaryActions = [];
@@ -63,6 +76,43 @@ export default class IABookActions extends LitElement {
     this.lendingOptions = {};
     this.borrowType = ''; // (browsed|borrowed)
     this.consecutiveLoanCounts = 1; // consecutive loan count
+    this.browseAgainNow = false;
+
+    // show toast-message for auto return message
+    this.hideToast = true;
+    this.autoReturnMessage = 'This book will be automatically returned in 15 seconds unless you turn a page.';
+    this.autoRenewMessage = 'This book has been renewed for another hour.';
+
+    // dispatched this event from timer-countdown 
+    this.addEventListener('autoReturnWarning', event => {
+      // const dd = this.autoRenew1 = new OneHourAutoRenew(
+      //   event.detail.bookPageChange,
+      //   this.identifier,
+      //   this.localCache,
+      //   this.autoRenewTimeConfig,
+      // );
+      // this.toastTexts = dd.resultRes.toastTexts;
+      // this.hideToast = dd.resultRes.hideToast;
+      this.handleBookAutoRenew(event);
+    });
+
+    // dispatched this event from bookreader side 
+    this.addEventListener('bookPageFlip', event => {
+      // console.log(e)
+      // const dd = this.autoRenew1 = new OneHourAutoRenew(
+      //   event.detail.bookPageChange,
+      //   this.identifier,
+      //   this.localCache,
+      //   this.autoRenewTimeConfig,
+      // );
+      // this.toastTexts = dd.resultRes.toastTexts;
+      // this.hideToast = dd.resultRes.hideToast;
+      // console.log(dd.resultRes)
+      this.handleBookAutoRenew(event);
+      // this.browseAgainNow = true;
+    });
+
+    this.resetTimerCountdown = false;
   }
 
   disconnectedCallback() {
@@ -84,14 +134,29 @@ export default class IABookActions extends LitElement {
       this.update();
     }
 
+    if (changed.has('autoRenew')) {
+      this.resetTimerCountdown = true;
+    }
     if (changed.has('sharedObserver')) {
       this.disconnectResizeObserver();
       this.setupResizeObserver();
     }
   }
 
-  browseHasExpired() {
+  async browseHasExpired() {
     const currStatus = { ...this.lendingStatus, browsingExpired: true };
+    this.lendingStatus = currStatus;
+
+    // remove respected key:value
+    await this.localCache.delete(`${this.identifier}-loanTime`);
+    await this.localCache.delete(`${this.identifier}-pageFlipTime`);
+
+    // show message after browsed book is expired.
+    this.toastTexts = 'This book has been automatically returned due to inactivity.';
+  }
+
+  async browseHasRenew() {
+    const currStatus = { ...this.lendingStatus, secondsLeftOnLoan: 61 };
     this.lendingStatus = currStatus;
   }
 
@@ -105,10 +170,88 @@ export default class IABookActions extends LitElement {
       return;
     }
 
+    // expired book and show browse again button
     const timeLeft = secondsLeftOnLoan * 1000;
     setTimeout(() => {
       this.browseHasExpired();
     }, timeLeft);
+  }
+
+  async handleBookAutoRenew(event) {
+    try {
+      const bookPageChange = event.detail.bookPageChange;
+      const currentDate = new Date();
+
+      const {
+        totalTime, // 60
+        autoRenewCheckerAtLast, // 50
+        autoRenewVisitedInLast, // 15
+      } = this.autoRenewTimeConfig;
+
+      const loanTime = await this.localCache.get(`${this.identifier}-loanTime`);
+      const lastPageFlipTime = await this.localCache.get(`${this.identifier}-pageFlipTime`);
+
+      const lastFlipTimeFrame = await this.changeTime(
+        currentDate,
+        autoRenewVisitedInLast,
+        'sub'
+      ); // 15 seconds
+
+      console.log(lastPageFlipTime, lastFlipTimeFrame)
+
+      // if page is not flipped in last 15 minutes,
+      // instantaly renew it if user viewed new page in last 10 minutes
+      if (bookPageChange === true) {
+        const lastTimeFrame = await this.changeTime(
+          loanTime,
+          totalTime - autoRenewCheckerAtLast,
+          'add'
+        ); // 50 seconds
+        console.log('page flipped!')
+
+        if (currentDate >= lastTimeFrame) {
+          console.log('1 YES NOW BORROW IT AGAIN NOW!');
+          this.toastTexts = this.autoRenewMessage;
+          this.browseAgainNow = true;
+          this.hideToast = false;
+          await this.browseHasRenew();
+        }
+
+        return nothing // early return
+      }
+
+      console.log(lastPageFlipTime, lastFlipTimeFrame)
+      if (lastPageFlipTime === undefined) { // not viewed
+        console.log('2 DON\'T BORROW IT!');
+        this.toastTexts = this.autoReturnMessage;
+        this.hideToast = false;
+      } else if (lastPageFlipTime >= lastFlipTimeFrame) { // viewed in last time frame
+        console.log('3 YES BORROW IT AGAIN!');
+        this.toastTexts = this.autoRenewMessage;
+        this.browseAgainNow = true;
+        this.hideToast = false;
+        await this.browseHasRenew();
+      } else if (lastPageFlipTime <= lastFlipTimeFrame) { // viewed but not in last time frame
+        console.log('4 DON\'T BORROW IT!');
+        this.toastTexts = this.autoReturnMessage;
+        this.hideToast = false;
+      } else {
+        this.browseAgainNow = true;
+        console.log('5 YES NOW BORROW IT AGAIN NOW!');
+      }
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+  async changeTime(date, minutes, op) {
+    if (date === undefined) return undefined;
+    
+    if (op === 'sub') {
+      return new Date(date.getTime() - minutes * 1000);
+    }
+
+    return new Date(date.getTime() + minutes * 1000);
   }
 
   /** SharedObserver resize handler */
@@ -164,6 +307,7 @@ export default class IABookActions extends LitElement {
     });
 
     this.borrowType = actions.borrowType;
+    this.remainingTime = this.lendingStatus.secondsLeftOnLoan;
 
     const hasExpired =
       'browsingExpired' in this.lendingStatus &&
@@ -216,6 +360,26 @@ export default class IABookActions extends LitElement {
     ></book-title-bar>`;
   }
 
+  get timerCountdownTemplate() {
+    return this.borrowType === 'browsed'
+      ? html`<timer-countdown
+          time=${Number(this.remainingTime)}
+          .autoRenewCheckerAtLast=${this.autoRenewTimeConfig.autoRenewCheckerAtLast}
+          ?resetTimerCountdown=${this.resetTimerCountdown}
+        ></timer-countdown>`
+      : nothing;
+  }
+
+  get toastMessageTemplate() {
+    return html`
+      <toast-message
+        .texts=${this.toastTexts}
+        .dismisOnClick="1"
+        ?hideToast=${this.hideToast}
+      ></toast-message>
+    `;
+  }
+
   get bookActionBar() {
     return html`
       <collapsible-action-group
@@ -227,13 +391,16 @@ export default class IABookActions extends LitElement {
         .width=${this.width}
         .borrowType=${this.borrowType}
         .returnUrl=${this.returnUrl}
+        .autoRenew=${this.autoRenew}
         ?hasAdminAccess=${this.hasAdminAccess}
         ?disabled=${this.disableActionGroup}
+        ?browseAgainNow=${this.browseAgainNow}
         @lendingActionError=${this.handleLendingActionError}
         @toggleActionGroup=${this.handleToggleActionGroup}
       >
       </collapsible-action-group>
       ${this.textGroupTemplate} ${this.infoIconTemplate}
+      ${this.timerCountdownTemplate} ${this.toastMessageTemplate}
     `;
   }
 
@@ -400,6 +567,10 @@ export default class IABookActions extends LitElement {
         align-items: center;
         justify-content: center;
         flex-wrap: wrap;
+      }
+
+      toast-message {
+        --messageHeightFromTop: 18%;
       }
     `;
   }

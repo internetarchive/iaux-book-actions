@@ -1,5 +1,6 @@
 import { LitElement } from 'lit';
 
+import { LocalCache } from '@internetarchive/local-cache';
 import { URLHelper } from '../../config/url-helper.js';
 import ActionsHandlerService from './actions-handler-service.js';
 import * as Cookies from '../doc-cookies.js';
@@ -17,8 +18,14 @@ export default class ActionsHandler extends LitElement {
     super();
     this.identifier = '';
     this.ajaxTimeout = 6000;
-    this.bindEvents();
     this.returnUrl = '';
+
+    this.localCache = new LocalCache({
+      namespace: '1HourLoanStorage',
+      defaultTTL: 1 * 30,  // 0.5 minute
+    });
+
+    this.bindEvents();
   }
 
   sendEvent(eventCategory, eventAction) {
@@ -29,7 +36,9 @@ export default class ActionsHandler extends LitElement {
     );
   }
 
-  bindEvents() {
+  async bindEvents() {
+    // console.log(await this.localCache.get('loanTime'));
+
     this.addEventListener('browseBook', ({ detail }) => {
       this.handleBrowseIt();
       this.setConsecutiveLoanCounts();
@@ -40,6 +49,14 @@ export default class ActionsHandler extends LitElement {
     this.addEventListener('browseBookAgain', ({ detail }) => {
       this.handleBrowseIt();
       this.setConsecutiveLoanCounts('browseAgain');
+      const { category, action } = detail.event;
+      this.sendEvent(category, action);
+    });
+
+    this.addEventListener('autoBrowseBook', ({ detail }) => {
+      console.log('book has be renewed for you. thank you!!!');
+      this.handleAutoBrowseIt();
+      // this.setConsecutiveLoanCounts();
       const { category, action } = detail.event;
       this.sendEvent(category, action);
     });
@@ -98,6 +115,7 @@ export default class ActionsHandler extends LitElement {
   handleBrowseIt() {
     const action = 'browse_book';
     this.dispatchToggleActionGroup();
+    // this.setBrowseTimeSession()
 
     ActionsHandlerService({
       action,
@@ -111,6 +129,21 @@ export default class ActionsHandler extends LitElement {
     });
   }
 
+  handleAutoBrowseIt() {
+    const action = 'auto_browse';
+    // this.setBrowseTimeSession()
+
+    ActionsHandlerService({
+      action,
+      identifier: this.identifier,
+      success: () => {},
+      error: data => {
+        this.dispatchActionError(action, data);
+      },
+    });
+  }
+
+  
   handleReturnIt() {
     const action = 'return_loan';
     this.dispatchToggleActionGroup();
@@ -279,5 +312,17 @@ export default class ActionsHandler extends LitElement {
       '/',
       '.archive.org'
     );
+  }
+
+  async setBrowseTimeSession() {
+    try {
+      // set a value
+      await this.localCache.set({
+        key: `${this.identifier}-loanTime`,
+        value: new Date(), // current time
+      })
+
+      await this.localCache.delete(`${this.identifier}-pageFlipTime`);
+    } catch (error) {}
   }
 }

@@ -28,6 +28,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
       dropdownArrow: { type: String },
       disabled: { type: Boolean },
       returnUrl: { type: String },
+      browseAgainNow: { type: Boolean },
     };
   }
 
@@ -47,6 +48,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
     this.loaderIcon = 'https://archive.org/upload/images/tree/loading.gif';
     this.disabled = false;
     this.returnUrl = '';
+    this.browseAgainNow = false;
   }
 
   updated(changed) {
@@ -55,6 +57,16 @@ export class CollapsibleActionGroup extends ActionsHandler {
       this.isBelowTabletContainer
     ) {
       this.resetActions();
+    }
+
+    if (this.browseAgainNow === true) {
+      this.dispatchEvent(
+        new CustomEvent('autoBrowseBook', {
+          detail: {
+            event: { 'autoRenewed1Hour': 'browseBook' },
+          },
+        })
+      );
     }
   }
 

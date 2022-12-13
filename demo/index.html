@@ -94,6 +94,12 @@
       canBrowseAndBorrow,
     } from '../src/assets/data/lending-get-status-service.js';
     import { ModalConfig } from '@internetarchive/modal-manager';
+    import { LocalCache } from '@internetarchive/local-cache';
+
+    const localCache = new LocalCache({
+      namespace: '1HourLoanStorage',
+      defaultTTL: 1 * 60,  // 1 minute
+    });
 
     const userid = '@neeraj-archive';
     const identifier = 'naturalhistoryof00unse_4111';
@@ -121,8 +127,32 @@
     iaBookActions.lendingBarPostInit = lendingBarPostInit;
     iaBookActions.tokenDelay = 2000; // 2 seconds
     iaBookActions.returnUrl = 'https://openlibrary.org';
+    iaBookActions.localCache = localCache;
+    iaBookActions.autoRenewTimeConfig = {
+      totalTime: 60, // 60 second = 1 min
+      autoRenewCheckerAtLast: 10, // totalTime - 10th minute
+      autoRenewVisitedInLast: 15, // within last 15 second/minute 
+    };
 
     let lendingStatus1 = iaBookActions.lendingStatus;
+    let secondsLeftOnLoan = 60;
+
+    document.querySelector('#flip-page').addEventListener('click', async (e) => {
+      try {
+        // set pageFlipTime time in localStorage
+        await localCache.set({
+          key: `${identifier}-pageFlipTime`,
+          value: new Date(), // current time
+        })
+
+        // dispatch event to say book page has flipped
+        document.querySelector("ia-book-actions").dispatchEvent(
+          new CustomEvent("bookPageFlip", {
+            detail: { bookPageChange: true },
+          })
+        );
+      } catch (error) {}
+    });
 
     document.querySelectorAll('.titleBar input[type=checkbox]').forEach((item) => {
       item.addEventListener('click', (e) => {
@@ -131,6 +161,21 @@
         } else {
           iaBookActions.barType = 'action';
         }
+      });
+    });
+
+    document.querySelectorAll('.autoRenew input[type=checkbox]').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        if (e.target.checked) {
+          iaBookActions.autoRenew = true;
+          iaBookActions.resetTimerCountdown = true;
+          lendingStatus1.secondsLeftOnLoan = secondsLeftOnLoan;
+        } else {
+          iaBookActions.autoRenew = false;
+        }
+
+        let lending = {...defaultLendingStatus, ...lendingStatus1};
+        iaBookActions.lendingStatus = lending;
       });
     });
 
@@ -187,12 +232,23 @@
     });
 
     document.querySelectorAll('.availableToBrowse input[type=radio]').forEach((item) => {
-      item.addEventListener('click', (e) => {
+      item.addEventListener('click', async (e) => {
         if (e.target.value === 'user_has_browsed') {
           lendingStatus1.user_has_browsed = true;
           lendingStatus1.available_to_browse = false;
-          lendingStatus1.secondsLeftOnLoan = 10;
+          lendingStatus1.secondsLeftOnLoan = secondsLeftOnLoan;
           lendingStatus1.browsingExpired = false;
+
+          try {
+            // set a value
+            await localCache.set({
+              key: `${identifier}-loanTime`,
+              value: new Date(), // current time
+            })
+
+            await localCache.delete(`${identifier}-pageFlipTime`);
+          } catch (error) {}
+          
         } else if(e.target.value === 'browsingExpired') {
           lendingStatus1.user_has_browsed = true;
           lendingStatus1.available_to_browse = false;
@@ -272,6 +328,10 @@
         <table class="initial">
           <tr colspan='5'>
             <td class="errorEnable"><label><input type="checkbox" name="errorEnable" value="errorEnable" />Do you want to see error response?</label></td>
+            <td class="autoRenew"><label><input type="checkbox" name="autoRenew" value="autoRenew" />Do you want to auto-renew 1 hour</label></td>
+          </tr>
+          <tr>
+            <td><button id="flip-page">Flip page</button></td>
           </tr>
           <tr>
             <td class="userState">

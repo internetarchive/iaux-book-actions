@@ -11,8 +11,8 @@
   },
   "scripts": {
     "start": "web-dev-server",
-    "lint": "eslint --ext .js,.html . --ignore-path .gitignore && prettier \"**/*.js\" --check --ignore-path .gitignore",
-    "format": "eslint --ext .js,.html . --fix --ignore-path .gitignore && prettier \"**/*.js\" --write --ignore-path .gitignore",
+    "lint": "eslint --ext .js",
+    "format": "eslint --ext .js,",
     "test": "yarn run lint && yarn test:fast",
     "test:fast": "web-test-runner --coverage --playwright --browsers chromium firefox webkit",
     "test:watch": "web-test-runner --watch --playwright --browsers chromium firefox webkit"
@@ -54,7 +54,6 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "lint-staged"
     }
   },
   "lint-staged": {
