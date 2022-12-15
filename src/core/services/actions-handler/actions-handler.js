@@ -115,7 +115,7 @@ export default class ActionsHandler extends LitElement {
   handleBrowseIt() {
     const action = 'browse_book';
     this.dispatchToggleActionGroup();
-    // this.setBrowseTimeSession()
+    this.setBrowseTimeSession()
 
     ActionsHandlerService({
       action,
@@ -131,7 +131,7 @@ export default class ActionsHandler extends LitElement {
 
   handleAutoBrowseIt() {
     const action = 'auto_browse';
-    // this.setBrowseTimeSession()
+    this.setBrowseTimeSession()
 
     ActionsHandlerService({
       action,

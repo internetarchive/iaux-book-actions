@@ -4,7 +4,7 @@ export default class TimerCountdown extends LitElement {
   static get properties() {
     return {
       time: { type: Number },
-      autoRenewCheckerAtLast: { type: Number },
+      autoCheckAt: { type: Number },
       resetTimerCountdown: { type: Boolean },
     };
   }
@@ -12,7 +12,7 @@ export default class TimerCountdown extends LitElement {
   constructor() {
     super();
     this.time = 60;
-    this.autoRenewCheckerAtLast = 0;
+    this.autoCheckAt = 0;
     this.timerInterval = undefined;
     this.resetTimerCountdown = false;
   }
@@ -37,11 +37,12 @@ export default class TimerCountdown extends LitElement {
       this.time -= 1;
 
       // execute 50th minute check
-      if (this.time === this.autoRenewCheckerAtLast) {
+      if (this.time === this.autoCheckAt) {
         this.dispatchEvent(
-          new CustomEvent('autoReturnWarning', {
+          new CustomEvent('autoRenewAttempt', {
             detail: {
-              remainingT: this.time
+              remainingT: this.time,
+              bookPageChange: false,
             },
             bubbles: true,
             composed: true,

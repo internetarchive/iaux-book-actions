@@ -87,7 +87,6 @@
 
   <script type="module">
     /* eslint-disable */
-
     import '../src/ia-book-actions.js';
     import {
       defaultLendingStatus,
@@ -130,8 +129,8 @@
     iaBookActions.localCache = localCache;
     iaBookActions.autoRenewTimeConfig = {
       totalTime: 60, // 60 second = 1 min
-      autoRenewCheckerAtLast: 10, // totalTime - 10th minute
-      autoRenewVisitedInLast: 15, // within last 15 second/minute 
+      autoCheckAt: 58, // totalTime - 10th minute
+      FlippedInLast: 15, // within last 15 second/minute 
     };
 
     let lendingStatus1 = iaBookActions.lendingStatus;
@@ -147,7 +146,7 @@
 
         // dispatch event to say book page has flipped
         document.querySelector("ia-book-actions").dispatchEvent(
-          new CustomEvent("bookPageFlip", {
+          new CustomEvent("autoRenewAttempt", {
             detail: { bookPageChange: true },
           })
         );

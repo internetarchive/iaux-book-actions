@@ -3,6 +3,7 @@ import { html, css, LitElement, nothing } from 'lit';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
 import { ModalConfig } from '@internetarchive/modal-manager';
+import { LocalCache } from '@internetarchive/local-cache';
 
 import './components/collapsible-action-group.js';
 import './components/book-title-bar.js';
@@ -65,7 +66,10 @@ export default class IABookActions extends LitElement {
     this.disableActionGroup = false;
     this.modal = undefined;
     this.tokenDelay = 120000; // 2 minutes
-    this.localCache = {},
+    this.localCache = new LocalCache({
+      namespace: '1HourLoanStorage',
+      defaultTTL: 1 * 60,  // 1 minute
+    }),
     this.autoRenewTimeConfig = {},
 
     // private props
@@ -77,41 +81,10 @@ export default class IABookActions extends LitElement {
     this.borrowType = ''; // (browsed|borrowed)
     this.consecutiveLoanCounts = 1; // consecutive loan count
     this.browseAgainNow = false;
-
-    // show toast-message for auto return message
+    this.browserTimer = undefined;
     this.hideToast = true;
-    this.autoReturnMessage = 'This book will be automatically returned in 15 seconds unless you turn a page.';
-    this.autoRenewMessage = 'This book has been renewed for another hour.';
 
-    // dispatched this event from timer-countdown 
-    this.addEventListener('autoReturnWarning', event => {
-      // const dd = this.autoRenew1 = new OneHourAutoRenew(
-      //   event.detail.bookPageChange,
-      //   this.identifier,
-      //   this.localCache,
-      //   this.autoRenewTimeConfig,
-      // );
-      // this.toastTexts = dd.resultRes.toastTexts;
-      // this.hideToast = dd.resultRes.hideToast;
-      this.handleBookAutoRenew(event);
-    });
-
-    // dispatched this event from bookreader side 
-    this.addEventListener('bookPageFlip', event => {
-      // console.log(e)
-      // const dd = this.autoRenew1 = new OneHourAutoRenew(
-      //   event.detail.bookPageChange,
-      //   this.identifier,
-      //   this.localCache,
-      //   this.autoRenewTimeConfig,
-      // );
-      // this.toastTexts = dd.resultRes.toastTexts;
-      // this.hideToast = dd.resultRes.hideToast;
-      // console.log(dd.resultRes)
-      this.handleBookAutoRenew(event);
-      // this.browseAgainNow = true;
-    });
-
+    this.bindAutoRenewEvent();
     this.resetTimerCountdown = false;
   }
 
@@ -143,6 +116,26 @@ export default class IABookActions extends LitElement {
     }
   }
 
+  bindAutoRenewEvent() {
+    // dispatched this event from timer-countdown 
+    this.addEventListener('autoRenewAttempt', async event => {
+      const dd = await new OneHourAutoRenew(
+        event.detail.bookPageChange,
+        this.identifier,
+        this.localCache,
+        this.autoRenewTimeConfig,
+      );
+
+      this.toastTexts = dd.toastTexts;
+      this.hideToast = dd.hideToast;
+      if (dd.renewNow) {
+        await this.browseHasRenew();
+      }
+      this.browseAgainNow
+      // this.handleBookAutoRenew(event);
+    });
+  }
+
   async browseHasExpired() {
     const currStatus = { ...this.lendingStatus, browsingExpired: true };
     this.lendingStatus = currStatus;
@@ -152,15 +145,24 @@ export default class IABookActions extends LitElement {
     await this.localCache.delete(`${this.identifier}-pageFlipTime`);
 
     // show message after browsed book is expired.
-    this.toastTexts = 'This book has been automatically returned due to inactivity.';
+    this.toastTexts = this.autoReturnMessage;
   }
 
   async browseHasRenew() {
-    const currStatus = { ...this.lendingStatus, secondsLeftOnLoan: 61 };
+    const currStatus = { 
+      ...this.lendingStatus,
+      user_has_browsed: true,
+      browsingExpired: false,
+      secondsLeftOnLoan: 61
+    };
     this.lendingStatus = currStatus;
+
+    this.startBrowseTimer();
   }
 
   startBrowseTimer() {
+    clearTimeout(this.browserTimer);
+
     const {
       browsingExpired,
       user_has_browsed,
@@ -172,86 +174,9 @@ export default class IABookActions extends LitElement {
 
     // expired book and show browse again button
     const timeLeft = secondsLeftOnLoan * 1000;
-    setTimeout(() => {
+    this.browserTimer = setTimeout(() => {
       this.browseHasExpired();
     }, timeLeft);
-  }
-
-  async handleBookAutoRenew(event) {
-    try {
-      const bookPageChange = event.detail.bookPageChange;
-      const currentDate = new Date();
-
-      const {
-        totalTime, // 60
-        autoRenewCheckerAtLast, // 50
-        autoRenewVisitedInLast, // 15
-      } = this.autoRenewTimeConfig;
-
-      const loanTime = await this.localCache.get(`${this.identifier}-loanTime`);
-      const lastPageFlipTime = await this.localCache.get(`${this.identifier}-pageFlipTime`);
-
-      const lastFlipTimeFrame = await this.changeTime(
-        currentDate,
-        autoRenewVisitedInLast,
-        'sub'
-      ); // 15 seconds
-
-      console.log(lastPageFlipTime, lastFlipTimeFrame)
-
-      // if page is not flipped in last 15 minutes,
-      // instantaly renew it if user viewed new page in last 10 minutes
-      if (bookPageChange === true) {
-        const lastTimeFrame = await this.changeTime(
-          loanTime,
-          totalTime - autoRenewCheckerAtLast,
-          'add'
-        ); // 50 seconds
-        console.log('page flipped!')
-
-        if (currentDate >= lastTimeFrame) {
-          console.log('1 YES NOW BORROW IT AGAIN NOW!');
-          this.toastTexts = this.autoRenewMessage;
-          this.browseAgainNow = true;
-          this.hideToast = false;
-          await this.browseHasRenew();
-        }
-
-        return nothing // early return
-      }
-
-      console.log(lastPageFlipTime, lastFlipTimeFrame)
-      if (lastPageFlipTime === undefined) { // not viewed
-        console.log('2 DON\'T BORROW IT!');
-        this.toastTexts = this.autoReturnMessage;
-        this.hideToast = false;
-      } else if (lastPageFlipTime >= lastFlipTimeFrame) { // viewed in last time frame
-        console.log('3 YES BORROW IT AGAIN!');
-        this.toastTexts = this.autoRenewMessage;
-        this.browseAgainNow = true;
-        this.hideToast = false;
-        await this.browseHasRenew();
-      } else if (lastPageFlipTime <= lastFlipTimeFrame) { // viewed but not in last time frame
-        console.log('4 DON\'T BORROW IT!');
-        this.toastTexts = this.autoReturnMessage;
-        this.hideToast = false;
-      } else {
-        this.browseAgainNow = true;
-        console.log('5 YES NOW BORROW IT AGAIN NOW!');
-      }
-    } catch (error) {
-      console.log(error)
-    }
-  }
-
-  async changeTime(date, minutes, op) {
-    if (date === undefined) return undefined;
-    
-    if (op === 'sub') {
-      return new Date(date.getTime() - minutes * 1000);
-    }
-
-    return new Date(date.getTime() + minutes * 1000);
   }
 
   /** SharedObserver resize handler */
@@ -364,7 +289,7 @@ export default class IABookActions extends LitElement {
     return this.borrowType === 'browsed'
       ? html`<timer-countdown
           time=${Number(this.remainingTime)}
-          .autoRenewCheckerAtLast=${this.autoRenewTimeConfig.autoRenewCheckerAtLast}
+          .autoCheckAt=${this.autoRenewTimeConfig.autoCheckAt}
           ?resetTimerCountdown=${this.resetTimerCountdown}
         ></timer-countdown>`
       : nothing;
