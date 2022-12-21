@@ -11,33 +11,29 @@ export default class TimerCountdown extends LitElement {
 
   constructor() {
     super();
-    this.time = 60;
+    this.time = 0;
     this.autoCheckAt = 0;
     this.timerInterval = undefined;
     this.resetTimerCountdown = false;
   }
 
   disconnectedCallback() {
-    clearInterval(this.timerInterval)
-  }
-
-  firstUpdated() {
-    this.timerCountdown();
+    clearInterval(this.timerInterval);
   }
 
   updated(changed) {
-    if (changed.has('resetTimerCountdown')) {
+    if (changed.has('time') && this.time > 0) {
       clearInterval(this.timerInterval);
-      this.timerCountdown()
+      this.timerCountdown();
     }
   }
-  
+
   timerCountdown() {
     this.timerInterval = setInterval(() => {
       this.time -= 1;
 
       // execute 50th minute check
-      if (this.time === this.autoCheckAt) {
+      if (Math.round(this.time) === this.autoCheckAt) {
         this.dispatchEvent(
           new CustomEvent('autoRenewAttempt', {
             detail: {
@@ -51,18 +47,16 @@ export default class TimerCountdown extends LitElement {
       }
 
       if (this.time === 0) clearInterval(this.timerInterval);
-
     }, 1000);
   }
 
-
   render() {
     return html`<div id="countdown">
-    <div id="countdown-number">${this.time}</div>
-    <svg>
-      <circle r="18" cx="20" cy="20"></circle>
-    </svg>
-  </div>`
+      <div id="countdown-number">${Math.round(this.time)}</div>
+      <svg>
+        <circle r="18" cx="20" cy="20"></circle>
+      </svg>
+    </div>`;
   }
 
   static get styles() {
@@ -72,22 +66,13 @@ export default class TimerCountdown extends LitElement {
         font-size: 14px;
         position: absolute;
       }
-      #countdown1 {
-        position: relative;
-        margin: auto;
-        margin-top: 100px;
-        height: 40px;
-        width: 40px;
-        text-align: center;
-      }
-      
       #countdown-number {
         color: white;
         display: inline-block;
         line-height: 40px;
         margin-right: 12px;
       }
-      
+
       svg {
         position: absolute;
         top: 0;
@@ -96,7 +81,7 @@ export default class TimerCountdown extends LitElement {
         height: 40px;
         transform: rotateY(-180deg) rotateZ(-90deg);
       }
-      
+
       svg circle {
         stroke-dasharray: 113px;
         stroke-dashoffset: 0px;
@@ -106,7 +91,7 @@ export default class TimerCountdown extends LitElement {
         fill: none;
         animation: countdown 60s linear infinite forwards;
       }
-      
+
       @keyframes countdown {
         from {
           stroke-dashoffset: 0px;

@@ -1,6 +1,5 @@
 import { LitElement } from 'lit';
 
-import { LocalCache } from '@internetarchive/local-cache';
 import { URLHelper } from '../../config/url-helper.js';
 import ActionsHandlerService from './actions-handler-service.js';
 import * as Cookies from '../doc-cookies.js';
@@ -19,12 +18,7 @@ export default class ActionsHandler extends LitElement {
     this.identifier = '';
     this.ajaxTimeout = 6000;
     this.returnUrl = '';
-
-    this.localCache = new LocalCache({
-      namespace: '1HourLoanStorage',
-      defaultTTL: 1 * 30,  // 0.5 minute
-    });
-
+    this.autoRenewConfig = {};
     this.bindEvents();
   }
 
@@ -37,8 +31,6 @@ export default class ActionsHandler extends LitElement {
   }
 
   async bindEvents() {
-    // console.log(await this.localCache.get('loanTime'));
-
     this.addEventListener('browseBook', ({ detail }) => {
       this.handleBrowseIt();
       this.setConsecutiveLoanCounts();
@@ -54,9 +46,8 @@ export default class ActionsHandler extends LitElement {
     });
 
     this.addEventListener('autoBrowseBook', ({ detail }) => {
-      console.log('book has be renewed for you. thank you!!!');
+      console.log('auto renew handlerExecuted!!');
       this.handleAutoBrowseIt();
-      // this.setConsecutiveLoanCounts();
       const { category, action } = detail.event;
       this.sendEvent(category, action);
     });
@@ -115,7 +106,7 @@ export default class ActionsHandler extends LitElement {
   handleBrowseIt() {
     const action = 'browse_book';
     this.dispatchToggleActionGroup();
-    this.setBrowseTimeSession()
+    this.setBrowseTimeSession();
 
     ActionsHandlerService({
       action,
@@ -130,20 +121,21 @@ export default class ActionsHandler extends LitElement {
   }
 
   handleAutoBrowseIt() {
-    const action = 'auto_browse';
-    this.setBrowseTimeSession()
+    const action = 'renew_loan';
+    this.setBrowseTimeSession();
 
     ActionsHandlerService({
       action,
       identifier: this.identifier,
-      success: () => {},
+      success: () => {
+        // console.log('success!');
+      },
       error: data => {
         this.dispatchActionError(action, data);
       },
     });
   }
 
-  
   handleReturnIt() {
     const action = 'return_loan';
     this.dispatchToggleActionGroup();
@@ -294,6 +286,21 @@ export default class ActionsHandler extends LitElement {
     }
   }
 
+  async setBrowseTimeSession() {
+    try {
+      // set a value
+      await this.localCache.set({
+        key: `${this.identifier}-loanTime`,
+        value: new Date(), // current time
+        ttl: Number(this.autoRenewConfig.totalTime),
+      });
+
+      await this.localCache.delete(`${this.identifier}-pageFlipTime`);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   deleteLoanCookies() {
     const date = new Date();
     date.setTime(date.getTime() - 24 * 60 * 60 * 1000); // one day ago
@@ -312,17 +319,5 @@ export default class ActionsHandler extends LitElement {
       '/',
       '.archive.org'
     );
-  }
-
-  async setBrowseTimeSession() {
-    try {
-      // set a value
-      await this.localCache.set({
-        key: `${this.identifier}-loanTime`,
-        value: new Date(), // current time
-      })
-
-      await this.localCache.delete(`${this.identifier}-pageFlipTime`);
-    } catch (error) {}
   }
 }

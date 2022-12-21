@@ -4,7 +4,7 @@ export class ToastMessage extends LitElement {
   static get properties() {
     return {
       texts: { type: String },
-      dismisOnClick: { type: Function },
+      dismisOnClick: { type: Boolean },
       hideToast: { type: Boolean },
     };
   }
@@ -19,7 +19,14 @@ export class ToastMessage extends LitElement {
   render() {
     return !this.hideToast
       ? html`
-          <span class="toast-message ${this.textClass}">${this.texts}</span>
+          <span
+            class="toast-message fade-in ${this.textClass}"
+            title="Click/tap to close"
+            @click=${() => {
+              this.dismisOnClick ? (this.hideToast = true) : nothing;
+            }}
+            >${this.texts}</span
+          >
         `
       : nothing;
   }
@@ -36,9 +43,9 @@ export class ToastMessage extends LitElement {
         position: absolute;
         top: ${heightFromTop};
         font-size: 1.4rem;
+        font-family: 'Helvetica Neue';
         color: #fff;
         left: 50%;
-        right: 50%;
         background: #333;
         border: 1px solid #fff;
         border-radius: 5px;
@@ -46,7 +53,18 @@ export class ToastMessage extends LitElement {
         padding: 10px;
         width: fit-content;
         transform: translate(-50%, -50%);
+        cursor: pointer;
+        animation: fadeIn 5s;
+        @keyframes fadeIn {
+          0% {
+            opacity: 0;
+          }
+          100% {
+            opacity: 1;
+          }
+        }
       }
+
       .hidden {
         display: none;
       }

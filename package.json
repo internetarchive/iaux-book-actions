@@ -1,6 +1,6 @@
 {
   "name": "@internetarchive/ia-book-actions",
-  "version": "0.0.29-alpha1",
+  "version": "0.0.29-alpha9",
   "description": "Bookreader actions for borrowable book",
   "author": "Internet Archive",
   "license": "AGPL-3.0-only",
@@ -11,8 +11,8 @@
   },
   "scripts": {
     "start": "web-dev-server",
-    "lint": "eslint --ext .js",
-    "format": "eslint --ext .js,",
+    "lint": "eslint --ext .js,.html . --ignore-path .gitignore && prettier \"**/*.js\" --check --ignore-path .gitignore",
+    "format": "eslint --ext .js,.html . --fix --ignore-path .gitignore && prettier \"**/*.js\" --write --ignore-path .gitignore",
     "test": "yarn run lint && yarn test:fast",
     "test:fast": "web-test-runner --coverage --playwright --browsers chromium firefox webkit",
     "test:watch": "web-test-runner --watch --playwright --browsers chromium firefox webkit"
@@ -43,6 +43,12 @@
     "sinon": "^13.0.2"
   },
   "eslintConfig": {
+    "rules": {
+      "no-console": "off",
+      "no-unused-expressions": "off",
+      "class-methods-use-this": "off",
+      "lit-a11y/click-events-have-key-events": "off"
+    },
     "extends": [
       "@open-wc/eslint-config",
       "eslint-config-prettier"

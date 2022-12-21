@@ -28,6 +28,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
       dropdownArrow: { type: String },
       disabled: { type: Boolean },
       returnUrl: { type: String },
+      localCache: { type: Function },
       browseAgainNow: { type: Boolean },
     };
   }
@@ -48,6 +49,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
     this.loaderIcon = 'https://archive.org/upload/images/tree/loading.gif';
     this.disabled = false;
     this.returnUrl = '';
+    this.localCache = undefined;
     this.browseAgainNow = false;
   }
 
@@ -59,11 +61,11 @@ export class CollapsibleActionGroup extends ActionsHandler {
       this.resetActions();
     }
 
-    if (this.browseAgainNow === true) {
+    if (changed.has('browseAgainNow') && this.browseAgainNow === true) {
       this.dispatchEvent(
         new CustomEvent('autoBrowseBook', {
           detail: {
-            event: { 'autoRenewed1Hour': 'browseBook' },
+            event: { autoRenewed1Hour: 'browseBook' },
           },
         })
       );

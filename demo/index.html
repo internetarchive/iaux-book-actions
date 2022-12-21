@@ -127,31 +127,14 @@
     iaBookActions.tokenDelay = 2000; // 2 seconds
     iaBookActions.returnUrl = 'https://openlibrary.org';
     iaBookActions.localCache = localCache;
-    iaBookActions.autoRenewTimeConfig = {
+    iaBookActions.autoRenewConfig = {
       totalTime: 60, // 60 second = 1 min
-      autoCheckAt: 58, // totalTime - 10th minute
+      autoCheckAt: 55, // totalTime - 10th minute
       FlippedInLast: 15, // within last 15 second/minute 
     };
 
     let lendingStatus1 = iaBookActions.lendingStatus;
-    let secondsLeftOnLoan = 60;
-
-    document.querySelector('#flip-page').addEventListener('click', async (e) => {
-      try {
-        // set pageFlipTime time in localStorage
-        await localCache.set({
-          key: `${identifier}-pageFlipTime`,
-          value: new Date(), // current time
-        })
-
-        // dispatch event to say book page has flipped
-        document.querySelector("ia-book-actions").dispatchEvent(
-          new CustomEvent("autoRenewAttempt", {
-            detail: { bookPageChange: true },
-          })
-        );
-      } catch (error) {}
-    });
+    let secondsLeftOnLoan = iaBookActions.autoRenewConfig.totalTime;
 
     document.querySelectorAll('.titleBar input[type=checkbox]').forEach((item) => {
       item.addEventListener('click', (e) => {
@@ -243,6 +226,7 @@
             await localCache.set({
               key: `${identifier}-loanTime`,
               value: new Date(), // current time
+              ttl: Number(iaBookActions.autoRenewConfig.totalTime),
             })
 
             await localCache.delete(`${identifier}-pageFlipTime`);
@@ -328,9 +312,6 @@
           <tr colspan='5'>
             <td class="errorEnable"><label><input type="checkbox" name="errorEnable" value="errorEnable" />Do you want to see error response?</label></td>
             <td class="autoRenew"><label><input type="checkbox" name="autoRenew" value="autoRenew" />Do you want to auto-renew 1 hour</label></td>
-          </tr>
-          <tr>
-            <td><button id="flip-page">Flip page</button></td>
           </tr>
           <tr>
             <td class="userState">
