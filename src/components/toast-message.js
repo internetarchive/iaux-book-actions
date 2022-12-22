@@ -6,6 +6,7 @@ export class ToastMessage extends LitElement {
       texts: { type: String },
       dismisOnClick: { type: Boolean },
       hideToast: { type: Boolean },
+      clostAfter: { type: Number },
     };
   }
 
@@ -14,6 +15,7 @@ export class ToastMessage extends LitElement {
     this.texts = '';
     this.textClass = '';
     this.hideToast = false;
+    this.clostAfter = 0;
   }
 
   render() {

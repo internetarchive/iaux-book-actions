@@ -5,7 +5,6 @@ export default class TimerCountdown extends LitElement {
     return {
       time: { type: Number },
       autoCheckAt: { type: Number },
-      resetTimerCountdown: { type: Boolean },
     };
   }
 
@@ -13,8 +12,9 @@ export default class TimerCountdown extends LitElement {
     super();
     this.time = 0;
     this.autoCheckAt = 0;
+
+    // private props
     this.timerInterval = undefined;
-    this.resetTimerCountdown = false;
   }
 
   disconnectedCallback() {
@@ -37,7 +37,6 @@ export default class TimerCountdown extends LitElement {
         this.dispatchEvent(
           new CustomEvent('autoRenewAttempt', {
             detail: {
-              remainingT: this.time,
               bookPageChange: false,
             },
             bubbles: true,
@@ -66,6 +65,7 @@ export default class TimerCountdown extends LitElement {
         font-size: 14px;
         position: absolute;
       }
+
       #countdown-number {
         color: white;
         display: inline-block;
@@ -100,6 +100,7 @@ export default class TimerCountdown extends LitElement {
           stroke-dashoffset: 113px;
         }
       }
+
       .hidden {
         display: none;
       }

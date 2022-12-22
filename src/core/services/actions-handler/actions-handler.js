@@ -15,10 +15,8 @@ import * as Cookies from '../doc-cookies.js';
 export default class ActionsHandler extends LitElement {
   constructor() {
     super();
-    this.identifier = '';
     this.ajaxTimeout = 6000;
-    this.returnUrl = '';
-    this.autoRenewConfig = {};
+
     this.bindEvents();
   }
 
@@ -30,7 +28,7 @@ export default class ActionsHandler extends LitElement {
     );
   }
 
-  async bindEvents() {
+  bindEvents() {
     this.addEventListener('browseBook', ({ detail }) => {
       this.handleBrowseIt();
       this.setConsecutiveLoanCounts();
@@ -45,9 +43,8 @@ export default class ActionsHandler extends LitElement {
       this.sendEvent(category, action);
     });
 
-    this.addEventListener('autoBrowseBook', ({ detail }) => {
-      console.log('auto renew handlerExecuted!!');
-      this.handleAutoBrowseIt();
+    this.addEventListener('autoRenewLoan', ({ detail }) => {
+      this.handleAutoRenewLoan();
       const { category, action } = detail.event;
       this.sendEvent(category, action);
     });
@@ -120,16 +117,14 @@ export default class ActionsHandler extends LitElement {
     });
   }
 
-  handleAutoBrowseIt() {
+  handleAutoRenewLoan() {
     const action = 'renew_loan';
     this.setBrowseTimeSession();
 
     ActionsHandlerService({
       action,
       identifier: this.identifier,
-      success: () => {
-        // console.log('success!');
-      },
+      success: () => {},
       error: data => {
         this.dispatchActionError(action, data);
       },
@@ -286,15 +281,18 @@ export default class ActionsHandler extends LitElement {
     }
   }
 
+  /**
+   * set browse time in indexedDB
+   */
   async setBrowseTimeSession() {
     try {
-      // set a value
       await this.localCache.set({
         key: `${this.identifier}-loanTime`,
         value: new Date(), // current time
         ttl: Number(this.autoRenewConfig.totalTime),
       });
 
+      // delete flip time
       await this.localCache.delete(`${this.identifier}-pageFlipTime`);
     } catch (error) {
       console.log(error);

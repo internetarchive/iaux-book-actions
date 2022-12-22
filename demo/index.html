@@ -87,6 +87,7 @@
 
   <script type="module">
     /* eslint-disable */
+
     import '../src/ia-book-actions.js';
     import {
       defaultLendingStatus,
@@ -143,21 +144,6 @@
         } else {
           iaBookActions.barType = 'action';
         }
-      });
-    });
-
-    document.querySelectorAll('.autoRenew input[type=checkbox]').forEach((item) => {
-      item.addEventListener('click', (e) => {
-        if (e.target.checked) {
-          iaBookActions.autoRenew = true;
-          iaBookActions.resetTimerCountdown = true;
-          lendingStatus1.secondsLeftOnLoan = secondsLeftOnLoan;
-        } else {
-          iaBookActions.autoRenew = false;
-        }
-
-        let lending = {...defaultLendingStatus, ...lendingStatus1};
-        iaBookActions.lendingStatus = lending;
       });
     });
 
@@ -311,7 +297,6 @@
         <table class="initial">
           <tr colspan='5'>
             <td class="errorEnable"><label><input type="checkbox" name="errorEnable" value="errorEnable" />Do you want to see error response?</label></td>
-            <td class="autoRenew"><label><input type="checkbox" name="autoRenew" value="autoRenew" />Do you want to auto-renew 1 hour</label></td>
           </tr>
           <tr>
             <td class="userState">
