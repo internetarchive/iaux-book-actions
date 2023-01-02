@@ -5,27 +5,24 @@ export class ToastMessage extends LitElement {
     return {
       texts: { type: String },
       dismisOnClick: { type: Boolean },
-      hideToast: { type: Boolean },
       clostAfter: { type: Number },
     };
   }
 
   constructor() {
     super();
-    this.texts = '';
-    this.textClass = '';
-    this.hideToast = false;
+    this.texts = null;
     this.clostAfter = 0;
   }
 
   render() {
-    return !this.hideToast
+    return this.texts
       ? html`
           <span
-            class="toast-message fade-in ${this.textClass}"
+            class="toast-message fade-in"
             title="Click/tap to close"
             @click=${() => {
-              this.dismisOnClick ? (this.hideToast = true) : nothing;
+              this.dismisOnClick ? this.texts = null : nothing;
             }}
             >${this.texts}</span
           >
@@ -40,6 +37,7 @@ export class ToastMessage extends LitElement {
       :host {
         display: inline-block;
       }
+
       .toast-message {
         z-index: 2;
         position: absolute;

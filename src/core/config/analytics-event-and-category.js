@@ -13,6 +13,7 @@ export const analyticsCategories = {
 export const analyticsActions = {
   browse: 'Borrow-1Hour',
   browseAgain: 'Borrow-Again',
+  browseLoanRenew: 'Borrow-Loan-Renew',
   borrow: 'Borrow-14Days',
   waitlistJoin: 'JoinWaitlist',
   waitlistLeave: 'LeaveWaitlist',

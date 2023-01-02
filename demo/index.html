@@ -97,7 +97,7 @@
     import { LocalCache } from '@internetarchive/local-cache';
 
     const localCache = new LocalCache({
-      namespace: '1HourLoanStorage',
+      namespace: 'loanRenew',
       defaultTTL: 1 * 60,  // 1 minute
     });
 
@@ -128,14 +128,14 @@
     iaBookActions.tokenDelay = 2000; // 2 seconds
     iaBookActions.returnUrl = 'https://openlibrary.org';
     iaBookActions.localCache = localCache;
-    iaBookActions.autoRenewConfig = {
+    iaBookActions.loanRenewConfig = {
       totalTime: 60, // 60 second = 1 min
       autoCheckAt: 55, // totalTime - 10th minute
-      FlippedInLast: 15, // within last 15 second/minute 
+      pageChangedInLast: 15, // within last 15 second/minute 
     };
 
     let lendingStatus1 = iaBookActions.lendingStatus;
-    let secondsLeftOnLoan = iaBookActions.autoRenewConfig.totalTime;
+    let secondsLeftOnLoan = iaBookActions.loanRenewConfig.totalTime;
 
     document.querySelectorAll('.titleBar input[type=checkbox]').forEach((item) => {
       item.addEventListener('click', (e) => {
@@ -212,10 +212,10 @@
             await localCache.set({
               key: `${identifier}-loanTime`,
               value: new Date(), // current time
-              ttl: Number(iaBookActions.autoRenewConfig.totalTime),
-            })
+              ttl: Number(iaBookActions.loanRenewConfig.totalTime),
+            });
 
-            await localCache.delete(`${identifier}-pageFlipTime`);
+            await localCache.delete(`${identifier}-pageChangedTime`);
           } catch (error) {}
           
         } else if(e.target.value === 'browsingExpired') {

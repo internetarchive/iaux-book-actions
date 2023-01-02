@@ -15,7 +15,7 @@ import './components/toast-message.js';
 import { mobileContainerWidth } from './core/config/constants.js';
 import { GetLendingActions } from './core/services/get-lending-actions.js';
 import { LoanTokenPoller } from './core/services/loan-token-poller.js';
-import { OneHourAutoRenew } from './core/services/one-hour-auto-renew.js';
+import { OneHourLoanRenew } from './core/services/one-hour-loan-renew.js';
 
 export const events = {
   browseExpired: 'IABookReader:BrowsingHasExpired',
@@ -41,8 +41,8 @@ export default class IABookActions extends LitElement {
       modal: { Object },
       tokenDelay: { type: Number },
       localCache: { type: Object },
-      autoRenewConfig: { type: Object },
-      autoRenewResult: { type: Object },
+      loanRenewConfig: { type: Object },
+      loanRenewResult: { type: Object },
     };
   }
 
@@ -62,16 +62,17 @@ export default class IABookActions extends LitElement {
     this.modal = undefined;
     this.tokenDelay = 120000; // 2 minutes
     this.localCache = new LocalCache({
-      namespace: '1HourLoanStorage',
+      namespace: 'loanRenew',
     });
 
     // loan auto renew
-    this.autoRenewConfig = {};
-    this.autoRenewResult = {
-      toastTexts: '',
-      hideToast: true,
-      browseAgainNow: false,
+    this.isPageChanged = false;
+    this.loanRenewConfig = {};
+    this.loanRenewResult = {
+      texts: null,
+      renewNow: false,
     };
+
 
     // private props
     this.primaryActions = [];
@@ -83,7 +84,7 @@ export default class IABookActions extends LitElement {
     this.consecutiveLoanCounts = 1; // consecutive loan count
     this.browserTimer = undefined;
 
-    this.bindAutoRenewEvent();
+    this.bindLoanRenewEvents();
   }
 
   disconnectedCallback() {
@@ -111,45 +112,53 @@ export default class IABookActions extends LitElement {
     }
   }
 
-  bindAutoRenewEvent() {
+  bindLoanRenewEvents() {
+    // dispatched this event from bookreader page changed
+    this.addEventListener('BookReader:pageChanged', e => {
+
+      // early return if book is not browsed (1 hour borrow)
+      if (this.borrowType !== 'browsed') return nothing;
+
+      this.isPageChanged = true;
+      this.executeLoanRenew();
+    })
+
     // dispatched this event from timer-countdown
-    this.addEventListener('autoRenewAttempt', async event => {
-      const isPageClick = event.detail.bookPageChange;
-
-      // early return if user is not browsed book
-      if (isPageClick && this.borrowType !== 'browsed') return nothing;
-
-      this.autoRenewResult = await new OneHourAutoRenew(
-        isPageClick,
-        this.identifier,
-        this.localCache,
-        this.autoRenewConfig
-      );
-
-      this.toastTexts = this.autoRenewResult.toastTexts;
-      this.hideToast = this.autoRenewResult.hideToast;
-      this.browseAgainNow = this.autoRenewResult.browseAgainNow;
-
-      if (this.autoRenewResult.browseAgainNow) {
-        this.tokenPoller.disconnectedInterval();
-        await this.browseHasRenew();
-      }
-
-      return nothing;
+    this.addEventListener('IABookActions:loanRenew', e => {
+      this.isPageChanged = false;
+      this.executeLoanRenew();
     });
+  }
+
+  async executeLoanRenew() {
+    this.loanRenewResult = await new OneHourLoanRenew(
+      this.isPageChanged,
+      this.identifier,
+      this.localCache,
+      this.loanRenewConfig
+    );
+
+    console.log(this.loanRenewResult)
+
+    if (this.loanRenewResult.renewNow) {
+      this.tokenPoller.disconnectedInterval();
+      await this.browseHasRenew();
+    }
+
+    return nothing;
   }
 
   async browseHasExpired() {
     const currStatus = { ...this.lendingStatus, browsingExpired: true };
     this.lendingStatus = currStatus;
-    this.autoRenewResult.browseAgainNow = false;
+    this.loanRenewResult.renewNow = false;
 
     // remove respected key:value
     await this.localCache.delete(`${this.identifier}-loanTime`);
-    await this.localCache.delete(`${this.identifier}-pageFlipTime`);
+    await this.localCache.delete(`${this.identifier}-pageChangedTime`);
 
     // show message after browsed book is expired.
-    this.autoRenewResult.toastTexts = 'This book has been auto-returned due to inactivity.';
+    this.loanRenewResult.texts = 'This book has been auto-returned due to inactivity.';
   }
 
   async browseHasRenew() {
@@ -278,7 +287,7 @@ export default class IABookActions extends LitElement {
     // - start token poller immediately
     setTimeout(() => {
       this.startLoanTokenPoller();
-    }, this.autoRenewResult.browseAgainNow ? this.tokenDelay : 100);
+    }, this.loanRenewResult.renewNow ? this.tokenDelay : 100);
   }
 
   render() {
@@ -304,7 +313,7 @@ export default class IABookActions extends LitElement {
     return this.borrowType === 'browsed'
       ? html`<timer-countdown
           time=${Number(this.lendingStatus.secondsLeftOnLoan)}
-          .autoCheckAt=${this.autoRenewConfig.autoCheckAt}
+          .autoCheckAt=${this.loanRenewConfig.autoCheckAt}
         ></timer-countdown>`
       : nothing;
   }
@@ -312,16 +321,15 @@ export default class IABookActions extends LitElement {
   get toastMessageTemplate() {
     return html`
       <toast-message
-        .texts=${this.autoRenewResult.toastTexts}
+        .texts=${this.loanRenewResult.texts}
         ?dismisOnClick=${Boolean(true)}
-        ?hideToast=${this.autoRenewResult.hideToast}
       ></toast-message>
     `;
   }
 
   get bookActionBar() {
     return html`
-      <button @click=${() => this.pageFlipEvent()}>Page Flip</button>
+      <button @click=${() => this.pageChangedEvent()}>Page Change</button>
       <collapsible-action-group
         .userid=${this.userid}
         .identifier=${this.identifier}
@@ -332,10 +340,10 @@ export default class IABookActions extends LitElement {
         .borrowType=${this.borrowType}
         .returnUrl=${this.returnUrl}
         .localCache=${this.localCache}
-        .autoRenewConfig=${this.autoRenewConfig}
+        .loanRenewConfig=${this.loanRenewConfig}
         ?hasAdminAccess=${this.hasAdminAccess}
         ?disabled=${this.disableActionGroup}
-        ?browseAgainNow=${this.autoRenewResult.browseAgainNow}
+        ?renewNow=${this.loanRenewResult.renewNow}
         @lendingActionError=${this.handleLendingActionError}
         @toggleActionGroup=${this.handleToggleActionGroup}
       >
@@ -346,11 +354,11 @@ export default class IABookActions extends LitElement {
   }
 
   // will move this function to bookreader...
-  pageFlipEvent() {
+  pageChangedEvent() {
     // dispatch event to say book page has flipped
     document.querySelector('ia-book-actions').dispatchEvent(
-      new CustomEvent('autoRenewAttempt', {
-        detail: { bookPageChange: true },
+      new CustomEvent('BookReader:pageChanged', {
+        detail: { isPageChanged: true },
         bubbles: true,
         composed: true,
       })

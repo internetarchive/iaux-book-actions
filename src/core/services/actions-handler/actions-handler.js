@@ -43,8 +43,8 @@ export default class ActionsHandler extends LitElement {
       this.sendEvent(category, action);
     });
 
-    this.addEventListener('autoRenewLoan', ({ detail }) => {
-      this.handleAutoRenewLoan();
+    this.addEventListener('loanRenew', ({ detail }) => {
+      this.handleLoanRenew();
       const { category, action } = detail.event;
       this.sendEvent(category, action);
     });
@@ -117,7 +117,7 @@ export default class ActionsHandler extends LitElement {
     });
   }
 
-  handleAutoRenewLoan() {
+  handleLoanRenew() {
     const action = 'renew_loan';
     this.setBrowseTimeSession();
 
@@ -289,11 +289,11 @@ export default class ActionsHandler extends LitElement {
       await this.localCache.set({
         key: `${this.identifier}-loanTime`,
         value: new Date(), // current time
-        ttl: Number(this.autoRenewConfig.totalTime),
+        ttl: Number(this.loanRenewConfig.totalTime),
       });
 
       // delete flip time
-      await this.localCache.delete(`${this.identifier}-pageFlipTime`);
+      await this.localCache.delete(`${this.identifier}-pageChangedTime`);
     } catch (error) {
       console.log(error);
     }

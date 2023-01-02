@@ -35,9 +35,9 @@ export default class TimerCountdown extends LitElement {
       // execute 50th minute check
       if (Math.round(this.time) === this.autoCheckAt) {
         this.dispatchEvent(
-          new CustomEvent('autoRenewAttempt', {
+          new CustomEvent('IABookActions:loanRenew', {
             detail: {
-              bookPageChange: false,
+              isPageChanged: false,
             },
             bubbles: true,
             composed: true,
