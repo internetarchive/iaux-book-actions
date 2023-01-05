@@ -5,12 +5,7 @@ import { nothing } from 'lit';
  *
  */
 export class OneHourLoanRenew {
-  constructor(
-    isPageChanged,
-    identifier,
-    localCache,
-    loanRenewConfig
-  ) {
+  constructor(isPageChanged, identifier, localCache, loanRenewConfig) {
     this.isPageChanged = isPageChanged;
     this.identifier = identifier;
     this.localCache = localCache;
@@ -39,7 +34,7 @@ export class OneHourLoanRenew {
         console.log('page changed!!');
         return this.pageChanged(); // user clicked on page
       }
-      
+
       return this.autoChecker(); // auto checker at 50th minute
     } catch (error) {
       console.log(error);
@@ -94,7 +89,7 @@ export class OneHourLoanRenew {
       lastPageFlipTime <= lastFlipTimeFrame
     ) {
       // not viewed
-      console.log('Not viewed, don\'t borrow it!');
+      console.log("Not viewed, don't borrow it!");
       this.loanRenewResult.texts = this.loanReturnWarning;
       this.loanRenewResult.renewNow = false;
     } else if (lastPageFlipTime >= lastFlipTimeFrame) {
@@ -109,8 +104,7 @@ export class OneHourLoanRenew {
     return this.loanRenewResult;
   }
 
-
-  // save page changed time in indexedDB 
+  // save page changed time in indexedDB
   async setPageChangedTime() {
     await this.localCache.set({
       key: `${this.identifier}-pageChangedTime`,

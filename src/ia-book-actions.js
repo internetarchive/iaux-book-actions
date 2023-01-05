@@ -3,6 +3,7 @@ import { html, css, LitElement, nothing } from 'lit';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
 import { ModalConfig } from '@internetarchive/modal-manager';
+import { ToastConfig } from '@internetarchive/toast-manager';
 import { LocalCache } from '@internetarchive/local-cache';
 
 import './components/collapsible-action-group.js';
@@ -10,7 +11,6 @@ import './components/book-title-bar.js';
 import './components/text-group.js';
 import './components/info-icon.js';
 import './components/timer-countdown.js';
-import './components/toast-message.js';
 
 import { mobileContainerWidth } from './core/config/constants.js';
 import { GetLendingActions } from './core/services/get-lending-actions.js';
@@ -73,7 +73,6 @@ export default class IABookActions extends LitElement {
       renewNow: false,
     };
 
-
     // private props
     this.primaryActions = [];
     this.primaryTitle = '';
@@ -110,21 +109,26 @@ export default class IABookActions extends LitElement {
       this.disconnectResizeObserver();
       this.setupResizeObserver();
     }
+
+    if (changed.has('loanRenewResult')) {
+      this.showToastMessage();
+    }
   }
 
   bindLoanRenewEvents() {
     // dispatched this event from bookreader page changed
-    this.addEventListener('BookReader:pageChanged', e => {
-
+    window.addEventListener('BookReader:pageChanged', () => {
       // early return if book is not browsed (1 hour borrow)
-      if (this.borrowType !== 'browsed') return nothing;
+      if (this.borrowType === 'browsed') {
+        this.isPageChanged = true;
+        this.executeLoanRenew();
+      }
 
-      this.isPageChanged = true;
-      this.executeLoanRenew();
-    })
+      return nothing;
+    });
 
     // dispatched this event from timer-countdown
-    this.addEventListener('IABookActions:loanRenew', e => {
+    this.addEventListener('IABookActions:loanRenew', () => {
       this.isPageChanged = false;
       this.executeLoanRenew();
     });
@@ -138,7 +142,7 @@ export default class IABookActions extends LitElement {
       this.loanRenewConfig
     );
 
-    console.log(this.loanRenewResult)
+    console.log(this.loanRenewResult);
 
     if (this.loanRenewResult.renewNow) {
       this.tokenPoller.disconnectedInterval();
@@ -146,6 +150,16 @@ export default class IABookActions extends LitElement {
     }
 
     return nothing;
+  }
+
+  showToastMessage() {
+    let toastManager = document.querySelector('toast-template');
+    if (!toastManager) {
+      toastManager = document.createElement('toast-template');
+    }
+    document.body.appendChild(toastManager);
+
+    toastManager.config = new ToastConfig(this.loanRenewResult);
   }
 
   async browseHasExpired() {
@@ -158,7 +172,9 @@ export default class IABookActions extends LitElement {
     await this.localCache.delete(`${this.identifier}-pageChangedTime`);
 
     // show message after browsed book is expired.
-    this.loanRenewResult.texts = 'This book has been auto-returned due to inactivity.';
+    this.loanRenewResult.texts =
+      'This book has been auto-returned due to inactivity.';
+    this.update();
   }
 
   async browseHasRenew() {
@@ -285,9 +301,12 @@ export default class IABookActions extends LitElement {
     // - start token to poller around this.tokenDelay time until renew is completed
     // else
     // - start token poller immediately
-    setTimeout(() => {
-      this.startLoanTokenPoller();
-    }, this.loanRenewResult.renewNow ? this.tokenDelay : 100);
+    setTimeout(
+      () => {
+        this.startLoanTokenPoller();
+      },
+      this.loanRenewResult.renewNow ? this.tokenDelay : 100
+    );
   }
 
   render() {
@@ -318,18 +337,8 @@ export default class IABookActions extends LitElement {
       : nothing;
   }
 
-  get toastMessageTemplate() {
-    return html`
-      <toast-message
-        .texts=${this.loanRenewResult.texts}
-        ?dismisOnClick=${Boolean(true)}
-      ></toast-message>
-    `;
-  }
-
   get bookActionBar() {
     return html`
-      <button @click=${() => this.pageChangedEvent()}>Page Change</button>
       <collapsible-action-group
         .userid=${this.userid}
         .identifier=${this.identifier}
@@ -349,20 +358,8 @@ export default class IABookActions extends LitElement {
       >
       </collapsible-action-group>
       ${this.textGroupTemplate} ${this.infoIconTemplate}
-      ${this.timerCountdownTemplate} ${this.toastMessageTemplate}
+      ${this.timerCountdownTemplate}
     `;
-  }
-
-  // will move this function to bookreader...
-  pageChangedEvent() {
-    // dispatch event to say book page has flipped
-    document.querySelector('ia-book-actions').dispatchEvent(
-      new CustomEvent('BookReader:pageChanged', {
-        detail: { isPageChanged: true },
-        bubbles: true,
-        composed: true,
-      })
-    );
   }
 
   /**
@@ -530,8 +527,10 @@ export default class IABookActions extends LitElement {
         flex-wrap: wrap;
       }
 
-      toast-message {
-        --messageHeightFromTop: 17%;
+      toast-template {
+        --toastHeightFromTop: 50%;
+        --toastBGColor: #333333;
+        --toastFontColor: #ffffff;
       }
     `;
   }

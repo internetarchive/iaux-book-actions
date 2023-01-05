@@ -109,7 +109,7 @@
   dependencies:
     lit "^2.0.2"
 
-"@internetarchive/local-cache@^0.2.1":
+"@internetarchive/local-cache@^0.2.0":
   version "0.2.1"
   resolved "https://registry.yarnpkg.com/@internetarchive/local-cache/-/local-cache-0.2.1.tgz#fa416cae81227228b73f51d82f3361d460e27539"
   integrity sha512-8FFAvEEoazktWsIEod2NVYp0r+Fk3OxM8woe42mNlXHbht3Je98yQjooIFiA3/sJYB7xsZB2RHzUzh+GmBHFgw==
@@ -133,10 +133,24 @@
   resolved "https://registry.npmjs.org/@internetarchive/shared-resize-observer/-/shared-resize-observer-0.2.0.tgz"
   integrity sha512-E5Jh6rX03usPkihB/lnGpoL3qedE84NLRHxuAEGrlwC0zyQ7xTr6NNQWwKBDzG1OBcCrUJXIWaQuJdjqo+og1Q==
 
+"@internetarchive/toast-manager@0.0.1-alpha1":
+  version "0.0.1-alpha1"
+  resolved "https://registry.yarnpkg.com/@internetarchive/toast-manager/-/toast-manager-0.0.1-alpha1.tgz#674bb3357d5fb72791f603983888ac211bb2758f"
+  integrity sha512-USbqJfXZJoVzQ/br2UiX/JVkkqqSrIHjbg3hGP98CPhpMqzY8NZQxzAPmJbRO1nl/08gNSJs8pcBzVdTIw3hrA==
+  dependencies:
+    "@internetarchive/icon-close" "^1.3.2"
+    lit "^2.2.2"
+    throttle-debounce "^5.0.0"
+
 "@lit/reactive-element@^1.3.0":
   version "1.3.1"
   resolved "https://registry.npmjs.org/@lit/reactive-element/-/reactive-element-1.3.1.tgz"
   integrity sha512-nOJARIr3pReqK3hfFCSW2Zg/kFcFsSAlIE7z4a0C9D2dPrgD/YSn3ZP2ET/rxKB65SXyG7jJbkynBRm+tGlacw==
+
+"@lit/reactive-element@^1.5.0":
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/@lit/reactive-element/-/reactive-element-1.5.0.tgz#344cc33f2d1491d094b8ef824a9fe31d150d2375"
+  integrity sha512-fQh9FDK0LPTwDk+0HhSZEtb8K0LTN1wXerwpGrWA+a8tWulYRDLI4vQDWp4GOIsewn0572KYV/oZ3+492D7osA==
 
 "@mdn/browser-compat-data@^4.0.0":
   version "4.0.9"
@@ -804,11 +818,6 @@ acorn@^7.4.0:
   version "7.4.1"
   resolved "https://registry.npmjs.org/acorn/-/acorn-7.4.1.tgz"
   integrity sha512-nQyp0o1/mNdbTO1PO6kHkwSrmgZ0MT/jCCpNiwbUjGoRN4dlBhqJtoQuCnEOKzgTVwg0ZWiCoQy6SxMebQVh8A==
-
-add@^2.0.6:
-  version "2.0.6"
-  resolved "https://registry.yarnpkg.com/add/-/add-2.0.6.tgz#248f0a9f6e5a528ef2295dbeec30532130ae2235"
-  integrity sha512-j5QzrmsokwWWp6kUcJQySpbG+xfOBqqKnup3OIk1pz+kB/80SLorZ9V8zHFLO92Lcd+hbvq8bT+zOGoPkmBV0Q==
 
 agent-base@5:
   version "5.1.1"
@@ -2863,6 +2872,13 @@ lit-html@^2.2.0:
   dependencies:
     "@types/trusted-types" "^2.0.2"
 
+lit-html@^2.5.0:
+  version "2.5.0"
+  resolved "https://registry.yarnpkg.com/lit-html/-/lit-html-2.5.0.tgz#9d4c0bb3652a6b10bc4ccdb627dfa9eff1215474"
+  integrity sha512-bLHosg1XL3JRUcKdSVI0sLCs0y1wWrj2sqqAN3cZ7bDDPNgmDHH29RV48x6Wz3ZmkxIupaE+z7uXSZ/pXWAO1g==
+  dependencies:
+    "@types/trusted-types" "^2.0.2"
+
 lit@^2.0.2, lit@^2.2.1:
   version "2.2.1"
   resolved "https://registry.npmjs.org/lit/-/lit-2.2.1.tgz"
@@ -2871,6 +2887,15 @@ lit@^2.0.2, lit@^2.2.1:
     "@lit/reactive-element" "^1.3.0"
     lit-element "^3.2.0"
     lit-html "^2.2.0"
+
+lit@^2.2.2:
+  version "2.5.0"
+  resolved "https://registry.yarnpkg.com/lit/-/lit-2.5.0.tgz#3a425d69ff8483effb2026957b86ae45de0bc51a"
+  integrity sha512-DtnUP6vR3l4Q8nRPPNBD+UxbAhwJPeky+OVbi3pdgMqm0g57xFSl1Sj64D1rIB+nVNdiVVg8YxB0hqKjvdadZA==
+  dependencies:
+    "@lit/reactive-element" "^1.5.0"
+    lit-element "^3.2.0"
+    lit-html "^2.5.0"
 
 load-json-file@^2.0.0:
   version "2.0.0"
@@ -4207,6 +4232,11 @@ throttle-debounce@^2.2.1:
   resolved "https://registry.npmjs.org/throttle-debounce/-/throttle-debounce-2.3.0.tgz"
   integrity sha512-H7oLPV0P7+jgvrk+6mwwwBDmxTaxnu9HMXmloNLXwnNO0ZxZ31Orah2n8lU1eMPvsaowP2CX+USCgyovXfdOFQ==
 
+throttle-debounce@^5.0.0:
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/throttle-debounce/-/throttle-debounce-5.0.0.tgz#a17a4039e82a2ed38a5e7268e4132d6960d41933"
+  integrity sha512-2iQTSgkkc1Zyk0MeVrt/3BvuOXYPl/R8Z0U2xxo9rjwNciaHDG3R+Lm6dh4EeUci49DanvBnuqI6jshoQQRGEg==
+
 through@^2.3.8:
   version "2.3.8"
   resolved "https://registry.npmjs.org/through/-/through-2.3.8.tgz"
@@ -4543,11 +4573,6 @@ yargs@13.3.2, yargs@^13.3.0:
     which-module "^2.0.0"
     y18n "^4.0.0"
     yargs-parser "^13.1.2"
-
-yarn@^1.22.19:
-  version "1.22.19"
-  resolved "https://registry.yarnpkg.com/yarn/-/yarn-1.22.19.tgz#4ba7fc5c6e704fce2066ecbfb0b0d8976fe62447"
-  integrity sha512-/0V5q0WbslqnwP91tirOvldvYISzaqhClxzyUKXYxs07yUILIs5jx/k6CFe8bvKSkds5w+eiOqta39Wk3WxdcQ==
 
 yauzl@2.10.0, yauzl@^2.10.0:
   version "2.10.0"
