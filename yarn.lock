@@ -133,14 +133,12 @@
   resolved "https://registry.npmjs.org/@internetarchive/shared-resize-observer/-/shared-resize-observer-0.2.0.tgz"
   integrity sha512-E5Jh6rX03usPkihB/lnGpoL3qedE84NLRHxuAEGrlwC0zyQ7xTr6NNQWwKBDzG1OBcCrUJXIWaQuJdjqo+og1Q==
 
-"@internetarchive/toast-manager@0.0.1-alpha1":
-  version "0.0.1-alpha1"
-  resolved "https://registry.yarnpkg.com/@internetarchive/toast-manager/-/toast-manager-0.0.1-alpha1.tgz#674bb3357d5fb72791f603983888ac211bb2758f"
-  integrity sha512-USbqJfXZJoVzQ/br2UiX/JVkkqqSrIHjbg3hGP98CPhpMqzY8NZQxzAPmJbRO1nl/08gNSJs8pcBzVdTIw3hrA==
+"@internetarchive/toast-manager@0.0.1-alpha5":
+  version "0.0.1-alpha5"
+  resolved "https://registry.yarnpkg.com/@internetarchive/toast-manager/-/toast-manager-0.0.1-alpha5.tgz#a10b7757a77f0032ccd88673f52f456cc1b4cd6e"
+  integrity sha512-AI8lpziVYQWrV7pILYjnUZm+t4+Ayg2ePA5d/WhiipfgkNrn6OdlB5WWmy0b1bZ4HEw2vDdymlPGUQ3/k339DA==
   dependencies:
-    "@internetarchive/icon-close" "^1.3.2"
-    lit "^2.2.2"
-    throttle-debounce "^5.0.0"
+    lit "^2.2.7"
 
 "@lit/reactive-element@^1.3.0":
   version "1.3.1"
@@ -2888,7 +2886,7 @@ lit@^2.0.2, lit@^2.2.1:
     lit-element "^3.2.0"
     lit-html "^2.2.0"
 
-lit@^2.2.2:
+lit@^2.2.7:
   version "2.5.0"
   resolved "https://registry.yarnpkg.com/lit/-/lit-2.5.0.tgz#3a425d69ff8483effb2026957b86ae45de0bc51a"
   integrity sha512-DtnUP6vR3l4Q8nRPPNBD+UxbAhwJPeky+OVbi3pdgMqm0g57xFSl1Sj64D1rIB+nVNdiVVg8YxB0hqKjvdadZA==
@@ -4231,11 +4229,6 @@ throttle-debounce@^2.2.1:
   version "2.3.0"
   resolved "https://registry.npmjs.org/throttle-debounce/-/throttle-debounce-2.3.0.tgz"
   integrity sha512-H7oLPV0P7+jgvrk+6mwwwBDmxTaxnu9HMXmloNLXwnNO0ZxZ31Orah2n8lU1eMPvsaowP2CX+USCgyovXfdOFQ==
-
-throttle-debounce@^5.0.0:
-  version "5.0.0"
-  resolved "https://registry.yarnpkg.com/throttle-debounce/-/throttle-debounce-5.0.0.tgz#a17a4039e82a2ed38a5e7268e4132d6960d41933"
-  integrity sha512-2iQTSgkkc1Zyk0MeVrt/3BvuOXYPl/R8Z0U2xxo9rjwNciaHDG3R+Lm6dh4EeUci49DanvBnuqI6jshoQQRGEg==
 
 through@^2.3.8:
   version "2.3.8"

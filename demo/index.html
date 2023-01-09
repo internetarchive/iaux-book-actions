@@ -15,7 +15,7 @@
       font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     }
     #demo {
-      height: 50px;
+      height: 100px;
     }
     ia-book-actions {
       --white: #fff;
@@ -127,10 +127,9 @@
     iaBookActions.returnUrl = 'https://openlibrary.org';
     iaBookActions.localCache = localCache;
     iaBookActions.loanRenewConfig = {
-      enable: false, // If loan renew is enabled
-      totalTime: 10, // 60 second = 1 min
-      autoCheckAt: 5, // totalTime - 10th minute
-      pageChangedInLast: 15, // within last 15 second/minute 
+      totalTime: 40, // 60 second = 1 min
+      autoCheckAt: 35, // totalTime - 10th minute
+      pageChangedInLast: 5, // within last 15 second/minute 
     };
 
     let lendingStatus1 = iaBookActions.lendingStatus;

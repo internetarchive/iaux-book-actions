@@ -3,6 +3,7 @@ import { html, css, LitElement, nothing } from 'lit';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
 import { ModalConfig } from '@internetarchive/modal-manager';
+import '@internetarchive/toast-manager';
 import { ToastConfig } from '@internetarchive/toast-manager';
 import { LocalCache } from '@internetarchive/local-cache';
 
@@ -83,6 +84,7 @@ export default class IABookActions extends LitElement {
     this.consecutiveLoanCounts = 1; // consecutive loan count
     this.browserTimer = undefined;
 
+    this._shadowRoot = this.attachShadow({ mode: "open" });
     this.bindLoanRenewEvents();
   }
 
@@ -108,10 +110,6 @@ export default class IABookActions extends LitElement {
     if (changed.has('sharedObserver')) {
       this.disconnectResizeObserver();
       this.setupResizeObserver();
-    }
-
-    if (changed.has('loanRenewResult')) {
-      this.showToastMessage();
     }
   }
 
@@ -144,6 +142,8 @@ export default class IABookActions extends LitElement {
 
     console.log(this.loanRenewResult);
 
+    this.showToastMessage();
+
     if (this.loanRenewResult.renewNow) {
       this.tokenPoller.disconnectedInterval();
       await this.browseHasRenew();
@@ -152,29 +152,38 @@ export default class IABookActions extends LitElement {
     return nothing;
   }
 
-  showToastMessage() {
-    let toastManager = document.querySelector('toast-template');
-    if (!toastManager) {
-      toastManager = document.createElement('toast-template');
+  async showToastMessage() {
+    let toastTemplate = this.shadowRoot.querySelector('toast-template');
+    if (!toastTemplate) {
+      toastTemplate = document.createElement('toast-template');
     }
-    document.body.appendChild(toastManager);
 
-    toastManager.config = new ToastConfig(this.loanRenewResult);
+    await this.shadowRoot.appendChild(toastTemplate)
+    // await document.body.appendChild(toastTemplate);
+
+    const config = new ToastConfig();
+    config.texts = this.loanRenewResult?.texts;
+    config.dismisOnClick = true;
+
+    toastTemplate.showToast({
+      config
+    });
   }
 
   async browseHasExpired() {
     const currStatus = { ...this.lendingStatus, browsingExpired: true };
     this.lendingStatus = currStatus;
-    this.loanRenewResult.renewNow = false;
 
     // remove respected key:value
     await this.localCache.delete(`${this.identifier}-loanTime`);
     await this.localCache.delete(`${this.identifier}-pageChangedTime`);
 
     // show message after browsed book is expired.
+    this.loanRenewResult.renewNow = false;
     this.loanRenewResult.texts =
       'This book has been auto-returned due to inactivity.';
-    this.update();
+
+    this.showToastMessage();
   }
 
   async browseHasRenew() {
@@ -502,7 +511,7 @@ export default class IABookActions extends LitElement {
   get textGroupTemplate() {
     return html`<text-group
       textClass=${this.textClass}
-      texts=${this.primaryTitle}
+      .texts=${this.primaryTitle}
     >
     </text-group>`;
   }
@@ -515,12 +524,13 @@ export default class IABookActions extends LitElement {
     return css`
       :host {
         display: block;
-        background: var(--primaryBGColor, #000);
-        color: var(--primaryTextColor, #fff);
       }
+
       .lending-wrapper {
         width: 100%;
         margin: 0 auto;
+        background: var(--primaryBGColor, #000);
+        color: var(--primaryTextColor, #fff);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -528,9 +538,9 @@ export default class IABookActions extends LitElement {
       }
 
       toast-template {
-        --toastHeightFromTop: 50%;
-        --toastBGColor: #333333;
-        --toastFontColor: #ffffff;
+        --toastTopMargin: 80px;
+        --toastBGColor: #333;
+        --toastFontColor: #fff;
       }
     `;
   }
