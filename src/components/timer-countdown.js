@@ -34,10 +34,11 @@ export default class TimerCountdown extends LitElement {
 
       // execute 50th minute check
       if (Math.round(this.time) === this.autoCheckAt) {
+        // cldar at here and < 10...
         this.dispatchEvent(
           new CustomEvent('IABookActions:loanRenew', {
             detail: {
-              isPageChanged: false,
+              hasPageChanged: false,
             },
             bubbles: true,
             composed: true,
@@ -50,62 +51,58 @@ export default class TimerCountdown extends LitElement {
   }
 
   render() {
-    return html`<div id="countdown">
-      <div id="countdown-number">${Math.round(this.time)}</div>
-      <svg>
-        <circle r="18" cx="20" cy="20"></circle>
+    return html`
+      <svg
+        width="30"
+        height="30"
+        viewBox="0 0 100 100"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <circle class="circle" cx="50" cy="50" r="50" />
       </svg>
-    </div>`;
+      <span>${Math.round(this.time)}</span>
+    `;
   }
 
   static get styles() {
+    const white = css`var(--white, #fff)`;
+    const secondsLeft = css`var(--secondsLeft, 60s)`;
+
     return css`
       :host {
-        right: 5px;
+        right: 0;
         font-size: 14px;
         position: absolute;
       }
 
-      #countdown-number {
-        color: white;
-        display: inline-block;
-        line-height: 40px;
-        margin-right: 12px;
+      @keyframes circletimer {
+        0% {
+          stroke-dashoffset: 320;
+          stroke-dasharray: 320;
+        }
+        100% {
+          stroke-dashoffset: 0;
+          stroke-dasharray: 320;
+        }
       }
 
       svg {
+        background-color: transparent;
         position: absolute;
-        top: 0;
+        top: 50%;
         right: 0;
-        width: 40px;
-        height: 40px;
-        transform: rotateY(-180deg) rotateZ(-90deg);
+        border-radius: 50px;
+        border: 2px solid ${white};
+        transform: translate(-50%, -50%) rotateZ(-90deg);
       }
 
-      svg circle {
-        stroke-dasharray: 113px;
-        stroke-dashoffset: 0px;
-        stroke-linecap: round;
-        stroke-width: 3px;
-        stroke: white;
-        fill: none;
-        animation: countdown 60s linear infinite forwards;
-      }
-
-      @keyframes countdown {
-        from {
-          stroke-dashoffset: 0px;
-        }
-        to {
-          stroke-dashoffset: 113px;
-        }
-      }
-
-      .hidden {
-        display: none;
-      }
-      .visible {
-        display: inline-block;
+      svg .circle {
+        stroke: ${white};
+        stroke-width: 100px;
+        fill: transparent;
+        stroke-dashoffset: 320;
+        stroke-dasharray: 0;
+        animation: ${secondsLeft} circletimer linear;
       }
     `;
   }

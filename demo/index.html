@@ -127,10 +127,15 @@
     iaBookActions.returnUrl = 'https://openlibrary.org';
     iaBookActions.localCache = localCache;
     iaBookActions.loanRenewConfig = {
-      totalTime: 40, // 60 second = 1 min
-      autoCheckAt: 35, // totalTime - 10th minute
-      pageChangedInLast: 5, // within last 15 second/minute 
+      totalTime: 20, // 60 second = 1 min
+      autoCheckAt: 15, // totalTime - 10th minute
+      pageChangedInLast: 15, // within last 15 second/minute 
     };
+
+    // 60 minutes
+    // just browsed, timer begin
+    //   = at last 10th minute, if user viewed a new page in last 15 min
+
 
     let lendingStatus1 = iaBookActions.lendingStatus;
     let secondsLeftOnLoan = iaBookActions.loanRenewConfig.totalTime;
@@ -226,8 +231,11 @@
           lendingStatus1.user_has_browsed = false;
         }
 
-        let lending = {...defaultLendingStatus, ...lendingStatus1};
-        iaBookActions.lendingStatus = lending;
+        // wait for a while
+        setTimeout(() => {
+          let lending = {...defaultLendingStatus, ...lendingStatus1};
+          iaBookActions.lendingStatus = lending;
+        }, 10);
       });
     });
 
@@ -281,7 +289,7 @@
       // dispatch event to say book page has flipped
       document.querySelector('ia-book-actions').dispatchEvent(
         new CustomEvent('BookReader:pageChanged', {
-          detail: { isPageChanged: true },
+          detail: { hasPageChanged: true },
           bubbles: true,
           composed: true,
         })

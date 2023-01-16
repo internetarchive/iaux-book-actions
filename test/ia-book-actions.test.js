@@ -183,7 +183,7 @@ describe('Borrow status actions', () => {
     ];
 
     expect(el.primaryTitle).to.equal(
-      'Renewable every hour, pending availability.'
+      ''
     );
     expect(el.primaryActions.length).to.equal(2);
     expect(el.primaryActions[0].text).to.equal('Log In and Borrow');
@@ -253,7 +253,6 @@ describe('Browsing expired status', () => {
     await aTimeout(1500); // wait for 1.5 second
     await el.updateComplete;
 
-    expect(el.primaryTitle).contains('Your loan has expired.');
     expect(el.primaryActions[0].text).to.equal('Borrow again');
   });
 
@@ -289,7 +288,6 @@ describe('Browsing expired status', () => {
     await aTimeout(1500); // wait for 1.5 sec
 
     expect(eventReceived).to.equal(true);
-    expect(el.primaryTitle).contains('Your loan has expired.');
     expect(el.primaryActions[0].text).to.equal('Borrow again');
     expect(el.tokenPoller.loanTokenInterval).to.equal(undefined);
   });

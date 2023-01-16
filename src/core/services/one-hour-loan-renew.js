@@ -5,18 +5,18 @@ import { nothing } from 'lit';
  *
  */
 export class OneHourLoanRenew {
-  constructor(isPageChanged, identifier, localCache, loanRenewConfig) {
-    this.isPageChanged = isPageChanged;
+  constructor(hasPageChanged, identifier, localCache, loanRenewConfig) {
+    this.hasPageChanged = hasPageChanged;
     this.identifier = identifier;
     this.localCache = localCache;
     this.loanRenewConfig = loanRenewConfig;
 
     // messages for auto return machenism
-    this.loanRenewMessage = 'This book has been renewed for another hour.';
+    this.loanRenewMessage = 'This book has been renewed for 1 hour.';
     this.loanReturnMessage =
-      'This book has been auto-returned due to inactivity.';
+      'This book has been automatically returned due to inactivity.';
     this.loanReturnWarning =
-      'This book will be auto-returned in 10 minutes unless you turn a page.';
+      'This book will be automatically returned in 10 minutes unless you turn a page.';
 
     // private props
     this.loanRenewResult = {
@@ -30,7 +30,7 @@ export class OneHourLoanRenew {
   handleLoanRenew() {
     try {
       // when user click/flip on book page
-      if (this.isPageChanged) {
+      if (this.hasPageChanged) {
         console.log('page changed!!');
         return this.pageChanged(); // user clicked on page
       }
@@ -62,8 +62,6 @@ export class OneHourLoanRenew {
       console.log('Yes, borrow it again now!');
       this.loanRenewResult.texts = this.loanRenewMessage;
       this.loanRenewResult.renewNow = true;
-
-      this.setLoanRenewedTime();
     }
 
     this.setPageChangedTime();
@@ -94,11 +92,9 @@ export class OneHourLoanRenew {
       this.loanRenewResult.renewNow = false;
     } else if (lastPageFlipTime >= lastFlipTimeFrame) {
       // viewed in last time frame
-      console.log('Yes viewed, borrow it again!');
-      this.loanRenewResult.texts = this.loanRenewMessage;
+      console.log('Yes viewed, silently renewed!');
+      this.loanRenewResult.texts = null;
       this.loanRenewResult.renewNow = true;
-
-      this.setLoanRenewedTime();
     }
 
     return this.loanRenewResult;

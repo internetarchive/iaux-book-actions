@@ -3,7 +3,6 @@ import { html, css, LitElement, nothing } from 'lit';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
 import { ModalConfig } from '@internetarchive/modal-manager';
-import '@internetarchive/toast-manager';
 import { ToastConfig } from '@internetarchive/toast-manager';
 import { LocalCache } from '@internetarchive/local-cache';
 
@@ -62,17 +61,6 @@ export default class IABookActions extends LitElement {
     this.disableActionGroup = false;
     this.modal = undefined;
     this.tokenDelay = 120000; // 2 minutes
-    this.localCache = new LocalCache({
-      namespace: 'loanRenew',
-    });
-
-    // loan auto renew
-    this.isPageChanged = false;
-    this.loanRenewConfig = {};
-    this.loanRenewResult = {
-      texts: null,
-      renewNow: false,
-    };
 
     // private props
     this.primaryActions = [];
@@ -82,9 +70,23 @@ export default class IABookActions extends LitElement {
     this.lendingOptions = {};
     this.borrowType = ''; // (browsed|borrowed)
     this.consecutiveLoanCounts = 1; // consecutive loan count
-    this.browserTimer = undefined;
 
-    this._shadowRoot = this.attachShadow({ mode: "open" });
+    // loan auto renew
+    this.browserTimer = undefined;
+    this.hasPageChanged = false;
+    this.loanRenewConfig = {};
+
+    /**
+     * contains loan auto-renew response
+     * - texts:- texts messages need to show in toast message
+     * - renewNow:- key it determine if need to renew now
+     */
+    this.loanRenewResult = {
+      texts: null,
+      renewNow: false,
+    };
+
+    this._shadowRoot = this.attachShadow({ mode: 'open' });
     this.bindLoanRenewEvents();
   }
 
@@ -95,6 +97,10 @@ export default class IABookActions extends LitElement {
   }
 
   firstUpdated() {
+    this.localCache = new LocalCache({
+      namespace: 'loanRenew',
+    });
+
     if (!this.sharedObserver) {
       this.sharedObserver = new SharedResizeObserver();
       this.setupResizeObserver();
@@ -118,7 +124,7 @@ export default class IABookActions extends LitElement {
     window.addEventListener('BookReader:pageChanged', () => {
       // early return if book is not browsed (1 hour borrow)
       if (this.borrowType === 'browsed') {
-        this.isPageChanged = true;
+        this.hasPageChanged = true;
         this.executeLoanRenew();
       }
 
@@ -127,14 +133,14 @@ export default class IABookActions extends LitElement {
 
     // dispatched this event from timer-countdown
     this.addEventListener('IABookActions:loanRenew', () => {
-      this.isPageChanged = false;
+      this.hasPageChanged = false;
       this.executeLoanRenew();
     });
   }
 
   async executeLoanRenew() {
     this.loanRenewResult = await new OneHourLoanRenew(
-      this.isPageChanged,
+      this.hasPageChanged,
       this.identifier,
       this.localCache,
       this.loanRenewConfig
@@ -142,14 +148,10 @@ export default class IABookActions extends LitElement {
 
     console.log(this.loanRenewResult);
 
-    this.showToastMessage();
-
-    if (this.loanRenewResult.renewNow) {
-      this.tokenPoller.disconnectedInterval();
-      await this.browseHasRenew();
+    if (this.loanRenewResult.renewNow === false) {
+      console.log('warning')
+      this.showToastMessage();
     }
-
-    return nothing;
   }
 
   async showToastMessage() {
@@ -158,15 +160,14 @@ export default class IABookActions extends LitElement {
       toastTemplate = document.createElement('toast-template');
     }
 
-    await this.shadowRoot.appendChild(toastTemplate)
-    // await document.body.appendChild(toastTemplate);
+    await this.shadowRoot.appendChild(toastTemplate);
 
     const config = new ToastConfig();
     config.texts = this.loanRenewResult?.texts;
     config.dismisOnClick = true;
 
     toastTemplate.showToast({
-      config
+      config,
     });
   }
 
@@ -181,7 +182,7 @@ export default class IABookActions extends LitElement {
     // show message after browsed book is expired.
     this.loanRenewResult.renewNow = false;
     this.loanRenewResult.texts =
-      'This book has been auto-returned due to inactivity.';
+      'This book has been automatically returned due to inactivity.';
 
     this.showToastMessage();
   }
@@ -306,16 +307,28 @@ export default class IABookActions extends LitElement {
       return;
     }
 
-    // if (book is about to renew)
-    // - start token to poller around this.tokenDelay time until renew is completed
-    // else
-    // - start token poller immediately
+    /**
+     * tokenPoller determines if user has loan token for this book
+     * - if book is going to renew, need to wait until renew is completed
+     * - otherwise execute immediately
+     */
     setTimeout(
       () => {
         this.startLoanTokenPoller();
+        this.changeTimerCountState();
       },
       this.loanRenewResult.renewNow ? this.tokenDelay : 100
     );
+  }
+
+  async changeTimerCountState() {
+    // this.time = this.time;
+    this.shadowRoot
+      ?.querySelector('timer-countdown')
+      ?.style?.setProperty(
+        '--secondsLeft',
+        `${Number(this.lendingStatus.secondsLeftOnLoan)}s`
+      );
   }
 
   render() {
@@ -340,7 +353,7 @@ export default class IABookActions extends LitElement {
   get timerCountdownTemplate() {
     return this.borrowType === 'browsed'
       ? html`<timer-countdown
-          time=${Number(this.lendingStatus.secondsLeftOnLoan)}
+          .time=${Number(this.lendingStatus.secondsLeftOnLoan)}
           .autoCheckAt=${this.loanRenewConfig.autoCheckAt}
         ></timer-countdown>`
       : nothing;
@@ -362,6 +375,7 @@ export default class IABookActions extends LitElement {
         ?hasAdminAccess=${this.hasAdminAccess}
         ?disabled=${this.disableActionGroup}
         ?renewNow=${this.loanRenewResult.renewNow}
+        @loanAutoRenewed=${this.handleLoanAutoRenewed}
         @lendingActionError=${this.handleLendingActionError}
         @toggleActionGroup=${this.handleToggleActionGroup}
       >
@@ -369,6 +383,15 @@ export default class IABookActions extends LitElement {
       ${this.textGroupTemplate} ${this.infoIconTemplate}
       ${this.timerCountdownTemplate}
     `;
+  }
+
+  async handleLoanAutoRenewed() {
+    this.showToastMessage();
+
+    if (this.loanRenewResult.renewNow) {
+      this.tokenPoller.disconnectedInterval();
+      await this.browseHasRenew();
+    }
   }
 
   /**
@@ -509,11 +532,13 @@ export default class IABookActions extends LitElement {
   }
 
   get textGroupTemplate() {
-    return html`<text-group
-      textClass=${this.textClass}
-      .texts=${this.primaryTitle}
-    >
-    </text-group>`;
+    return this.primaryTitle
+      ? html`<text-group
+          textClass=${this.textClass}
+          .texts=${this.primaryTitle}
+        >
+        </text-group>`
+      : nothing;
   }
 
   get hasAdminAccess() {

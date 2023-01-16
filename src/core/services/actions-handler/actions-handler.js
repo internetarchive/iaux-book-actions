@@ -119,12 +119,19 @@ export default class ActionsHandler extends LitElement {
 
   handleLoanRenew() {
     const action = 'renew_loan';
-    this.setBrowseTimeSession();
 
     ActionsHandlerService({
       action,
       identifier: this.identifier,
-      success: () => {},
+      success: data => {
+        // success analytics by isa?
+        this.setBrowseTimeSession();
+        this.dispatchEvent(
+          new CustomEvent('loanAutoRenewed', {
+            detail: { action, data },
+          })
+        );
+      },
       error: data => {
         this.dispatchActionError(action, data);
       },
@@ -286,13 +293,17 @@ export default class ActionsHandler extends LitElement {
    */
   async setBrowseTimeSession() {
     try {
+      const totalTime = this.loanRenewConfig.totalTime;
+      const expireDate = new Date(new Date().getTime() + totalTime * 1000);
+
+      // set a value
       await this.localCache.set({
         key: `${this.identifier}-loanTime`,
-        value: new Date(), // current time
-        ttl: Number(this.loanRenewConfig.totalTime),
+        value: expireDate,
+        ttl: Number(totalTime),
       });
 
-      // delete flip time
+      // delete pageChangedTime when book is auto renew at nth minute
       await this.localCache.delete(`${this.identifier}-pageChangedTime`);
     } catch (error) {
       console.log(error);
