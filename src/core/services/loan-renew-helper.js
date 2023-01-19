@@ -1,10 +1,11 @@
 import { nothing } from 'lit';
+import { ToastConfig } from '@internetarchive/toast-manager';
 
 /**
  * This class is used to determine if use is eligible for auto renew loan.
  *
  */
-export class OneHourLoanRenew {
+export class LoanRenewHelper {
   constructor(hasPageChanged, identifier, localCache, loanRenewConfig) {
     this.hasPageChanged = hasPageChanged;
     this.identifier = identifier;
@@ -16,26 +17,28 @@ export class OneHourLoanRenew {
     this.loanReturnMessage =
       'This book has been automatically returned due to inactivity.';
     this.loanReturnWarning =
-      'This book will be automatically returned in 10 minutes unless you turn a page.';
+      'This book will be automatically returned in #time minutes unless you turn a page.';
 
     // private props
-    this.loanRenewResult = {
+    this.result = {
       texts: null,
       renewNow: false,
     };
 
-    return this.handleLoanRenew();
+    this.timerMsgInterval = undefined
+  }
+
+  disconnectedInterval() {
+    clearInterval(this.timerMsgInterval);
   }
 
   handleLoanRenew() {
     try {
-      // when user click/flip on book page
-      if (this.hasPageChanged) {
-        console.log('page changed!!');
+      if (this.hasPageChanged) { // when user click/flip on book page
         return this.pageChanged(); // user clicked on page
+      } else {
+        return this.autoChecker(); // auto checker at 50th minute
       }
-
-      return this.autoChecker(); // auto checker at 50th minute
     } catch (error) {
       console.log(error);
     }
@@ -59,13 +62,13 @@ export class OneHourLoanRenew {
 
     // if user viewed new page in last 10 minutes, renew immediately
     if (currentTime >= lastTimeFrame) {
-      console.log('Yes, borrow it again now!');
-      this.loanRenewResult.texts = this.loanRenewMessage;
-      this.loanRenewResult.renewNow = true;
+      this.result.texts = this.loanRenewMessage;
+      this.result.renewNow = true;
+      this.showToastMessage();
     }
 
     this.setPageChangedTime();
-    return this.loanRenewResult;
+    return this.result;
   }
 
   async autoChecker() {
@@ -86,18 +89,15 @@ export class OneHourLoanRenew {
       lastPageFlipTime === undefined ||
       lastPageFlipTime <= lastFlipTimeFrame
     ) {
-      // not viewed
-      console.log("Not viewed, don't borrow it!");
-      this.loanRenewResult.texts = this.loanReturnWarning;
-      this.loanRenewResult.renewNow = false;
+      this.result.texts = this.loanReturnWarning;
+      this.result.renewNow = false; // not viewed
+      this.showToastMessage();
     } else if (lastPageFlipTime >= lastFlipTimeFrame) {
-      // viewed in last time frame
-      console.log('Yes viewed, silently renewed!');
-      this.loanRenewResult.texts = null;
-      this.loanRenewResult.renewNow = true;
+      this.result.texts = null;
+      this.result.renewNow = true; // viewed in last time frame
     }
 
-    return this.loanRenewResult;
+    return this.result;
   }
 
   // save page changed time in indexedDB
@@ -109,27 +109,34 @@ export class OneHourLoanRenew {
     });
   }
 
-  async setLoanRenewedTime() {
-    try {
-      // last 15 min if used flipped a page.
-      const expireDate = this.changeTime(
-        new Date(),
-        this.loanRenewConfig.totalTime,
-        'add'
-      ); // 15 seconds
+  async showToastMessage() {
+    this.disconnectedInterval();
 
-      // set a value
-      await this.localCache.set({
-        key: `${this.identifier}-loanTime`,
-        value: expireDate, // expireDate time
-        ttl: Number(this.loanRenewConfig.totalTime),
+    const iaBookActions = document.querySelector('ia-book-actions').shadowRoot;
+    let toastTemplate =  iaBookActions.querySelector('toast-template')
+    if (!toastTemplate) {
+      toastTemplate = document.createElement('toast-template');
+    }
+    await iaBookActions.appendChild(toastTemplate);
+
+    // change remaining time on warning message
+    let remainingTime = this.loanRenewConfig.autoCheckAt;
+
+    this.timerMsgInterval = setInterval(() => {
+      remainingTime -= 1;
+
+      const config = new ToastConfig();
+      config.texts = this.result.texts?.replace(/#time/, remainingTime);
+      config.dismisOnClick = true;
+      toastTemplate.showToast({
+        config,
       });
 
-      // delete pageChangedTime when book is auto renew at nth minute
-      await this.localCache.delete(`${this.identifier}-pageChangedTime`);
-    } catch (error) {
-      console.log(error);
-    }
+      // clear the interval
+      if (remainingTime === 0 || this.result.renewNow === true) {
+        clearInterval(this.timerMsgInterval);
+      }
+    }, 1000);
   }
 
   changeTime(date, minutes, op) {

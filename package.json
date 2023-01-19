@@ -22,7 +22,7 @@
     "@internetarchive/local-cache": "^0.2.0",
     "@internetarchive/modal-manager": "^0.2.1",
     "@internetarchive/shared-resize-observer": "^0.2.0",
-    "@internetarchive/toast-manager": "0.0.1-alpha5",
+    "@internetarchive/toast-manager": "0.0.1-alpha8",
     "lit": "^2.2.1"
   },
   "devDependencies": {

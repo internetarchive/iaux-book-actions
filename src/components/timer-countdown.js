@@ -46,7 +46,10 @@ export default class TimerCountdown extends LitElement {
         );
       }
 
-      if (this.time === 0) clearInterval(this.timerInterval);
+      // clear interval if timer is < this.autoCheckAt
+      if (this.time < this.autoCheckAt) {
+        clearInterval(this.timerInterval);
+      }
     }, 1000);
   }
 
@@ -70,7 +73,7 @@ export default class TimerCountdown extends LitElement {
 
     return css`
       :host {
-        right: 0;
+        right: 5px;
         font-size: 14px;
         position: absolute;
       }
