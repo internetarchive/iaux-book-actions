@@ -224,7 +224,6 @@ export default class IABookActions extends LitElement {
     );
   }
 
-
   /**
    * Bind 1 hour loan auto renew,
    * There are two events we want to use,
@@ -247,7 +246,7 @@ export default class IABookActions extends LitElement {
      * 1. user turned book page after showing auto-returned warning message
      * 2. show warning message having remaining time
      */
-    this.addEventListener('IABookActions:loanRenew', async (event) => {
+    this.addEventListener('IABookActions:loanRenew', async event => {
       const eventDetails = event.detail;
 
       await this.autoLoanRenewChecker(false);
@@ -305,6 +304,9 @@ export default class IABookActions extends LitElement {
     }, timeLeft);
   }
 
+  /**
+   * Execute when loan is expired
+   */
   async browseHasExpired() {
     const currStatus = { ...this.lendingStatus, browsingExpired: true };
     this.lendingStatus = currStatus;
@@ -322,7 +324,7 @@ export default class IABookActions extends LitElement {
   }
 
   /**
-   * Reset timer animation after book renewed
+   * Reset timer animation state after book renewed
    */
   async resetTimerCountState() {
     const timerCountdown = this.shadowRoot.querySelector('timer-countdown');
@@ -338,7 +340,7 @@ export default class IABookActions extends LitElement {
       animationCircle.style.animationName = 'circletimer';
     }, 100);
   }
-  
+
   render() {
     if (this.barType === 'title') {
       return html`<section class="lending-wrapper">
@@ -393,12 +395,18 @@ export default class IABookActions extends LitElement {
     `;
   }
 
+  /**
+   * Execute after auto loan renewed is completed
+   * - show success message
+   * - then change the remaining time
+   * - reset timer state
+   */
   async handleLoanAutoRenewed() {
     if (this.loanRenewResult.renewNow) {
       this.tokenPoller.disconnectedInterval();
       await this.loanRenewHelper.showToastMessage();
-      await this.browseHasRenew(); // alot 20 seconds
-      await this.resetTimerCountState(); //  change timer position
+      await this.browseHasRenew();
+      await this.resetTimerCountState();
     }
   }
 

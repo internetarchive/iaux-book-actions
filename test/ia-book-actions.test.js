@@ -182,9 +182,7 @@ describe('Borrow status actions', () => {
       },
     ];
 
-    expect(el.primaryTitle).to.equal(
-      ''
-    );
+    expect(el.primaryTitle).to.equal('');
     expect(el.primaryActions.length).to.equal(2);
     expect(el.primaryActions[0].text).to.equal('Log In and Borrow');
     expect(el.primaryActions[0].text).to.equal(expectedPrimaryActions[0].text);

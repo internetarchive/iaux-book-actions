@@ -26,12 +26,12 @@ export class LoanRenewHelper {
 
   handleLoanRenew() {
     try {
-      if (this.hasPageChanged) { // when user click/flip on book page
+      if (this.hasPageChanged) {
+        // when user click/flip on book page
         this.showToastMessage();
         return this.pageChanged(); // user clicked on page
-      } else {
-        return this.autoChecker(); // auto checker at 50th minute
       }
+      return this.autoChecker(); // auto checker at 50th minute
     } catch (error) {
       console.log(error);
     }
@@ -73,7 +73,7 @@ export class LoanRenewHelper {
   /**
    * Trigger this function when countdown hits last 10 minutes
    * - if user is open new page, just renew the loan at last 10th minute
-   * 
+   *
    * @returns {this.result}
    */
   async autoChecker() {
@@ -124,7 +124,7 @@ export class LoanRenewHelper {
    */
   async showToastMessage() {
     const iaBookActions = document.querySelector('ia-book-actions').shadowRoot;
-    let toastTemplate =  iaBookActions.querySelector('toast-template')
+    let toastTemplate = iaBookActions.querySelector('toast-template');
     if (!toastTemplate) {
       toastTemplate = document.createElement('toast-template');
     }
@@ -141,10 +141,10 @@ export class LoanRenewHelper {
   /**
    * Helper function to get time difference
    *
-   * @param {Date} date 
-   * @param {Number} minutes 
+   * @param {Date} date
+   * @param {Number} minutes
    * @param {String} op
-   * 
+   *
    * @returns {Object} Date
    */
   changeTime(date, minutes, op) {

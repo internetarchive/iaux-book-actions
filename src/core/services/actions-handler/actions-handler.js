@@ -293,7 +293,7 @@ export default class ActionsHandler extends LitElement {
    */
   async setBrowseTimeSession() {
     try {
-      const totalTime = this.loanRenewConfig.totalTime;
+      const { totalTime } = this.loanRenewConfig;
       const expireDate = new Date(new Date().getTime() + totalTime * 1000);
 
       // set a value
