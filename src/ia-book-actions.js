@@ -3,7 +3,6 @@ import { html, css, LitElement, nothing } from 'lit';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
 import { ModalConfig } from '@internetarchive/modal-manager';
-import { ToastConfig } from '@internetarchive/toast-manager';
 import { LocalCache } from '@internetarchive/local-cache';
 
 import './components/collapsible-action-group.js';
@@ -90,7 +89,6 @@ export default class IABookActions extends LitElement {
 
   disconnectedCallback() {
     this.tokenPoller.disconnectedInterval();
-    this.loanRenewHelper.disconnectedInterval();
     window?.Sentry?.captureMessage('disconnectedCallback');
     this.disconnectResizeObserver();
   }
@@ -120,88 +118,6 @@ export default class IABookActions extends LitElement {
       this.disconnectResizeObserver();
       this.setupResizeObserver();
     }
-  }
-
-  bindLoanRenewEvents() {
-    // dispatched this event from bookreader page changed
-    window.addEventListener('BookReader:pageChanged', () => {
-      // early return if book is not browsed (1 hour borrow)
-      if (this.borrowType === 'browsed') {
-        this.autoLoanRenewChecker(true);
-      }
-
-      return nothing;
-    });
-
-    // dispatched this event from timer-countdown
-    this.addEventListener('IABookActions:loanRenew', () => {
-      this.autoLoanRenewChecker(false);
-    });
-  }
-
-  async autoLoanRenewChecker(hasPageChanged = false) {
-    if (this.loanRenewHelper) {
-      this.loanRenewHelper.disconnectedInterval();
-    }
-
-    this.loanRenewHelper = new LoanRenewHelper(
-      hasPageChanged,
-      this.identifier,
-      this.localCache,
-      this.loanRenewConfig
-    );
-
-    await this.loanRenewHelper.handleLoanRenew();
-    this.loanRenewResult = this.loanRenewHelper.result;
-  }
-
-  async browseHasExpired() {
-    const currStatus = { ...this.lendingStatus, browsingExpired: true };
-    this.lendingStatus = currStatus;
-
-    // remove respected key:value for loan-renew
-    await this.localCache.delete(`${this.identifier}-loanTime`);
-    await this.localCache.delete(`${this.identifier}-pageChangedTime`);
-
-    // show message after browsed book is expired.
-    this.loanRenewResult.renewNow = false;
-    this.loanRenewResult.texts =
-      'This book has been automatically returned due to inactivity.';
-
-    this.loanRenewHelper?.showToastMessage();
-  }
-
-  async browseHasRenew() {
-    const loanTime = await this.localCache.get(`${this.identifier}-loanTime`);
-    const secondsLeft = (loanTime - new Date()) / 1000; // different in seconds
-
-    const currStatus = {
-      ...this.lendingStatus,
-      user_has_browsed: true,
-      browsingExpired: false,
-      secondsLeftOnLoan: secondsLeft,
-    };
-    this.lendingStatus = currStatus;
-
-    this.startBrowseTimer();
-  }
-
-  startBrowseTimer() {
-    clearTimeout(this.browserTimer);
-
-    const {
-      browsingExpired,
-      user_has_browsed,
-      secondsLeftOnLoan,
-    } = this.lendingStatus;
-    if (!user_has_browsed || browsingExpired) {
-      return;
-    }
-
-    const timeLeft = secondsLeftOnLoan * 1000;
-    this.browserTimer = setTimeout(() => {
-      this.browseHasExpired();
-    }, timeLeft);
   }
 
   /** SharedObserver resize handler */
@@ -299,22 +215,130 @@ export default class IABookActions extends LitElement {
     setTimeout(
       () => {
         this.startLoanTokenPoller();
-        this.changeTimerCountState();
+
+        if (!this.loanRenewResult.renewNow) {
+          this.resetTimerCountState();
+        }
       },
       this.loanRenewResult.renewNow ? this.tokenDelay : 100
     );
   }
 
-  async changeTimerCountState() {
-    // this.time = this.time;
-    this.shadowRoot
-      ?.querySelector('timer-countdown')
-      ?.style?.setProperty(
-        '--secondsLeft',
-        `${Number(this.lendingStatus.secondsLeftOnLoan)}s`
-      );
+
+  /**
+   * Bind 1 hour loan auto renew,
+   * There are two events we want to use,
+   * 1. BookReader:pageChanged - dispatched from bookreader side
+   * 2. IABookActions:loanRenew - dispatched from timer-countdown component
+   */
+  bindLoanRenewEvents() {
+    // dispatched this event from bookreader page changed
+    window.addEventListener('BookReader:pageChanged', () => {
+      // early return if book is not browsed (1 hour borrow)
+      if (this.borrowType === 'browsed') {
+        this.autoLoanRenewChecker(true);
+      }
+
+      return nothing;
+    });
+
+    /**
+     * this event dispatched from timer-countdown component for:
+     * 1. user turned book page after showing auto-returned warning message
+     * 2. show warning message having remaining time
+     */
+    this.addEventListener('IABookActions:loanRenew', async (event) => {
+      const eventDetails = event.detail;
+
+      await this.autoLoanRenewChecker(false);
+
+      // show warning message with remaining time to auto returned it.
+      if (this.loanRenewHelper.result.renewNow === false) {
+        this.loanRenewHelper.result.timeLeft = eventDetails.timeLeft;
+        this.loanRenewHelper.showToastMessage();
+      }
+    });
   }
 
+  async autoLoanRenewChecker(hasPageChanged = false) {
+    this.loanRenewHelper = new LoanRenewHelper(
+      hasPageChanged,
+      this.identifier,
+      this.localCache,
+      this.loanRenewConfig
+    );
+
+    await this.loanRenewHelper.handleLoanRenew();
+    this.loanRenewResult = this.loanRenewHelper.result;
+  }
+
+  async browseHasRenew() {
+    const loanTime = await this.localCache.get(`${this.identifier}-loanTime`);
+    const secondsLeft = (loanTime - new Date()) / 1000; // different in seconds
+
+    const currStatus = {
+      ...this.lendingStatus,
+      user_has_browsed: true,
+      browsingExpired: false,
+      secondsLeftOnLoan: secondsLeft,
+    };
+    this.lendingStatus = currStatus;
+
+    this.startBrowseTimer();
+  }
+
+  startBrowseTimer() {
+    clearTimeout(this.browserTimer);
+
+    const {
+      browsingExpired,
+      user_has_browsed,
+      secondsLeftOnLoan,
+    } = this.lendingStatus;
+    if (!user_has_browsed || browsingExpired) {
+      return;
+    }
+
+    const timeLeft = secondsLeftOnLoan * 1000;
+    this.browserTimer = setTimeout(() => {
+      this.browseHasExpired();
+    }, timeLeft);
+  }
+
+  async browseHasExpired() {
+    const currStatus = { ...this.lendingStatus, browsingExpired: true };
+    this.lendingStatus = currStatus;
+
+    // remove respected key:value for loan-renew
+    await this.localCache.delete(`${this.identifier}-loanTime`);
+    await this.localCache.delete(`${this.identifier}-pageChangedTime`);
+
+    // show message after browsed book is expired.
+    this.loanRenewResult.renewNow = false;
+    this.loanRenewResult.texts =
+      'This book has been automatically returned due to inactivity.';
+
+    this.loanRenewHelper.showToastMessage();
+  }
+
+  /**
+   * Reset timer animation after book renewed
+   */
+  async resetTimerCountState() {
+    const timerCountdown = this.shadowRoot.querySelector('timer-countdown');
+    const animationCircle = timerCountdown.shadowRoot.querySelector('.circle');
+
+    timerCountdown.style?.setProperty(
+      '--secondsLeft',
+      `${Number(this.lendingStatus.secondsLeftOnLoan)}s`
+    );
+
+    animationCircle.style.animationName = 'none';
+    setTimeout(() => {
+      animationCircle.style.animationName = 'circletimer';
+    }, 100);
+  }
+  
   render() {
     if (this.barType === 'title') {
       return html`<section class="lending-wrapper">
@@ -372,10 +396,9 @@ export default class IABookActions extends LitElement {
   async handleLoanAutoRenewed() {
     if (this.loanRenewResult.renewNow) {
       this.tokenPoller.disconnectedInterval();
-      this.loanRenewHelper.showToastMessage();
-      await this.changeTimerCountState();
-      await this.browseHasRenew();
-      console.log('renewed!');
+      await this.loanRenewHelper.showToastMessage();
+      await this.browseHasRenew(); // alot 20 seconds
+      await this.resetTimerCountState(); //  change timer position
     }
   }
 

@@ -3,7 +3,6 @@ import { ToastConfig } from '@internetarchive/toast-manager';
 
 /**
  * This class is used to determine if use is eligible for auto renew loan.
- *
  */
 export class LoanRenewHelper {
   constructor(hasPageChanged, identifier, localCache, loanRenewConfig) {
@@ -14,8 +13,6 @@ export class LoanRenewHelper {
 
     // messages for auto return machenism
     this.loanRenewMessage = 'This book has been renewed for 1 hour.';
-    this.loanReturnMessage =
-      'This book has been automatically returned due to inactivity.';
     this.loanReturnWarning =
       'This book will be automatically returned in #time minutes unless you turn a page.';
 
@@ -23,18 +20,14 @@ export class LoanRenewHelper {
     this.result = {
       texts: null,
       renewNow: false,
+      timeLeft: 0,
     };
-
-    this.timerMsgInterval = undefined
-  }
-
-  disconnectedInterval() {
-    clearInterval(this.timerMsgInterval);
   }
 
   handleLoanRenew() {
     try {
       if (this.hasPageChanged) { // when user click/flip on book page
+        this.showToastMessage();
         return this.pageChanged(); // user clicked on page
       } else {
         return this.autoChecker(); // auto checker at 50th minute
@@ -46,6 +39,13 @@ export class LoanRenewHelper {
     return nothing;
   }
 
+  /**
+   * Trigger this function when user has browsed a book and change the post
+   * - every time user change the page, we set current time in indexedDB
+   * - also check if need to auto renew current loan
+   *
+   * @returns {this.result}
+   */
   async pageChanged() {
     const {
       totalTime, // 60
@@ -64,13 +64,18 @@ export class LoanRenewHelper {
     if (currentTime >= lastTimeFrame) {
       this.result.texts = this.loanRenewMessage;
       this.result.renewNow = true;
-      this.showToastMessage();
     }
 
     this.setPageChangedTime();
     return this.result;
   }
 
+  /**
+   * Trigger this function when countdown hits last 10 minutes
+   * - if user is open new page, just renew the loan at last 10th minute
+   * 
+   * @returns {this.result}
+   */
   async autoChecker() {
     const currentTime = new Date();
     const { pageChangedInLast } = this.loanRenewConfig;
@@ -93,14 +98,16 @@ export class LoanRenewHelper {
       this.result.renewNow = false; // not viewed
       this.showToastMessage();
     } else if (lastPageFlipTime >= lastFlipTimeFrame) {
-      this.result.texts = null;
+      this.result.texts = '';
       this.result.renewNow = true; // viewed in last time frame
     }
 
     return this.result;
   }
 
-  // save page changed time in indexedDB
+  /**
+   * set current time in indexedDB when user viewed a new page
+   */
   async setPageChangedTime() {
     await this.localCache.set({
       key: `${this.identifier}-pageChangedTime`,
@@ -109,9 +116,13 @@ export class LoanRenewHelper {
     });
   }
 
+  /**
+   * Show toast messages on some specific loan renew features. e.g.
+   * - show success msg when book is auto renewed
+   * - show success msg when book is auto returned
+   * - show warninig msg when book is about to auto returned
+   */
   async showToastMessage() {
-    this.disconnectedInterval();
-
     const iaBookActions = document.querySelector('ia-book-actions').shadowRoot;
     let toastTemplate =  iaBookActions.querySelector('toast-template')
     if (!toastTemplate) {
@@ -119,26 +130,23 @@ export class LoanRenewHelper {
     }
     await iaBookActions.appendChild(toastTemplate);
 
-    // change remaining time on warning message
-    let remainingTime = this.loanRenewConfig.autoCheckAt;
-
-    this.timerMsgInterval = setInterval(() => {
-      remainingTime -= 1;
-
-      const config = new ToastConfig();
-      config.texts = this.result.texts?.replace(/#time/, remainingTime);
-      config.dismisOnClick = true;
-      toastTemplate.showToast({
-        config,
-      });
-
-      // clear the interval
-      if (remainingTime === 0 || this.result.renewNow === true) {
-        clearInterval(this.timerMsgInterval);
-      }
-    }, 1000);
+    const config = new ToastConfig();
+    config.texts = this.result.texts?.replace(/#time/, this.result.timeLeft);
+    config.dismisOnClick = true;
+    toastTemplate.showToast({
+      config,
+    });
   }
 
+  /**
+   * Helper function to get time difference
+   *
+   * @param {Date} date 
+   * @param {Number} minutes 
+   * @param {String} op
+   * 
+   * @returns {Object} Date
+   */
   changeTime(date, minutes, op) {
     if (date === undefined) return nothing;
 

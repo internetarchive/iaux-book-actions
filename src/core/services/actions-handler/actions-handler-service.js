@@ -54,25 +54,12 @@ export default async function ActionsHandlerService(options) {
 
         // The response is a Response instance.
         // You parse the data into a useable format using `.json()`
-        setTimeout(
-          () => {
-            return response.json();
-          },
-          baseHost == '/demo/' ? 2000 : 10
-        );
+        return response.json();
       })
       .then(data => {
         // `data` is the parsed version of the JSON returned from the above endpoint.
         if (!data?.error) {
-          setTimeout(
-            () => {
-              if (option?.action == 'renew_loan') {
-                console.log('renew_executed');
-              }
-              option?.success(data);
-            },
-            baseHost == '/demo/' ? 2000 : 10
-          );
+          option?.success(data);
         } else {
           option?.error(data);
         }

@@ -32,13 +32,15 @@ export default class TimerCountdown extends LitElement {
     this.timerInterval = setInterval(() => {
       this.time -= 1;
 
-      // execute 50th minute check
-      if (Math.round(this.time) === this.autoCheckAt) {
-        // cldar at here and < 10...
+      // execute from last 10th minute to 0th minute
+      // - 10th - to check if user has viewed
+      // - till 0th - to show warning msg with remaining time to auto returned
+      if (Math.round(this.time) <= this.autoCheckAt) {
         this.dispatchEvent(
           new CustomEvent('IABookActions:loanRenew', {
             detail: {
               hasPageChanged: false,
+              timeLeft: Math.round(this.time),
             },
             bubbles: true,
             composed: true,
@@ -63,7 +65,6 @@ export default class TimerCountdown extends LitElement {
       >
         <circle class="circle" cx="50" cy="50" r="50" />
       </svg>
-      <span>${Math.round(this.time)}</span>
     `;
   }
 
