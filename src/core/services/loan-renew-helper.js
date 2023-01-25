@@ -148,7 +148,7 @@ export class LoanRenewHelper {
    * @returns {Object} Date
    */
   changeTime(date, minutes, op) {
-    if (date === undefined) return nothing;
+    if (date === undefined) return null;
 
     if (op === 'sub') {
       return new Date(date.getTime() - minutes * 1000);

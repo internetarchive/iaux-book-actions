@@ -58,8 +58,8 @@ export default class TimerCountdown extends LitElement {
   render() {
     return html`
       <svg
-        width="30"
-        height="30"
+        width="16"
+        height="16"
         viewBox="0 0 100 100"
         xmlns="http://www.w3.org/2000/svg"
       >
@@ -70,43 +70,40 @@ export default class TimerCountdown extends LitElement {
 
   static get styles() {
     const white = css`var(--white, #fff)`;
-    const secondsLeft = css`var(--secondsLeft, 60s)`;
+    const timerSecondsLeft = css`var(--timerSeconds, 6000s)`;
+    const timerStrokeLeft = css`var(--timerStroke, 315)`;
 
     return css`
       :host {
         right: 5px;
-        font-size: 14px;
         position: absolute;
       }
 
       @keyframes circletimer {
         0% {
-          stroke-dashoffset: 320;
-          stroke-dasharray: 320;
+          stroke-dashoffset: ${timerStrokeLeft};
+          stroke-dasharray: 315;
         }
         100% {
           stroke-dashoffset: 0;
-          stroke-dasharray: 320;
+          stroke-dasharray: 315;
         }
       }
 
       svg {
-        background-color: transparent;
-        position: absolute;
-        top: 50%;
-        right: 0;
+        background-color: ${white};
         border-radius: 50px;
         border: 2px solid ${white};
-        transform: translate(-50%, -50%) rotateZ(-90deg);
+        transform: rotateZ(-90deg);
       }
 
       svg .circle {
-        stroke: ${white};
+        stroke: #000;
         stroke-width: 100px;
-        fill: transparent;
-        stroke-dashoffset: 320;
+        fill: ${white};
+        stroke-dashoffset: 315;
         stroke-dasharray: 0;
-        animation: ${secondsLeft} circletimer linear;
+        animation: ${timerSecondsLeft} circletimer linear;
       }
     `;
   }

@@ -232,9 +232,8 @@ export default class IABookActions extends LitElement {
    */
   bindLoanRenewEvents() {
     // dispatched this event from bookreader page changed
-    window.addEventListener('BookReader:pageChanged', () => {
-      // early return if book is not browsed (1 hour borrow)
-      if (this.borrowType === 'browsed') {
+    window.addEventListener('BookReader:pageChanged', event => {
+      if (this.borrowType === 'browsed' && event.detail.hasPageChanged) {
         this.autoLoanRenewChecker(true);
       }
 
@@ -268,6 +267,7 @@ export default class IABookActions extends LitElement {
     );
 
     await this.loanRenewHelper.handleLoanRenew();
+    console.log(this.loanRenewResult);
     this.loanRenewResult = this.loanRenewHelper.result;
   }
 
@@ -327,12 +327,26 @@ export default class IABookActions extends LitElement {
    * Reset timer animation state after book renewed
    */
   async resetTimerCountState() {
+    const secondsLeft = Number(this.lendingStatus.secondsLeftOnLoan);
+
     const timerCountdown = this.shadowRoot.querySelector('timer-countdown');
     const animationCircle = timerCountdown.shadowRoot.querySelector('.circle');
 
+    // the perimeter of the circle
+    const circleStroke = 315;  // (π * 2 * radius)
+    const strokeDashOffset =
+      (secondsLeft / this.loanRenewConfig.totalTime) *
+      circleStroke;
+
+    // set seconds left in loan expire
     timerCountdown.style?.setProperty(
-      '--secondsLeft',
-      `${Number(this.lendingStatus.secondsLeftOnLoan)}s`
+      '--timerSeconds',
+      `${secondsLeft}s`
+    );
+    // set circle stroke offset left in loan expire
+    timerCountdown.style?.setProperty(
+      '--timerStroke',
+      `${Number(strokeDashOffset)}`
     );
 
     animationCircle.style.animationName = 'none';
