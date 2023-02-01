@@ -128,8 +128,9 @@
     iaBookActions.localCache = localCache;
     iaBookActions.loanRenewConfig = {
       totalTime: 20, // 60 second = 1 min
-      autoCheckAt: 15, // totalTime - 10th minute
-      pageChangedInLast: 15, // within last 15 second/minute 
+      autoCheckAt: 12, // totalTime - 10th minute
+      pageChangedInLast: 5, // within last 15 second/minute
+      env: 'dev', // dev/prod
     };
 
     let lendingStatus1 = iaBookActions.lendingStatus;
@@ -284,7 +285,7 @@
       // dispatch event to say book page has flipped
       document.querySelector('ia-book-actions').dispatchEvent(
         new CustomEvent('BookReader:pageChanged', {
-          detail: { hasPageChanged: true },
+          detail: { props: { hasPageChanged: true }},
           bubbles: true,
           composed: true,
         })

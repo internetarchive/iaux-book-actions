@@ -81,7 +81,7 @@ describe('Primary Actions data', () => {
     );
     const expectedPrimaryActions = [
       {
-        text: 'Borrow for 1 hour',
+        text: 'Borrow', // changed from 'Borrow for 1 hour'
         callback: () => {},
         className: 'ia-button primary',
       },
@@ -161,7 +161,7 @@ describe('Borrow status actions', () => {
 
     // removed available_to_borrow from lending bar
     expect(el.lendingStatus.available_to_borrow).to.be.false;
-    expect(el.primaryActions[0].text).to.equal('Borrow for 1 hour');
+    expect(el.primaryActions[0].text).to.equal('Borrow');
   });
 
   it('Check action for borrowable book without user', async () => {
@@ -251,7 +251,7 @@ describe('Browsing expired status', () => {
     await aTimeout(1500); // wait for 1.5 second
     await el.updateComplete;
 
-    expect(el.primaryActions[0].text).to.equal('Borrow again');
+    expect(el.primaryActions[0].text).to.equal('Borrow');
   });
 
   it('Expiring book cancels interval & emits event', async () => {
@@ -286,7 +286,7 @@ describe('Browsing expired status', () => {
     await aTimeout(1500); // wait for 1.5 sec
 
     expect(eventReceived).to.equal(true);
-    expect(el.primaryActions[0].text).to.equal('Borrow again');
+    expect(el.primaryActions[0].text).to.equal('Borrow');
     expect(el.tokenPoller.loanTokenInterval).to.equal(undefined);
   });
 });

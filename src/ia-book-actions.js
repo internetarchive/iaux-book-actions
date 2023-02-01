@@ -3,6 +3,7 @@ import { html, css, LitElement, nothing } from 'lit';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
 import { ModalConfig } from '@internetarchive/modal-manager';
+import { ToastConfig } from '@internetarchive/toast-manager';
 import { LocalCache } from '@internetarchive/local-cache';
 
 import './components/collapsible-action-group.js';
@@ -73,6 +74,7 @@ export default class IABookActions extends LitElement {
     // loan auto renew
     this.browserTimer = undefined;
     this.loanRenewConfig = {};
+    this.suppressToast = false;
 
     /**
      * contains loan auto-renew response
@@ -82,6 +84,7 @@ export default class IABookActions extends LitElement {
     this.loanRenewResult = {
       texts: null,
       renewNow: false,
+      timeLeft: 0,
     };
 
     this._shadowRoot = this.attachShadow({ mode: 'open' });
@@ -231,13 +234,26 @@ export default class IABookActions extends LitElement {
    * 2. IABookActions:loanRenew - dispatched from timer-countdown component
    */
   bindLoanRenewEvents() {
-    // dispatched this event from bookreader page changed
+    /**
+     * dispatched this event from bookreader page changed
+     */
     window.addEventListener('BookReader:pageChanged', event => {
-      if (this.borrowType === 'browsed' && event.detail.hasPageChanged) {
+      if (this.borrowType === 'browsed' && event.detail.props.hasPageChanged) {
+        console.log('actual page changed executed!')
         this.autoLoanRenewChecker(true);
       }
 
       return nothing;
+    });
+
+    /**
+     * Detech click-event on document to close toast-template
+     */
+    document.addEventListener('click', () => {
+      if (this.loanRenewHelper && this.loanRenewResult.timeLeft > 0) {
+        console.log('1');
+        this.suppressToast = true;
+      }
     });
 
     /**
@@ -246,14 +262,12 @@ export default class IABookActions extends LitElement {
      * 2. show warning message having remaining time
      */
     this.addEventListener('IABookActions:loanRenew', async event => {
-      const eventDetails = event.detail;
-
       await this.autoLoanRenewChecker(false);
 
       // show warning message with remaining time to auto returned it.
-      if (this.loanRenewHelper.result.renewNow === false) {
-        this.loanRenewHelper.result.timeLeft = eventDetails.timeLeft;
-        this.loanRenewHelper.showToastMessage();
+      if (this.loanRenewResult.renewNow === false) {
+        this.loanRenewResult.timeLeft = event.detail.timeLeft;
+        this.showToastMessage();
       }
     });
   }
@@ -269,6 +283,24 @@ export default class IABookActions extends LitElement {
     await this.loanRenewHelper.handleLoanRenew();
     console.log(this.loanRenewResult);
     this.loanRenewResult = this.loanRenewHelper.result;
+  }
+
+  async showToastMessage() {
+    if (this.suppressToast) return false;
+
+    const iaBookActions = document.querySelector('ia-book-actions').shadowRoot;
+    let toastTemplate = iaBookActions.querySelector('toast-template');
+    if (!toastTemplate) {
+      toastTemplate = document.createElement('toast-template');
+    }
+    await iaBookActions.appendChild(toastTemplate);
+
+    const config = new ToastConfig();
+    config.texts = this.loanRenewResult.texts?.replace(/#time/, this.loanRenewResult.timeLeft);
+    config.dismisOnClick = true;
+    toastTemplate.showToast({
+      config,
+    });
   }
 
   async browseHasRenew() {
@@ -320,7 +352,8 @@ export default class IABookActions extends LitElement {
     this.loanRenewResult.texts =
       'This book has been automatically returned due to inactivity.';
 
-    this.loanRenewHelper.showToastMessage();
+    this.suppressToast = false;
+    this.showToastMessage();
   }
 
   /**
@@ -377,8 +410,8 @@ export default class IABookActions extends LitElement {
   get timerCountdownTemplate() {
     return this.borrowType === 'browsed'
       ? html`<timer-countdown
-          .time=${Number(this.lendingStatus.secondsLeftOnLoan)}
-          .autoCheckAt=${this.loanRenewConfig.autoCheckAt}
+          .timeLeftOnLoan=${Number(this.lendingStatus.secondsLeftOnLoan)}
+          .loanRenewConfig=${this.loanRenewConfig}
         ></timer-countdown>`
       : nothing;
   }
@@ -418,7 +451,9 @@ export default class IABookActions extends LitElement {
   async handleLoanAutoRenewed() {
     if (this.loanRenewResult.renewNow) {
       this.tokenPoller.disconnectedInterval();
-      await this.loanRenewHelper.showToastMessage();
+
+      this.suppressToast = false;
+      await this.showToastMessage();
       await this.browseHasRenew();
       await this.resetTimerCountState();
     }

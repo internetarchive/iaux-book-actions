@@ -3,15 +3,15 @@ import { html, css, LitElement } from 'lit';
 export default class TimerCountdown extends LitElement {
   static get properties() {
     return {
-      time: { type: Number },
-      autoCheckAt: { type: Number },
+      timeLeftOnLoan: { type: Number },
+      loanRenewConfig: { type: Object },
     };
   }
 
   constructor() {
     super();
-    this.time = 0;
-    this.autoCheckAt = 0;
+    this.timeLeftOnLoan = 0;
+    this.loanRenewConfig = 0;
 
     // private props
     this.timerInterval = undefined;
@@ -22,7 +22,7 @@ export default class TimerCountdown extends LitElement {
   }
 
   updated(changed) {
-    if (changed.has('time') && this.time > 0) {
+    if (changed.has('timeLeftOnLoan') && this.timeLeftOnLoan > 0) {
       clearInterval(this.timerInterval);
       this.timerCountdown();
     }
@@ -30,17 +30,17 @@ export default class TimerCountdown extends LitElement {
 
   timerCountdown() {
     this.timerInterval = setInterval(() => {
-      this.time -= 1;
+      this.timeLeftOnLoan -= 1;
 
       // execute from last 10th minute to 0th minute
       // - 10th - to check if user has viewed
       // - till 0th - to show warning msg with remaining time to auto returned
-      if (Math.round(this.time) <= this.autoCheckAt) {
+      if (Math.round(this.timeLeftOnLoan) <= this.loanRenewConfig.autoCheckAt) {
         this.dispatchEvent(
           new CustomEvent('IABookActions:loanRenew', {
             detail: {
               hasPageChanged: false,
-              timeLeft: Math.round(this.time),
+              timeLeft: Math.round(this.timeLeftOnLoan),
             },
             bubbles: true,
             composed: true,
@@ -48,8 +48,8 @@ export default class TimerCountdown extends LitElement {
         );
       }
 
-      // clear interval if timer is < this.autoCheckAt
-      if (this.time < this.autoCheckAt) {
+      // clear interval if timer is < this.loanRenewConfig.autoCheckAt
+      if (this.timeLeftOnLoan < this.loanRenewConfig.autoCheckAt) {
         clearInterval(this.timerInterval);
       }
     }, 1000);
@@ -65,6 +65,7 @@ export default class TimerCountdown extends LitElement {
       >
         <circle class="circle" cx="50" cy="50" r="50" />
       </svg>
+      <span>${Math.round(this.timeLeftOnLoan)}</span>
     `;
   }
 

@@ -20,15 +20,12 @@ export class LoanRenewHelper {
     this.result = {
       texts: null,
       renewNow: false,
-      timeLeft: 0,
     };
   }
 
   handleLoanRenew() {
     try {
       if (this.hasPageChanged) {
-        // when user click/flip on book page
-        this.showToastMessage();
         return this.pageChanged(); // user clicked on page
       }
       return this.autoChecker(); // auto checker at 50th minute
@@ -64,6 +61,7 @@ export class LoanRenewHelper {
     if (currentTime >= lastTimeFrame) {
       this.result.texts = this.loanRenewMessage;
       this.result.renewNow = true;
+      console.log('manually renewed by page click!');
     }
 
     this.setPageChangedTime();
@@ -96,10 +94,11 @@ export class LoanRenewHelper {
     ) {
       this.result.texts = this.loanReturnWarning;
       this.result.renewNow = false; // not viewed
-      this.showToastMessage();
+      console.log('not viewed!');
     } else if (lastPageFlipTime >= lastFlipTimeFrame) {
       this.result.texts = '';
       this.result.renewNow = true; // viewed in last time frame
+      console.log('silently renewed!');
     }
 
     return this.result;
@@ -123,6 +122,8 @@ export class LoanRenewHelper {
    * - show warninig msg when book is about to auto returned
    */
   async showToastMessage() {
+    if (this.hideToast) return false;
+
     const iaBookActions = document.querySelector('ia-book-actions').shadowRoot;
     let toastTemplate = iaBookActions.querySelector('toast-template');
     if (!toastTemplate) {
