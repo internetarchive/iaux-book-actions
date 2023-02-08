@@ -1,5 +1,4 @@
 import { nothing } from 'lit';
-import { ToastConfig } from '@internetarchive/toast-manager';
 
 /**
  * This class is used to determine if use is eligible for auto renew loan.
@@ -112,30 +111,6 @@ export class LoanRenewHelper {
       key: `${this.identifier}-pageChangedTime`,
       value: new Date(), // current time
       ttl: Number(this.loanRenewConfig.totalTime),
-    });
-  }
-
-  /**
-   * Show toast messages on some specific loan renew features. e.g.
-   * - show success msg when book is auto renewed
-   * - show success msg when book is auto returned
-   * - show warninig msg when book is about to auto returned
-   */
-  async showToastMessage() {
-    if (this.hideToast) return false;
-
-    const iaBookActions = document.querySelector('ia-book-actions').shadowRoot;
-    let toastTemplate = iaBookActions.querySelector('toast-template');
-    if (!toastTemplate) {
-      toastTemplate = document.createElement('toast-template');
-    }
-    await iaBookActions.appendChild(toastTemplate);
-
-    const config = new ToastConfig();
-    config.texts = this.result.texts?.replace(/#time/, this.result.timeLeft);
-    config.dismisOnClick = true;
-    toastTemplate.showToast({
-      config,
     });
   }
 

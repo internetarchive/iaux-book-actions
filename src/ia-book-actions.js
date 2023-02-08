@@ -219,7 +219,7 @@ export default class IABookActions extends LitElement {
       () => {
         this.startLoanTokenPoller();
 
-        if (!this.loanRenewResult.renewNow) {
+        if (this.borrowType === 'browsed' && !this.loanRenewResult.renewNow) {
           this.resetTimerCountState();
         }
       },
@@ -237,9 +237,9 @@ export default class IABookActions extends LitElement {
     /**
      * dispatched this event from bookreader page changed
      */
-    window.addEventListener('BookReader:pageChanged', event => {
-      if (this.borrowType === 'browsed' && event.detail.props.hasPageChanged) {
-        console.log('actual page changed executed!')
+    window.addEventListener('BookReader:userAction', event => {
+      if (this.borrowType === 'browsed') {
+        console.log('user-action executed!');
         this.autoLoanRenewChecker(true);
       }
 
@@ -285,8 +285,14 @@ export default class IABookActions extends LitElement {
     this.loanRenewResult = this.loanRenewHelper.result;
   }
 
+  /**
+   * Show toast messages on some specific loan renew features. e.g.
+   * - show success msg when book is auto renewed
+   * - show success msg when book is auto returned
+   * - show warninig msg when book is about to auto returned
+   */
   async showToastMessage() {
-    if (this.suppressToast) return false;
+    if (this.suppressToast) return;
 
     const iaBookActions = document.querySelector('ia-book-actions').shadowRoot;
     let toastTemplate = iaBookActions.querySelector('toast-template');
@@ -296,7 +302,10 @@ export default class IABookActions extends LitElement {
     await iaBookActions.appendChild(toastTemplate);
 
     const config = new ToastConfig();
-    config.texts = this.loanRenewResult.texts?.replace(/#time/, this.loanRenewResult.timeLeft);
+    config.texts = this.loanRenewResult.texts?.replace(
+      /#time/,
+      this.loanRenewResult.timeLeft
+    );
     config.dismisOnClick = true;
     toastTemplate.showToast({
       config,
@@ -360,28 +369,23 @@ export default class IABookActions extends LitElement {
    * Reset timer animation state after book renewed
    */
   async resetTimerCountState() {
+    const timerCountdown = this._shadowRoot.querySelector('timer-countdown');
+    if (!timerCountdown) return;
+
     const secondsLeft = Number(this.lendingStatus.secondsLeftOnLoan);
-
-    const timerCountdown = this.shadowRoot.querySelector('timer-countdown');
-    const animationCircle = timerCountdown.shadowRoot.querySelector('.circle');
-
-    // the perimeter of the circle
-    const circleStroke = 315;  // (π * 2 * radius)
     const strokeDashOffset =
-      (secondsLeft / this.loanRenewConfig.totalTime) *
-      circleStroke;
+      (secondsLeft / this.loanRenewConfig.totalTime) * 315;
 
     // set seconds left in loan expire
-    timerCountdown.style?.setProperty(
-      '--timerSeconds',
-      `${secondsLeft}s`
-    );
+    timerCountdown.style?.setProperty('--timerSeconds', `${secondsLeft}s`);
+
     // set circle stroke offset left in loan expire
     timerCountdown.style?.setProperty(
       '--timerStroke',
-      `${Number(strokeDashOffset)}`
+      `${Number(strokeDashOffset)}` // the perimeter of the circle = (π * 2 * radius)
     );
 
+    const animationCircle = timerCountdown.shadowRoot.querySelector('.circle');
     animationCircle.style.animationName = 'none';
     setTimeout(() => {
       animationCircle.style.animationName = 'circletimer';
