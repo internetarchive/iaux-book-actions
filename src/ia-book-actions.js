@@ -60,7 +60,7 @@ export default class IABookActions extends LitElement {
     this.sharedObserver = undefined;
     this.disableActionGroup = false;
     this.modal = undefined;
-    this.tokenDelay = 120000; // 2 minutes
+    this.tokenDelay = 120; // in seconds
 
     // private props
     this.primaryActions = [];
@@ -156,6 +156,8 @@ export default class IABookActions extends LitElement {
   /** End SharedObserver resize handler */
 
   async setupLendingToolbarActions() {
+    this.suppressToast = false;
+
     this.lendingOptions = new GetLendingActions(
       this.userid,
       this.identifier,
@@ -223,7 +225,7 @@ export default class IABookActions extends LitElement {
           this.resetTimerCountState();
         }
       },
-      this.loanRenewResult.renewNow ? this.tokenDelay : 100
+      this.loanRenewResult.renewNow ? this.tokenDelay * 1000 : 100
     );
   }
 
@@ -237,7 +239,7 @@ export default class IABookActions extends LitElement {
     /**
      * dispatched this event from bookreader page changed
      */
-    window.addEventListener('BookReader:userAction', event => {
+    window.addEventListener('BookReader:userAction', () => {
       if (this.borrowType === 'browsed') {
         console.log('user-action executed!');
         this.autoLoanRenewChecker(true);
@@ -281,7 +283,7 @@ export default class IABookActions extends LitElement {
     );
 
     await this.loanRenewHelper.handleLoanRenew();
-    console.log(this.loanRenewResult);
+    // console.log(this.loanRenewResult.timeLeft);
     this.loanRenewResult = this.loanRenewHelper.result;
   }
 
@@ -302,8 +304,8 @@ export default class IABookActions extends LitElement {
     await iaBookActions.appendChild(toastTemplate);
 
     const config = new ToastConfig();
-    config.texts = this.loanRenewResult.texts?.replace(
-      /#time/,
+    config.texts = this.loanRenewHelper?.getMessageTexts(
+      this.loanRenewResult.texts,
       this.loanRenewResult.timeLeft
     );
     config.dismisOnClick = true;
@@ -339,10 +341,9 @@ export default class IABookActions extends LitElement {
       return;
     }
 
-    const timeLeft = secondsLeftOnLoan * 1000;
     this.browserTimer = setTimeout(() => {
       this.browseHasExpired();
-    }, timeLeft);
+    }, secondsLeftOnLoan * 1000);
   }
 
   /**
@@ -460,6 +461,7 @@ export default class IABookActions extends LitElement {
       await this.showToastMessage();
       await this.browseHasRenew();
       await this.resetTimerCountState();
+      this.startLoanTokenPoller();
     }
   }
 
@@ -494,7 +496,7 @@ export default class IABookActions extends LitElement {
       this.borrowType,
       successCallback,
       errorCallback,
-      this.tokenDelay // 1000 ms = 1 sec
+      this.tokenDelay // in seconds
     );
   }
 

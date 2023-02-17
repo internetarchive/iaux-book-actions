@@ -13,7 +13,7 @@ export class LoanRenewHelper {
     // messages for auto return machenism
     this.loanRenewMessage = 'This book has been renewed for 1 hour.';
     this.loanReturnWarning =
-      'This book will be automatically returned in #time minutes unless you turn a page.';
+      'This book will be automatically returned in #time #unitsOfTime unless you turn a page.';
 
     // private props
     this.result = {
@@ -93,7 +93,7 @@ export class LoanRenewHelper {
     ) {
       this.result.texts = this.loanReturnWarning;
       this.result.renewNow = false; // not viewed
-      console.log('not viewed!');
+      // console.log('not viewed!');
     } else if (lastPageFlipTime >= lastFlipTimeFrame) {
       this.result.texts = '';
       this.result.renewNow = true; // viewed in last time frame
@@ -112,6 +112,36 @@ export class LoanRenewHelper {
       value: new Date(), // current time
       ttl: Number(this.loanRenewConfig.totalTime),
     });
+  }
+
+  /**
+   * Texts we want to show in toast template including remaining time
+   * - eg. 1 minute, 50 seconds
+   *
+   * @param {String} texts
+   * @param {Number} time
+   *
+   * @returns {String} // texts will be appear in toast template
+   */
+  getMessageTexts(texts, time) {
+    let unitOfTime = 'second';
+
+    let toastTexts = texts;
+    let timeLeft = time;
+
+    if (timeLeft > 60) {
+      unitOfTime = 'minute';
+      timeLeft = Math.floor(timeLeft / 60);
+    }
+
+    // replace remaining time
+    toastTexts = toastTexts?.replace(/#time/, timeLeft);
+
+    // replace unitsOfTime eg second vs seconds / minute vs /minutes
+    return toastTexts?.replace(
+      /#unitsOfTime/,
+      timeLeft !== 1 ? `${unitOfTime}s` : unitOfTime
+    );
   }
 
   /**

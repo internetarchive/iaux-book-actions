@@ -11,7 +11,7 @@ export default class TimerCountdown extends LitElement {
   constructor() {
     super();
     this.timeLeftOnLoan = 0;
-    this.loanRenewConfig = 0;
+    this.loanRenewConfig = {};
 
     // private props
     this.timerInterval = undefined;
@@ -29,30 +29,36 @@ export default class TimerCountdown extends LitElement {
   }
 
   timerCountdown() {
-    this.timerInterval = setInterval(() => {
-      this.timeLeftOnLoan -= 1;
+    // execute interval in each second in-case of dev environment
+    this.timerInterval = setInterval(
+      () => {
+        this.timeLeftOnLoan -= this.loanRenewConfig.env === 'dev' ? 1 : 60;
 
-      // execute from last 10th minute to 0th minute
-      // - 10th - to check if user has viewed
-      // - till 0th - to show warning msg with remaining time to auto returned
-      if (Math.round(this.timeLeftOnLoan) <= this.loanRenewConfig.autoCheckAt) {
-        this.dispatchEvent(
-          new CustomEvent('IABookActions:loanRenew', {
-            detail: {
-              hasPageChanged: false,
-              timeLeft: Math.round(this.timeLeftOnLoan),
-            },
-            bubbles: true,
-            composed: true,
-          })
-        );
-      }
+        // execute from last 10th minute to 0th minute
+        // - 10th - to check if user has viewed
+        // - till 0th - to show warning msg with remaining time to auto returned
+        if (
+          Math.round(this.timeLeftOnLoan) <= this.loanRenewConfig.autoCheckAt
+        ) {
+          this.dispatchEvent(
+            new CustomEvent('IABookActions:loanRenew', {
+              detail: {
+                hasPageChanged: false,
+                timeLeft: Math.round(this.timeLeftOnLoan),
+              },
+              bubbles: true,
+              composed: true,
+            })
+          );
+        }
 
-      // clear interval if timer is < this.loanRenewConfig.autoCheckAt
-      if (this.timeLeftOnLoan < this.loanRenewConfig.autoCheckAt) {
-        clearInterval(this.timerInterval);
-      }
-    }, 1000);
+        // clear interval if timer is < this.loanRenewConfig.autoCheckAt
+        if (this.timeLeftOnLoan < this.loanRenewConfig.autoCheckAt) {
+          clearInterval(this.timerInterval);
+        }
+      },
+      this.loanRenewConfig.env === 'dev' ? 1000 : 60000
+    );
   }
 
   render() {

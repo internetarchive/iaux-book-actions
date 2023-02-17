@@ -15,7 +15,7 @@ import * as Cookies from '../doc-cookies.js';
 export default class ActionsHandler extends LitElement {
   constructor() {
     super();
-    this.ajaxTimeout = 6000;
+    this.ajaxTimeout = 6; // in seconds
 
     this.bindEvents();
   }
@@ -262,7 +262,7 @@ export default class ActionsHandler extends LitElement {
     // redirection on details page after 5 seconds because borrowing book takes time to create item creation.
     setTimeout(() => {
       URLHelper.goToUrl(redirectTo, true);
-    }, this.ajaxTimeout);
+    }, this.ajaxTimeout * 1000);
   }
 
   // save consecutive loan count for borrow
