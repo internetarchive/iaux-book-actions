@@ -129,10 +129,10 @@
 
     let isDevBox = true;
     iaBookActions.loanRenewConfig = {
-      totalTime: isDevBox ? 120 : 3600, // 60 second = 1 min
-      autoCheckAt: isDevBox ? 115 : 3540, // at last 10th minute
+      totalTime: isDevBox ? 20 : 3600, // 60 second = 1 min
+      autoCheckAt: isDevBox ? 15 : 3540, // at last 10th minute
       pageChangedInLast: isDevBox ? 80 : 900, // within last 15 second/minute
-      env: isDevBox ? 'dev' : 'prod',
+      isDevBox: isDevBox,
     };
 
     let lendingStatus1 = iaBookActions.lendingStatus;

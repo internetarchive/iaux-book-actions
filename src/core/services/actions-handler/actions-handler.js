@@ -103,12 +103,12 @@ export default class ActionsHandler extends LitElement {
   handleBrowseIt() {
     const action = 'browse_book';
     this.dispatchToggleActionGroup();
-    this.setBrowseTimeSession();
 
     ActionsHandlerService({
       action,
       identifier: this.identifier,
       success: () => {
+        this.setBrowseTimeSession();
         this.handleReadItNow();
       },
       error: data => {

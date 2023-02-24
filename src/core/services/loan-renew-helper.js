@@ -26,8 +26,9 @@ export class LoanRenewHelper {
     try {
       if (this.hasPageChanged) {
         return this.pageChanged(); // user clicked on page
+      } else {
+        return this.autoChecker(); // auto checker at last 10th minute
       }
-      return this.autoChecker(); // auto checker at 50th minute
     } catch (error) {
       console.log(error);
     }
@@ -57,7 +58,7 @@ export class LoanRenewHelper {
     );
 
     // if user viewed new page in last 10 minutes, renew immediately
-    if (currentTime >= lastTimeFrame) {
+    if (lastTimeFrame !== null && currentTime >= lastTimeFrame) {
       this.result.texts = this.loanRenewMessage;
       this.result.renewNow = true;
       console.log('manually renewed by page click!');
@@ -68,33 +69,31 @@ export class LoanRenewHelper {
   }
 
   /**
-   * Trigger this function when countdown hits last 10 minutes
-   * - if user is open new page, just renew the loan at last 10th minute
+   * Trigger this function when countdown hits at last 10th minute
+   * - if user is active, just renew the loan at last 10th minute
    *
    * @returns {this.result}
    */
   async autoChecker() {
-    const currentTime = new Date();
     const { pageChangedInLast } = this.loanRenewConfig;
-    const lastPageFlipTime = await this.localCache.get(
+    const pageChangedTime = await this.localCache.get(
       `${this.identifier}-pageChangedTime`
     );
 
-    // last 15 min if used flipped a page.
-    const lastFlipTimeFrame = this.changeTime(
-      currentTime,
+    // in last 15 min if user make any activity.
+    const pageChangeTimeFrame = this.changeTime(
+      new Date(),
       pageChangedInLast,
       'sub'
     ); // 15 seconds
 
     if (
-      lastPageFlipTime === undefined ||
-      lastPageFlipTime <= lastFlipTimeFrame
+      pageChangedTime === undefined ||
+      pageChangedTime <= pageChangeTimeFrame
     ) {
       this.result.texts = this.loanReturnWarning;
       this.result.renewNow = false; // not viewed
-      // console.log('not viewed!');
-    } else if (lastPageFlipTime >= lastFlipTimeFrame) {
+    } else if (pageChangedTime >= pageChangeTimeFrame) {
       this.result.texts = '';
       this.result.renewNow = true; // viewed in last time frame
       console.log('silently renewed!');

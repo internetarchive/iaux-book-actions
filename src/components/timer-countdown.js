@@ -32,19 +32,20 @@ export default class TimerCountdown extends LitElement {
     // execute interval in each second in-case of dev environment
     this.timerInterval = setInterval(
       () => {
-        this.timeLeftOnLoan -= this.loanRenewConfig.env === 'dev' ? 1 : 60;
+        this.timeLeftOnLoan -= this.loanRenewConfig.isDevBox ? 1 : 60;
+        const timeLeft = Math.round(this.timeLeftOnLoan);
 
         // execute from last 10th minute to 0th minute
         // - 10th - to check if user has viewed
         // - till 0th - to show warning msg with remaining time to auto returned
         if (
-          Math.round(this.timeLeftOnLoan) <= this.loanRenewConfig.autoCheckAt
+          timeLeft <= this.loanRenewConfig.autoCheckAt
         ) {
           this.dispatchEvent(
             new CustomEvent('IABookActions:loanRenew', {
               detail: {
                 hasPageChanged: false,
-                timeLeft: Math.round(this.timeLeftOnLoan),
+                timeLeft: timeLeft,
               },
               bubbles: true,
               composed: true,
@@ -52,12 +53,13 @@ export default class TimerCountdown extends LitElement {
           );
         }
 
-        // clear interval if timer is < this.loanRenewConfig.autoCheckAt
-        if (this.timeLeftOnLoan < this.loanRenewConfig.autoCheckAt) {
-          clearInterval(this.timerInterval);
+        // clear interval
+        if (timeLeft <= 1) {
+          // clearInterval(this.timerInterval);
+          console.log('cleared timer interval');
         }
       },
-      this.loanRenewConfig.env === 'dev' ? 1000 : 60000
+      this.loanRenewConfig.isDevBox ? 1000 : 60000
     );
   }
 

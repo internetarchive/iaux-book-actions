@@ -253,7 +253,7 @@ export default class IABookActions extends LitElement {
      */
     document.addEventListener('click', () => {
       if (this.loanRenewHelper && this.loanRenewResult.timeLeft > 0) {
-        console.log('1');
+        console.log('clicked-outside');
         this.suppressToast = true;
       }
     });
@@ -283,7 +283,6 @@ export default class IABookActions extends LitElement {
     );
 
     await this.loanRenewHelper.handleLoanRenew();
-    // console.log(this.loanRenewResult.timeLeft);
     this.loanRenewResult = this.loanRenewHelper.result;
   }
 
@@ -350,6 +349,8 @@ export default class IABookActions extends LitElement {
    * Execute when loan is expired
    */
   async browseHasExpired() {
+    clearTimeout(this.browserTimer);
+
     const currStatus = { ...this.lendingStatus, browsingExpired: true };
     this.lendingStatus = currStatus;
 
@@ -461,7 +462,6 @@ export default class IABookActions extends LitElement {
       await this.showToastMessage();
       await this.browseHasRenew();
       await this.resetTimerCountState();
-      this.startLoanTokenPoller();
     }
   }
 
@@ -527,6 +527,20 @@ export default class IABookActions extends LitElement {
 
     if (errorMsg) this.showErrorModal(errorMsg, action);
 
+    // if error related to loan token
+    // - clear tokenPoller interval
+    // - set user_has_browsed to `false`
+    if (action === 'create_token') {
+      this.tokenPoller.disconnectedInterval();
+
+      const currStatus = {
+        ...this.lendingStatus,
+        user_has_browsed: false,
+        available_to_browse: true,
+      };
+      this.lendingStatus = currStatus;
+    }
+
     // update action bar state if book is not available to browse or borrow.
     if (errorMsg && errorMsg.match(/not available to borrow/gm)) {
       let currStatus = this.lendingStatus;
@@ -582,7 +596,8 @@ export default class IABookActions extends LitElement {
           href="mailto:info@archive.org?subject=Help: cannot access my borrowed book: ${this
             .identifier}"
           >info@archive.org</a
-        >`;
+        ><br /><br />
+        errorLog: ${errorMsg}`;
     }
 
     this.modal.showModal({

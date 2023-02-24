@@ -12,7 +12,7 @@ export class LoanTokenPoller {
     this.borrowType = borrowType;
     this.successCallback = successCallback; // callback function to be called after loan token is created
     this.errorCallback = errorCallback; // callback function to be called after loan token is created
-    this.pollerDelay = pollerDelay; // value in ms (1000 ms = 1 sec)
+    this.pollerDelay = pollerDelay; // value in seconds
 
     this.loanTokenInterval = undefined;
     this.enableBookAccess();
@@ -57,7 +57,7 @@ export class LoanTokenPoller {
       if (this.borrowType !== 'adminBorrowed') {
         this.loanTokenInterval = setInterval(() => {
           this.handleLoanTokenPoller();
-        }, this.pollerDelay);
+        }, this.pollerDelay * 1000);
       }
 
       // event category and action for browsing book access
