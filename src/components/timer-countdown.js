@@ -1,4 +1,5 @@
 import { html, css, LitElement } from 'lit';
+import { sentryLogs } from '../core/config/sentry-events.js';
 
 export default class TimerCountdown extends LitElement {
   static get properties() {
@@ -38,14 +39,12 @@ export default class TimerCountdown extends LitElement {
         // execute from last 10th minute to 0th minute
         // - 10th - to check if user has viewed
         // - till 0th - to show warning msg with remaining time to auto returned
-        if (
-          timeLeft <= this.loanRenewConfig.autoCheckAt
-        ) {
+        if (timeLeft <= this.loanRenewConfig.autoCheckAt) {
           this.dispatchEvent(
             new CustomEvent('IABookActions:loanRenew', {
               detail: {
                 hasPageChanged: false,
-                timeLeft: timeLeft,
+                timeLeft,
               },
               bubbles: true,
               composed: true,
@@ -55,8 +54,9 @@ export default class TimerCountdown extends LitElement {
 
         // clear interval
         if (timeLeft <= 1) {
-          // clearInterval(this.timerInterval);
-          console.log('cleared timer interval');
+          clearInterval(this.timerInterval);
+          window?.Sentry?.captureMessage(sentryLogs.clearOneHourTimer);
+          console.log(sentryLogs.clearOneHourTimer);
         }
       },
       this.loanRenewConfig.isDevBox ? 1000 : 60000

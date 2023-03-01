@@ -14,6 +14,7 @@ import './components/timer-countdown.js';
 
 import { GetLendingActions } from './core/services/get-lending-actions.js';
 import { mobileContainerWidth } from './core/config/constants.js';
+import { sentryLogs } from './core/config/sentry-events.js';
 import { LoanTokenPoller } from './core/services/loan-token-poller.js';
 import { LoanRenewHelper } from './core/services/loan-renew-helper.js';
 
@@ -92,7 +93,7 @@ export default class IABookActions extends LitElement {
 
   disconnectedCallback() {
     this.tokenPoller.disconnectedInterval();
-    window?.Sentry?.captureMessage('disconnectedCallback');
+    window?.Sentry?.captureMessage(sentryLogs.disconnectedCallback);
     this.disconnectResizeObserver();
   }
 
@@ -184,9 +185,7 @@ export default class IABookActions extends LitElement {
       this.lendingStatus?.browsingExpired;
     if (hasExpired) {
       if (!this.tokenPoller) {
-        window?.Sentry?.captureMessage(
-          'setupLendingToolbarActions hasExpired - no tokenPoller'
-        );
+        window?.Sentry?.captureMessage(sentryLogs.bookWasExpired);
       }
       this.tokenPoller?.disconnectedInterval();
       /** Global event - always fire */
@@ -197,6 +196,8 @@ export default class IABookActions extends LitElement {
           composed: true,
         })
       );
+
+      // early return if book is already expired
       return;
     }
 
@@ -255,6 +256,14 @@ export default class IABookActions extends LitElement {
       if (this.loanRenewHelper && this.loanRenewResult.timeLeft > 0) {
         console.log('clicked-outside');
         this.suppressToast = true;
+      }
+
+      // reload when user click on page after it EXPIRED
+      const hasExpired =
+        'browsingExpired' in this.lendingStatus &&
+        this.lendingStatus?.browsingExpired;
+      if (hasExpired) {
+        window.location?.reload();
       }
     });
 
@@ -365,6 +374,9 @@ export default class IABookActions extends LitElement {
 
     this.suppressToast = false;
     this.showToastMessage();
+
+    window?.Sentry?.captureMessage(sentryLogs.browseHasExpired);
+    console.log(sentryLogs.browseHasExpired);
   }
 
   /**
@@ -462,6 +474,14 @@ export default class IABookActions extends LitElement {
       await this.showToastMessage();
       await this.browseHasRenew();
       await this.resetTimerCountState();
+
+      window?.Sentry?.captureMessage(`${sentryLogs.bookHasRenewed}`);
+
+      console.log(sentryLogs.bookHasRenewed, {
+        loanRenewResult: this.loanRenewResult,
+        browseHasRenew: this.lendingStatus.secondsLeftOnLoan,
+        resetTimerCountState: this._shadowRoot.querySelector('timer-countdown'),
+      });
     }
   }
 
@@ -470,7 +490,7 @@ export default class IABookActions extends LitElement {
    */
   startLoanTokenPoller() {
     if (this.tokenPoller) {
-      window?.Sentry?.captureMessage('startLoanTokenPoller clearing interval');
+      window?.Sentry?.captureMessage(sentryLogs.clearTokenPoller);
       this.tokenPoller.disconnectedInterval();
     }
     const successCallback = () => {

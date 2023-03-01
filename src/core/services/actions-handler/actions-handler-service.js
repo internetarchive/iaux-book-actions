@@ -1,4 +1,5 @@
 /* eslint-disable */
+import { sentryLogs } from '../../config/sentry-events.js';
 
 /**
  * Helper to call loan service
@@ -64,7 +65,9 @@ export default async function ActionsHandlerService(options) {
           option?.error(data);
         }
       });
-  } catch (err) {
-    window?.Sentry?.captureException(err);
+  } catch (error) {
+    window?.Sentry?.captureException(
+      `${sentryLogs.actionsHandlerService} - Error: ${error}`
+    );
   }
 }

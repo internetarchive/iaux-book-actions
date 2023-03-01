@@ -72,6 +72,10 @@
       margin: 2px;
     }
 
+    fieldset {
+      display: inline-grid;
+    }
+
     body.modal-manager-open {
       overflow: hidden;
     }
@@ -129,9 +133,9 @@
 
     let isDevBox = true;
     iaBookActions.loanRenewConfig = {
-      totalTime: isDevBox ? 20 : 3600, // 60 second = 1 min
-      autoCheckAt: isDevBox ? 15 : 3540, // at last 10th minute
-      pageChangedInLast: isDevBox ? 80 : 900, // within last 15 second/minute
+      totalTime: isDevBox ? 13 : 3600, // 60 second = 1 min
+      autoCheckAt: isDevBox ? 10 : 3540, // at last 10th minute
+      pageChangedInLast: isDevBox ? 5 : 900, // within last 15 second/minute
       isDevBox: isDevBox,
     };
 

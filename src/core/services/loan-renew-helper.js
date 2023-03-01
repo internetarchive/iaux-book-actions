@@ -26,9 +26,8 @@ export class LoanRenewHelper {
     try {
       if (this.hasPageChanged) {
         return this.pageChanged(); // user clicked on page
-      } else {
-        return this.autoChecker(); // auto checker at last 10th minute
       }
+      return this.autoChecker(); // auto checker at last 10th minute
     } catch (error) {
       console.log(error);
     }

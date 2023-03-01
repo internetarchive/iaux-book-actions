@@ -1,6 +1,8 @@
 import { LitElement } from 'lit';
 
 import { URLHelper } from '../../config/url-helper.js';
+import { sentryLogs } from '../../config/sentry-events.js';
+
 import ActionsHandlerService from './actions-handler-service.js';
 import * as Cookies from '../doc-cookies.js';
 
@@ -283,7 +285,9 @@ export default class ActionsHandler extends LitElement {
       // set new value
       Cookies.setItem(storageKey, newCount, date, '/');
     } catch (error) {
-      window?.Sentry?.captureException(error);
+      window?.Sentry?.captureException(
+        `${sentryLogs.setConsecutiveLoanCounts} - Error: ${error}`
+      );
       this.sendEvent('Cookies-Error-Actions', error);
     }
   }
