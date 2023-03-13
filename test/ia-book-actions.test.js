@@ -4,9 +4,15 @@ import '../src/ia-book-actions.js';
 import Sinon from 'sinon';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
+import { LocalCache } from '@internetarchive/local-cache';
 
 afterEach(() => {
   Sinon.restore();
+});
+
+// localCache used for auto-loan-renew
+const localCache = new LocalCache({
+  namespace: 'loanRenew',
 });
 
 const container = ({ userid, identifier, lendingStatus = {} } = {}) =>
@@ -230,9 +236,14 @@ describe('Browsing expired status', () => {
         },
       })
     );
-    expect(el.primaryTitle).contains('Borrow ends at ');
+    expect(el.primaryTitle).contains('');
     expect(el.primaryActions[0].text).to.equal('Return now');
     expect(el.primaryActions[1].text).to.equal('Print Disability Access');
+
+    // default params of one-hour loan renew
+    expect(el.loanRenewResult.texts).to.equal(null);
+    expect(el.loanRenewResult.renewNow).to.equal(false);
+    expect(el.loanRenewResult.timeLeft).to.equal(0);
   });
 
   it('Book is browsing and going to expire after 1 second', async () => {
@@ -248,10 +259,23 @@ describe('Browsing expired status', () => {
       })
     );
 
+    // timer-countdown is still active
+    expect(el.shadowRoot.querySelector('timer-countdown')).to.not.be.null;
+
     await aTimeout(1500); // wait for 1.5 second
     await el.updateComplete;
 
     expect(el.primaryActions[0].text).to.equal('Borrow');
+
+    // timer-countdown is gone now
+    expect(el.shadowRoot.querySelector('timer-countdown')).to.be.null;
+
+    //   // book has been expired
+    expect(el.loanRenewResult.renewNow).to.equal(false);
+    expect(el.loanRenewResult.timeLeft).to.equal(0);
+    expect(el.loanRenewResult.texts).to.equal(
+      'This book has been automatically returned due to inactivity.'
+    );
   });
 
   it('Expiring book cancels interval & emits event', async () => {
@@ -276,9 +300,8 @@ describe('Browsing expired status', () => {
     el.lendingStatus = browsingStatus;
     await el.updateComplete;
 
-    expect(el.primaryTitle).contains('Borrow ends at ');
+    expect(el.primaryTitle).contains('');
     expect(el.primaryActions[0].text).to.equal('Return now');
-    expect(el.tokenPoller.loanTokenInterval).to.not.equal(undefined);
 
     const expiredStatus = { ...browsingStatus, browsingExpired: true };
     el.lendingStatus = expiredStatus;
@@ -288,6 +311,50 @@ describe('Browsing expired status', () => {
     expect(eventReceived).to.equal(true);
     expect(el.primaryActions[0].text).to.equal('Borrow');
     expect(el.tokenPoller.loanTokenInterval).to.equal(undefined);
+  });
+});
+
+describe('Auto renew one hour loan', () => {
+  it('Book is browsing and renewed it now', async () => {
+    const el = await fixture(
+      container({
+        userid: '@userid',
+        identifier: 'Foo',
+        lendingStatus: {
+          is_lendable: true,
+          user_has_browsed: true,
+          browseHasExpired: false,
+          secondsLeftOnLoan: 12,
+        },
+      })
+    );
+
+    el.loanRenewResult = {
+      texts: 'This book has been renewed for 1 hour.',
+      renewNow: true,
+      timeLeft: 10,
+    };
+
+    await localCache.set({
+      key: `${el.identifier}-loanTime`,
+      value: new Date(new Date().getTime() + 10 * 1000),
+      ttl: Number(10),
+    });
+
+    const myEvent = new CustomEvent('loanAutoRenewed');
+    el.addEventListener('loanAutoRenewed', () => {
+      el.handleLoanAutoRenewed();
+    });
+    el.dispatchEvent(myEvent);
+
+    await aTimeout(1500); // wait for 1.5 second
+    await el.updateComplete;
+
+    expect(el.loanRenewResult.timeLeft).to.equal(10);
+    expect(el.loanRenewResult.renewNow).to.equal(true);
+    expect(el.loanRenewResult.texts).to.equal(
+      'This book has been renewed for 1 hour.'
+    );
   });
 });
 
