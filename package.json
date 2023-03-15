@@ -20,9 +20,9 @@
   "dependencies": {
     "@internetarchive/icon-info": "^1.2.6",
     "@internetarchive/local-cache": "^0.2.0",
-    "@internetarchive/modal-manager": "^0.2.6",
+    "@internetarchive/modal-manager": "^0.2.8",
     "@internetarchive/shared-resize-observer": "^0.2.0",
-    "@internetarchive/toast-manager": "0.0.1-alpha9",
+    "@internetarchive/toast-manager": "0.1.0",
     "lit": "^2.5.0"
   },
   "devDependencies": {
@@ -45,10 +45,10 @@
   },
   "eslintConfig": {
     "rules": {
-      "no-console": "off",
-      "no-unused-expressions": "off",
-      "class-methods-use-this": "off",
-      "lit-a11y/click-events-have-key-events": "off"
+      "no-console": "warn",
+      "no-unused-expressions": "warn",
+      "class-methods-use-this": "warn",
+      "lit-a11y/click-events-have-key-events": "warn"
     },
     "extends": [
       "@open-wc/eslint-config",
@@ -60,7 +60,9 @@
     "arrowParens": "avoid"
   },
   "husky": {
-    "hooks": {}
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
   },
   "lint-staged": {
     "*.js": [

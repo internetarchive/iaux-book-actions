@@ -17,7 +17,12 @@ import * as Cookies from '../doc-cookies.js';
 export default class ActionsHandler extends LitElement {
   constructor() {
     super();
-    this.ajaxTimeout = 6; // in seconds
+
+    /**
+     * wait untill borrow is complete, then refresh the page
+     * @type {number}
+     */
+    this.waitUntillBorrowComplete = 6; // in seconds
 
     this.bindEvents();
   }
@@ -126,7 +131,6 @@ export default class ActionsHandler extends LitElement {
       action,
       identifier: this.identifier,
       success: data => {
-        // success analytics by isa?
         this.setBrowseTimeSession();
         this.dispatchEvent(
           new CustomEvent('loanAutoRenewed', {
@@ -264,7 +268,7 @@ export default class ActionsHandler extends LitElement {
     // redirection on details page after 5 seconds because borrowing book takes time to create item creation.
     setTimeout(() => {
       URLHelper.goToUrl(redirectTo, true);
-    }, this.ajaxTimeout * 1000);
+    }, this.waitUntillBorrowComplete * 1000);
   }
 
   // save consecutive loan count for borrow
@@ -297,14 +301,15 @@ export default class ActionsHandler extends LitElement {
    */
   async setBrowseTimeSession() {
     try {
-      const { totalTime } = this.loanRenewConfig;
-      const expireDate = new Date(new Date().getTime() + totalTime * 1000);
+      const expireDate = new Date(
+        new Date().getTime() + this.loanTotalTime * 1000
+      );
 
       // set a value
       await this.localCache.set({
         key: `${this.identifier}-loanTime`,
         value: expireDate,
-        ttl: Number(totalTime),
+        ttl: Number(this.loanTotalTime),
       });
 
       // delete pageChangedTime when book is auto renew at nth minute

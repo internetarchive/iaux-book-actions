@@ -17,7 +17,7 @@ export class LoanTokenPoller {
     this.pollerDelay = pollerDelay; // value in seconds
 
     this.loanTokenInterval = undefined;
-    this.enableBookAccess();
+    this.bookAccessed();
   }
 
   disconnectedInterval() {
@@ -33,7 +33,7 @@ export class LoanTokenPoller {
     // }
   }
 
-  async enableBookAccess() {
+  async bookAccessed() {
     let consecutiveLoanCounts = 1;
 
     if (this.borrowType) {
@@ -73,7 +73,7 @@ export class LoanTokenPoller {
       this.sendEvent(category, action);
     } else {
       window?.Sentry?.captureMessage(
-        `${sentryLogs.enableBookAccess} - not borrowed`
+        `${sentryLogs.bookAccessed} - not borrowed`
       );
 
       // if book is not browsed, just clear token polling interval

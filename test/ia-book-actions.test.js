@@ -241,9 +241,9 @@ describe('Browsing expired status', () => {
     expect(el.primaryActions[1].text).to.equal('Print Disability Access');
 
     // default params of one-hour loan renew
-    expect(el.loanRenewResult.texts).to.equal(null);
+    expect(el.loanRenewResult.texts).to.equal('');
     expect(el.loanRenewResult.renewNow).to.equal(false);
-    expect(el.loanRenewResult.timeLeft).to.equal(0);
+    expect(el.loanRenewResult.secondsLeft).to.equal(0);
   });
 
   it('Book is browsing and going to expire after 1 second', async () => {
@@ -272,7 +272,7 @@ describe('Browsing expired status', () => {
 
     //   // book has been expired
     expect(el.loanRenewResult.renewNow).to.equal(false);
-    expect(el.loanRenewResult.timeLeft).to.equal(0);
+    expect(el.loanRenewResult.secondsLeft).to.equal(0);
     expect(el.loanRenewResult.texts).to.equal(
       'This book has been automatically returned due to inactivity.'
     );
@@ -332,7 +332,7 @@ describe('Auto renew one hour loan', () => {
     el.loanRenewResult = {
       texts: 'This book has been renewed for 1 hour.',
       renewNow: true,
-      timeLeft: 10,
+      secondsLeft: 10,
     };
 
     await localCache.set({
@@ -350,11 +350,11 @@ describe('Auto renew one hour loan', () => {
     await aTimeout(1500); // wait for 1.5 second
     await el.updateComplete;
 
-    expect(el.loanRenewResult.timeLeft).to.equal(10);
-    expect(el.loanRenewResult.renewNow).to.equal(true);
     expect(el.loanRenewResult.texts).to.equal(
       'This book has been renewed for 1 hour.'
     );
+    expect(el.loanRenewResult.renewNow).to.equal(true);
+    expect(el.loanRenewResult.secondsLeft).to.equal(10);
   });
 });
 

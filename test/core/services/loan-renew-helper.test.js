@@ -4,9 +4,9 @@ import { LocalCache } from '@internetarchive/local-cache';
 import { LoanRenewHelper } from '../../../src/core/services/loan-renew-helper.js';
 
 const identifier = 'booBar';
-const loanRenewConfig = {
-  totalTime: 13,
-  autoCheckAt: 10,
+const loanRenewTimeConfig = {
+  loanTotalTime: 13,
+  loanRenewAtLast: 10,
   pageChangedInLast: 12,
   isDevBox: true,
 };
@@ -19,8 +19,10 @@ const localCache = new LocalCache({
 beforeEach(async () => {
   await localCache.set({
     key: `${identifier}-loanTime`,
-    value: new Date(new Date().getTime() + loanRenewConfig.totalTime * 1000),
-    ttl: Number(loanRenewConfig.totalTime),
+    value: new Date(
+      new Date().getTime() + loanRenewTimeConfig.loanTotalTime * 1000
+    ),
+    ttl: Number(loanRenewTimeConfig.loanTotalTime),
   });
 });
 
@@ -31,14 +33,14 @@ describe('Loan Renew Determine', () => {
     await localCache.set({
       key: `${identifier}-pageChangedTime`,
       value: new Date(), // current time
-      ttl: Number(loanRenewConfig.totalTime),
+      ttl: Number(loanRenewTimeConfig.loanTotalTime),
     });
 
     const loanRenewHelper = new LoanRenewHelper(
       true, // hasPageChanged
       identifier,
       localCache,
-      loanRenewConfig
+      loanRenewTimeConfig
     );
     await loanRenewHelper.handleLoanRenew();
 
@@ -49,7 +51,7 @@ describe('Loan Renew Determine', () => {
     await localCache.set({
       key: `${identifier}-pageChangedTime`,
       value: new Date(), // current time
-      ttl: Number(loanRenewConfig.totalTime),
+      ttl: Number(loanRenewTimeConfig.loanTotalTime),
     });
 
     await aTimeout(1500);
@@ -58,7 +60,7 @@ describe('Loan Renew Determine', () => {
       false, // timer-countdown event
       identifier,
       localCache,
-      loanRenewConfig
+      loanRenewTimeConfig
     );
     await loanRenewHelper.handleLoanRenew();
 
@@ -70,12 +72,12 @@ describe('Loan Renew Determine', () => {
       false,
       identifier,
       localCache,
-      loanRenewConfig
+      loanRenewTimeConfig
     );
 
     const toastMsg = loanRenewHelper.getMessageTexts(
       loanRenewHelper.loanReturnWarning,
-      '65'
+      '65' // in seconds
     );
 
     expect(toastMsg).to.be.equal(

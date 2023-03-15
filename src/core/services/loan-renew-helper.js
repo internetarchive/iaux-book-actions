@@ -4,11 +4,11 @@ import { nothing } from 'lit';
  * This class is used to determine if use is eligible for auto renew loan.
  */
 export class LoanRenewHelper {
-  constructor(hasPageChanged, identifier, localCache, loanRenewConfig) {
+  constructor(hasPageChanged, identifier, localCache, loanRenewTimeConfig) {
     this.hasPageChanged = hasPageChanged;
     this.identifier = identifier;
     this.localCache = localCache;
-    this.loanRenewConfig = loanRenewConfig;
+    this.loanRenewTimeConfig = loanRenewTimeConfig;
 
     // messages for auto return machenism
     this.loanRenewMessage = 'This book has been renewed for 1 hour.';
@@ -44,15 +44,15 @@ export class LoanRenewHelper {
    */
   async pageChanged() {
     const {
-      totalTime, // 60
-      autoCheckAt, // 50
-    } = this.loanRenewConfig;
+      loanTotalTime, // 60
+      loanRenewAtLast, // 50
+    } = this.loanRenewTimeConfig;
     const currentTime = new Date();
     const loanTime = await this.localCache.get(`${this.identifier}-loanTime`);
 
     const lastTimeFrame = this.changeTime(
       loanTime,
-      totalTime - autoCheckAt,
+      loanTotalTime - loanRenewAtLast,
       'add'
     );
 
@@ -74,7 +74,7 @@ export class LoanRenewHelper {
    * @returns {this.result}
    */
   async autoChecker() {
-    const { pageChangedInLast } = this.loanRenewConfig;
+    const { pageChangedInLast } = this.loanRenewTimeConfig;
     const pageChangedTime = await this.localCache.get(
       `${this.identifier}-pageChangedTime`
     );
@@ -108,7 +108,7 @@ export class LoanRenewHelper {
     await this.localCache.set({
       key: `${this.identifier}-pageChangedTime`,
       value: new Date(), // current time
-      ttl: Number(this.loanRenewConfig.totalTime),
+      ttl: Number(this.loanRenewTimeConfig.loanTotalTime),
     });
   }
 
@@ -146,18 +146,18 @@ export class LoanRenewHelper {
    * Helper function to get time difference
    *
    * @param {Date} date
-   * @param {Number} minutes
-   * @param {String} op
+   * @param {Number} seconds
+   * @param {String} op - like sub, add, mul, sub
    *
    * @returns {Object} Date
    */
-  changeTime(date, minutes, op) {
+  changeTime(date, seconds, op) {
     if (date === undefined) return null;
 
     if (op === 'sub') {
-      return new Date(date.getTime() - minutes * 1000);
+      return new Date(date.getTime() - seconds * 1000);
     }
 
-    return new Date(date.getTime() + minutes * 1000);
+    return new Date(date.getTime() + seconds * 1000);
   }
 }

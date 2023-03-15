@@ -4,15 +4,31 @@ import { sentryLogs } from '../core/config/sentry-events.js';
 export default class TimerCountdown extends LitElement {
   static get properties() {
     return {
-      timeLeftOnLoan: { type: Number },
-      loanRenewConfig: { type: Object },
+      secondsLeftOnLoan: { type: Number }, // in seconds
+      loanRenewAtLast: { type: Number }, // in seconds
+      isDevBox: { type: Boolean },
     };
   }
 
   constructor() {
     super();
-    this.timeLeftOnLoan = 0;
-    this.loanRenewConfig = {};
+
+    /**
+     * seconds left in current time
+     * @type {number}
+     */
+    this.secondsLeftOnLoan = 0;
+
+    /**
+     * at the remaining time, we attempt to renew current loan
+     * @type {number}
+     */
+    this.loanRenewAtLast = 0;
+
+    /**
+     * @type {boolean}
+     */
+    this.isDevBox = false;
 
     // private props
     this.timerInterval = undefined;
@@ -23,44 +39,44 @@ export default class TimerCountdown extends LitElement {
   }
 
   updated(changed) {
-    if (changed.has('timeLeftOnLoan') && this.timeLeftOnLoan > 0) {
+    if (changed.has('secondsLeftOnLoan') && this.secondsLeftOnLoan > 0) {
       clearInterval(this.timerInterval);
       this.timerCountdown();
     }
   }
 
   timerCountdown() {
-    // execute interval in each second in-case of dev environment
-    this.timerInterval = setInterval(
-      () => {
-        this.timeLeftOnLoan -= this.loanRenewConfig.isDevBox ? 1 : 60;
-        const timeLeft = Math.round(this.timeLeftOnLoan);
+    // in-case of isDevBox, execute timer in each second instead of 60
+    const timerIntervalSeconds = this.isDevBox ? 1 : 60;
 
-        // execute from last 10th minute to 0th minute
-        // - 10th - to check if user has viewed
-        // - till 0th - to show warning msg with remaining time to auto returned
-        if (timeLeft <= this.loanRenewConfig.autoCheckAt) {
-          this.dispatchEvent(
-            new CustomEvent('IABookActions:loanRenew', {
-              detail: {
-                hasPageChanged: false,
-                timeLeft,
-              },
-              bubbles: true,
-              composed: true,
-            })
-          );
-        }
+    this.timerInterval = setInterval(() => {
+      // if this.isDevBox, just reduce seconds by 1 instead of 60 (1 min)
+      this.secondsLeftOnLoan -= timerIntervalSeconds;
+      const secondsLeft = Math.round(this.secondsLeftOnLoan);
 
-        // clear interval
-        if (timeLeft <= 1) {
-          clearInterval(this.timerInterval);
-          window?.Sentry?.captureMessage(sentryLogs.clearOneHourTimer);
-          console.log(sentryLogs.clearOneHourTimer);
-        }
-      },
-      this.loanRenewConfig.isDevBox ? 1000 : 60000
-    );
+      // execute from last 10th minute to 0th minute
+      // - 10th - to check if user has viewed
+      // - till 0th - to show warning msg with remaining time to auto expired
+      if (secondsLeft <= this.loanRenewAtLast) {
+        this.dispatchEvent(
+          new CustomEvent('IABookActions:loanRenew', {
+            detail: {
+              hasPageChanged: false,
+              secondsLeft,
+            },
+            bubbles: true,
+            composed: true,
+          })
+        );
+      }
+
+      // clear interval
+      if (secondsLeft <= 1) {
+        clearInterval(this.timerInterval);
+        window?.Sentry?.captureMessage(sentryLogs.clearOneHourTimer);
+        console.log(sentryLogs.clearOneHourTimer);
+      }
+    }, timerIntervalSeconds * 1000);
   }
 
   render() {
@@ -73,14 +89,15 @@ export default class TimerCountdown extends LitElement {
       >
         <circle class="circle" cx="50" cy="50" r="50" />
       </svg>
-      <span>${Math.round(this.timeLeftOnLoan)}</span>
+      <span class="sr-only"></span>
+      <span>${Math.round(this.secondsLeftOnLoan)}</span>
     `;
   }
 
   static get styles() {
     const white = css`var(--white, #fff)`;
-    const timerSecondsLeft = css`var(--timerSeconds, 6000s)`;
-    const timerStrokeLeft = css`var(--timerStroke, 315)`;
+    const timerSecondsLeft = css`var(--secondsLeftOnLoan, 6000s)`; //
+    const timerStrokeLeft = css`var(--strokeLeftOnLoan, 315)`;
 
     return css`
       :host {

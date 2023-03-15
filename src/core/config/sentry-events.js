@@ -1,5 +1,5 @@
 /**
- * Analytics categories and events. Used when building actions in
+ * sentry logs/messages we send for different actions....
  */
 export const sentryLogs = {
   disconnectedCallback: 'IABookActions:disconnectedCallback',
@@ -13,7 +13,7 @@ export const sentryLogs = {
     'IABookActions:startLoanTokenPoller - clearing token poller interval',
   clearOneHourTimer:
     'IABookActions:timerCountdown - one-hour timer interval cleared',
-  enableBookAccess: 'IABookActions:enableBookAccess',
+  bookAccessed: 'IABookActions:bookAccessed',
   handleLoanTokenPoller: 'IABookActions:handleLoanTokenPoller',
   setConsecutiveLoanCounts: 'IABookActions:setConsecutiveLoanCounts',
   actionsHandlerService: 'IABookActions:actionsHandlerService',
