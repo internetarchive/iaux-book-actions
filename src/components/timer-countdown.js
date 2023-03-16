@@ -79,6 +79,26 @@ export default class TimerCountdown extends LitElement {
     }, timerIntervalSeconds * 1000);
   }
 
+  /**
+   * get remaining time with timeunit
+   *
+   * @memberof TimerCountdown
+   * @return string
+   */
+  get remainingTime() {
+    let unitOfTime = 'second';
+    let timeLeft = Math.round(this.secondsLeftOnLoan);
+
+    if (timeLeft > 60) {
+      unitOfTime = 'minute';
+      timeLeft = Math.floor(timeLeft / 60);
+    }
+
+    return timeLeft !== 1
+      ? `${timeLeft} ${unitOfTime}s`
+      : `${timeLeft} ${unitOfTime}`;
+  }
+
   render() {
     return html`
       <svg
@@ -89,8 +109,8 @@ export default class TimerCountdown extends LitElement {
       >
         <circle class="circle" cx="50" cy="50" r="50" />
       </svg>
-      <span class="sr-only"></span>
-      <span>${Math.round(this.secondsLeftOnLoan)}</span>
+      <span class="sr-only">${this.remainingTime}</span>
+      <span>${this.remainingTime}</span>
     `;
   }
 
@@ -130,6 +150,17 @@ export default class TimerCountdown extends LitElement {
         stroke-dashoffset: 315;
         stroke-dasharray: 0;
         animation: ${timerSecondsLeft} circletimer linear;
+      }
+
+      .sr-only {
+        position: absolute;
+        left: -9999px;
+        width: 1px;
+        height: 1px;
+        margin: 0;
+        padding: 0;
+        border: none;
+        overflow: hidden;
       }
     `;
   }

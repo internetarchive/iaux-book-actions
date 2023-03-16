@@ -646,7 +646,7 @@ export default class IABookActions extends LitElement {
             .identifier}"
           >info@archive.org</a
         ><br /><br />
-        errorLog: ${errorMsg}`;
+        <code>errorLog: ${errorMsg}</code>`;
     }
 
     this.modal.showModal({
