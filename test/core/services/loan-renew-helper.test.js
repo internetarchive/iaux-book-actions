@@ -8,7 +8,6 @@ const loanRenewTimeConfig = {
   loanTotalTime: 13,
   loanRenewAtLast: 10,
   pageChangedInLast: 12,
-  isDevBox: true,
 };
 
 // localCache used for auto-loan-renew
