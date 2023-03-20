@@ -12,6 +12,7 @@ export default css`
   }
   .actiongroup {
     display: flex;
+    margin-right: 10px;
   }
   .action-buttons {
     display: inline-flex;
@@ -33,12 +34,12 @@ export default css`
   }
   .primary {
     background-color: ${whiteColor};
+    margin-right: 4px;
   }
   .primary,
   .secondary {
     position: relative;
     border-radius: 5px;
-    margin: 0 3px;
   }
   .primary .initial {
     border-radius: 4px 0 0 4px;

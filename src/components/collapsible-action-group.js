@@ -10,6 +10,10 @@ import CollapsibleActionGroupStyle from '../assets/styles/collapsible-action-gro
 import { tabletContainerWidth } from '../core/config/constants.js';
 import { purchaseIcon } from '../assets/data/purchase.js';
 import {
+  analyticsCategories,
+  analyticsActions,
+} from '../core/config/analytics-event-and-category.js';
+import {
   dropdownOpened,
   dropdownClosed,
 } from '../assets/data/dropdown-arrow.js';
@@ -28,6 +32,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
       dropdownArrow: { type: String },
       disabled: { type: Boolean },
       returnUrl: { type: String },
+      renewNow: { type: Boolean },
     };
   }
 
@@ -47,6 +52,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
     this.loaderIcon = 'https://archive.org/upload/images/tree/loading.gif';
     this.disabled = false;
     this.returnUrl = '';
+    this.renewNow = false;
   }
 
   updated(changed) {
@@ -56,6 +62,27 @@ export class CollapsibleActionGroup extends ActionsHandler {
     ) {
       this.resetActions();
     }
+
+    if (changed.has('renewNow') && this.renewNow === true) {
+      this.dispatchLoanRenewEvent();
+    }
+  }
+
+  // dispatch this event to loan renew handler
+  dispatchLoanRenewEvent() {
+    const { category, action } = {
+      category: analyticsCategories.browse,
+      action: analyticsActions.browseLoanRenew,
+    };
+
+    // listen in action-handler.js to execute ajax call on petabox.
+    this.dispatchEvent(
+      new CustomEvent('loanRenew', {
+        detail: {
+          event: { category, action },
+        },
+      })
+    );
   }
 
   /**

@@ -15,7 +15,7 @@
       font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     }
     #demo {
-      height: 50px;
+      height: 100px;
     }
     ia-book-actions {
       --white: #fff;
@@ -72,6 +72,10 @@
       margin: 2px;
     }
 
+    fieldset {
+      display: inline-grid;
+    }
+
     body.modal-manager-open {
       overflow: hidden;
     }
@@ -94,15 +98,17 @@
       canBrowseAndBorrow,
     } from '../src/assets/data/lending-get-status-service.js';
     import { ModalConfig } from '@internetarchive/modal-manager';
+    import { LocalCache } from '@internetarchive/local-cache';
+
+    const localCache = new LocalCache({
+      namespace: 'loanRenew',
+      defaultTTL: 1 * 60,  // 1 minute
+    });
 
     const userid = '@neeraj-archive';
     const identifier = 'naturalhistoryof00unse_4111';
     let bwbPurchaseUrl = 'https://www.betterworldbooks.com/product/detail/cambridge-ancient-hist-v04-0521044863';
 
-    let iaBookActions = document.querySelector('ia-book-actions');
-
-    // for debugging
-    window.iaBookActions = iaBookActions;
 
     const modalConfig = new ModalConfig();
     modalConfig.headerColor = '#d9534f';
@@ -112,6 +118,8 @@
     }
 
     // set defaultLendingStatus for unavailable (without borrowables) book
+    let iaBookActions = document.querySelector('ia-book-actions');
+
     iaBookActions.userid = userid;
     iaBookActions.identifier = identifier;
     iaBookActions.bookTitle = 'Contemporary Black biography. Volume 39 : profiles from the interContemporary Black biography. Volume 39';
@@ -119,10 +127,20 @@
     iaBookActions.bwbPurchaseUrl = '';
     iaBookActions.modalConfig = modalConfig;
     iaBookActions.lendingBarPostInit = lendingBarPostInit;
-    iaBookActions.tokenDelay = 2000; // 2 seconds
+    iaBookActions.tokenDelay = 2; // 2 seconds
     iaBookActions.returnUrl = 'https://openlibrary.org';
+    iaBookActions.localCache = localCache;
+
+    let isDevBox = true;
+    iaBookActions.loanRenewTimeConfig = {
+      loanTotalTime: isDevBox ? 15 : 3600, // 60 second = 1 min
+      loanRenewAtLast: isDevBox ? 10 : 3540, // at last 10th minute
+      pageChangedInLast: isDevBox ? 5 : 900, // within last 15 second/minute
+      isDevBox: isDevBox,
+    };
 
     let lendingStatus1 = iaBookActions.lendingStatus;
+    let secondsLeftOnLoan = iaBookActions.loanRenewTimeConfig.loanTotalTime;
 
     document.querySelectorAll('.titleBar input[type=checkbox]').forEach((item) => {
       item.addEventListener('click', (e) => {
@@ -187,12 +205,24 @@
     });
 
     document.querySelectorAll('.availableToBrowse input[type=radio]').forEach((item) => {
-      item.addEventListener('click', (e) => {
+      item.addEventListener('click', async (e) => {
         if (e.target.value === 'user_has_browsed') {
           lendingStatus1.user_has_browsed = true;
           lendingStatus1.available_to_browse = false;
-          lendingStatus1.secondsLeftOnLoan = 10;
+          lendingStatus1.secondsLeftOnLoan = secondsLeftOnLoan;
           lendingStatus1.browsingExpired = false;
+
+          try {
+            // set a value
+            await localCache.set({
+              key: `${identifier}-loanTime`,
+              value: new Date(), // current time
+              ttl: Number(iaBookActions.loanRenewTimeConfig.loanTotalTime),
+            });
+
+            await localCache.delete(`${identifier}-pageChangedTime`);
+          } catch (error) {}
+          
         } else if(e.target.value === 'browsingExpired') {
           lendingStatus1.user_has_browsed = true;
           lendingStatus1.available_to_browse = false;
@@ -203,8 +233,11 @@
           lendingStatus1.user_has_browsed = false;
         }
 
-        let lending = {...defaultLendingStatus, ...lendingStatus1};
-        iaBookActions.lendingStatus = lending;
+        // wait for a while
+        setTimeout(() => {
+          let lending = {...defaultLendingStatus, ...lendingStatus1};
+          iaBookActions.lendingStatus = lending;
+        }, 10);
       });
     });
 
@@ -253,6 +286,17 @@
         iaBookActions.bwbPurchaseUrl = bwbPurchaseUrl;
       })
     });
+
+    document.querySelector('.pageChangedEvent').addEventListener('click', () => {
+      // dispatch event to say book page has flipped
+      document.querySelector('ia-book-actions').dispatchEvent(
+        new CustomEvent('BookReader:userAction', {
+          detail: {},
+          bubbles: true,
+          composed: true,
+        })
+      );
+    })
 </script>
 
   <div>
@@ -262,6 +306,9 @@
           <tr>
             <td class="titleBar">
               <label><input type="checkbox" name="title" value="title" />Title Bar</label>
+            </td>
+            <td>
+              <button class="pageChangedEvent">Page Change Event</button>
             </td>
           </tr>
         </table>

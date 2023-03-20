@@ -1,6 +1,6 @@
 {
   "name": "@internetarchive/ia-book-actions",
-  "version": "0.0.29",
+  "version": "0.0.29-alpha42",
   "description": "Bookreader actions for borrowable book",
   "author": "Internet Archive",
   "license": "AGPL-3.0-only",
@@ -19,10 +19,11 @@
   },
   "dependencies": {
     "@internetarchive/icon-info": "^1.2.6",
-    "@internetarchive/local-cache": "^0.2.0",
-    "@internetarchive/modal-manager": "^0.2.1",
+    "@internetarchive/local-cache": "^0.2.1",
+    "@internetarchive/modal-manager": "^0.2.8",
     "@internetarchive/shared-resize-observer": "^0.2.0",
-    "lit": "^2.2.1"
+    "@internetarchive/toast-manager": "0.1.0",
+    "lit": "^2.5.0"
   },
   "devDependencies": {
     "@open-wc/eslint-config": "^4.2.0",

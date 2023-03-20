@@ -1,4 +1,6 @@
 import ActionsHandlerService from './actions-handler/actions-handler-service.js';
+import { sentryLogs } from '../config/sentry-events.js';
+
 import * as Cookies from './doc-cookies.js';
 
 /**
@@ -12,10 +14,10 @@ export class LoanTokenPoller {
     this.borrowType = borrowType;
     this.successCallback = successCallback; // callback function to be called after loan token is created
     this.errorCallback = errorCallback; // callback function to be called after loan token is created
-    this.pollerDelay = pollerDelay; // value in ms (1000 ms = 1 sec)
+    this.pollerDelay = pollerDelay; // value in seconds
 
     this.loanTokenInterval = undefined;
-    this.enableBookAccess();
+    this.bookAccessed();
   }
 
   disconnectedInterval() {
@@ -31,7 +33,7 @@ export class LoanTokenPoller {
     // }
   }
 
-  async enableBookAccess() {
+  async bookAccessed() {
     let consecutiveLoanCounts = 1;
 
     if (this.borrowType) {
@@ -43,7 +45,9 @@ export class LoanTokenPoller {
           );
           consecutiveLoanCounts = existingCount ?? 1;
         } catch (error) {
-          window?.Sentry?.captureException(error);
+          window?.Sentry?.captureException(
+            `${sentryLogs.enableBookAcces} - CookieError: ${error}`
+          );
           this.sendEvent('Cookies-Error-Token', error);
         }
       }
@@ -57,7 +61,7 @@ export class LoanTokenPoller {
       if (this.borrowType !== 'adminBorrowed') {
         this.loanTokenInterval = setInterval(() => {
           this.handleLoanTokenPoller();
-        }, this.pollerDelay);
+        }, this.pollerDelay * 1000);
       }
 
       // event category and action for browsing book access
@@ -68,7 +72,10 @@ export class LoanTokenPoller {
 
       this.sendEvent(category, action);
     } else {
-      window?.Sentry?.captureMessage('enableBookAccess error');
+      window?.Sentry?.captureMessage(
+        `${sentryLogs.bookAccessed} - not borrowed`
+      );
+
       // if book is not browsed, just clear token polling interval
       this.disconnectedInterval(); // stop token fetch api
     }
@@ -88,12 +95,14 @@ export class LoanTokenPoller {
       identifier: this.identifier,
       action,
       error: data => {
-        window?.Sentry?.captureMessage(
-          'handleLoanTokenPoller error',
-          JSON.stringify(data)
-        );
         this.disconnectedInterval(); // stop token fetch api
         this.errorCallback({ detail: { action, data } });
+
+        // send error to Sentry
+        window?.Sentry?.captureMessage(
+          `${sentryLogs.handleLoanTokenPoller} - Error: ${JSON.stringify(data)}`
+        );
+
         // send LendingServiceError to GA
         this.sendEvent('LendingServiceLoanError', action);
       },

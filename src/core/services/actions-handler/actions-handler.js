@@ -1,6 +1,8 @@
 import { LitElement } from 'lit';
 
 import { URLHelper } from '../../config/url-helper.js';
+import { sentryLogs } from '../../config/sentry-events.js';
+
 import ActionsHandlerService from './actions-handler-service.js';
 import * as Cookies from '../doc-cookies.js';
 
@@ -15,10 +17,14 @@ import * as Cookies from '../doc-cookies.js';
 export default class ActionsHandler extends LitElement {
   constructor() {
     super();
-    this.identifier = '';
-    this.ajaxTimeout = 6000;
+
+    /**
+     * wait untill borrow is complete, then refresh the page
+     * @type {number}
+     */
+    this.waitUntillBorrowComplete = 6; // in seconds
+
     this.bindEvents();
-    this.returnUrl = '';
   }
 
   sendEvent(eventCategory, eventAction) {
@@ -40,6 +46,12 @@ export default class ActionsHandler extends LitElement {
     this.addEventListener('browseBookAgain', ({ detail }) => {
       this.handleBrowseIt();
       this.setConsecutiveLoanCounts('browseAgain');
+      const { category, action } = detail.event;
+      this.sendEvent(category, action);
+    });
+
+    this.addEventListener('loanRenew', ({ detail }) => {
+      this.handleLoanRenew();
       const { category, action } = detail.event;
       this.sendEvent(category, action);
     });
@@ -103,7 +115,28 @@ export default class ActionsHandler extends LitElement {
       action,
       identifier: this.identifier,
       success: () => {
+        this.setBrowseTimeSession();
         this.handleReadItNow();
+      },
+      error: data => {
+        this.dispatchActionError(action, data);
+      },
+    });
+  }
+
+  handleLoanRenew() {
+    const action = 'renew_loan';
+
+    ActionsHandlerService({
+      action,
+      identifier: this.identifier,
+      success: data => {
+        this.setBrowseTimeSession();
+        this.dispatchEvent(
+          new CustomEvent('loanAutoRenewed', {
+            detail: { action, data },
+          })
+        );
       },
       error: data => {
         this.dispatchActionError(action, data);
@@ -235,7 +268,7 @@ export default class ActionsHandler extends LitElement {
     // redirection on details page after 5 seconds because borrowing book takes time to create item creation.
     setTimeout(() => {
       URLHelper.goToUrl(redirectTo, true);
-    }, this.ajaxTimeout);
+    }, this.waitUntillBorrowComplete * 1000);
   }
 
   // save consecutive loan count for borrow
@@ -256,8 +289,33 @@ export default class ActionsHandler extends LitElement {
       // set new value
       Cookies.setItem(storageKey, newCount, date, '/');
     } catch (error) {
-      window?.Sentry?.captureException(error);
+      window?.Sentry?.captureException(
+        `${sentryLogs.setConsecutiveLoanCounts} - Error: ${error}`
+      );
       this.sendEvent('Cookies-Error-Actions', error);
+    }
+  }
+
+  /**
+   * set browse time in indexedDB
+   */
+  async setBrowseTimeSession() {
+    try {
+      const expireDate = new Date(
+        new Date().getTime() + this.loanTotalTime * 1000
+      );
+
+      // set a value
+      await this.localCache.set({
+        key: `${this.identifier}-loanTime`,
+        value: expireDate,
+        ttl: Number(this.loanTotalTime),
+      });
+
+      // delete pageChangedTime when book is auto renew at nth minute
+      await this.localCache.delete(`${this.identifier}-pageChangedTime`);
+    } catch (error) {
+      console.log(error);
     }
   }
 

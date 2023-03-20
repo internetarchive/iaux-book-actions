@@ -6,7 +6,7 @@ const container = ({
     {
       analyticsEvent: { action: 'Browse', category: 'Lending' },
       className: 'ia-button primary',
-      text: 'Borrow for 1 hour',
+      text: 'Borrow',
       id: 'browseBook',
     },
     {
@@ -40,7 +40,7 @@ describe('<collapsible-action-group>', () => {
       .true;
 
     const primaryButton = primaryActionContainer.querySelector('.ia-button');
-    expect(primaryButton.innerText).to.equal('Borrow for 1 hour');
+    expect(primaryButton.innerText).to.equal('Borrow');
   });
 
   it('check if loader is active and action-group is disabled', async () => {
