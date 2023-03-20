@@ -74,7 +74,6 @@ export default class TimerCountdown extends LitElement {
       if (secondsLeft <= 1) {
         clearInterval(this.timerInterval);
         window?.Sentry?.captureMessage(sentryLogs.clearOneHourTimer);
-        console.log(sentryLogs.clearOneHourTimer);
       }
     }, timerIntervalSeconds * 1000);
   }
@@ -88,6 +87,10 @@ export default class TimerCountdown extends LitElement {
   get remainingTime() {
     let unitOfTime = 'second';
     let timeLeft = Math.round(this.secondsLeftOnLoan);
+
+    if (this.isDevBox) {
+      return `${timeLeft} seconds`;
+    }
 
     if (timeLeft > 60) {
       unitOfTime = 'minute';

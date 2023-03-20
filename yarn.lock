@@ -109,9 +109,9 @@
   dependencies:
     lit "^2.0.2"
 
-"@internetarchive/local-cache@^0.2.0":
+"@internetarchive/local-cache@^0.2.1":
   version "0.2.1"
-  resolved "https://registry.npmjs.org/@internetarchive/local-cache/-/local-cache-0.2.1.tgz"
+  resolved "https://registry.yarnpkg.com/@internetarchive/local-cache/-/local-cache-0.2.1.tgz#fa416cae81227228b73f51d82f3361d460e27539"
   integrity sha512-8FFAvEEoazktWsIEod2NVYp0r+Fk3OxM8woe42mNlXHbht3Je98yQjooIFiA3/sJYB7xsZB2RHzUzh+GmBHFgw==
   dependencies:
     idb-keyval "^6.1.0"

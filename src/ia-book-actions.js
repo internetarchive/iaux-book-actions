@@ -258,7 +258,7 @@ export default class IABookActions extends LitElement {
      */
     window.addEventListener('BookReader:userAction', () => {
       if (this.borrowType === 'browsed') {
-        console.log('user-action executed!');
+        this.suppressToast = false;
         this.autoLoanRenewChecker(true);
       }
 
@@ -270,7 +270,6 @@ export default class IABookActions extends LitElement {
      */
     document.addEventListener('click', e => {
       if (this.loanRenewHelper && this.loanRenewResult.secondsLeft > 0) {
-        console.log('clicked-outside');
         this.suppressToast = true;
       }
 
@@ -401,7 +400,6 @@ export default class IABookActions extends LitElement {
     this.showToastMessage();
 
     window?.Sentry?.captureMessage(sentryLogs.browseHasExpired);
-    console.log(sentryLogs.browseHasExpired);
   }
 
   /**
@@ -502,7 +500,7 @@ export default class IABookActions extends LitElement {
       await this.resetTimerCountState();
 
       window?.Sentry?.captureMessage(`${sentryLogs.bookHasRenewed}`);
-      // analytics?? for consecutive renew.....
+      // TODO: analytics?? for consecutive renew.....
 
       // testing console....
       console.log(sentryLogs.bookHasRenewed, {

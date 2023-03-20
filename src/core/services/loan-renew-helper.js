@@ -1,3 +1,5 @@
+/* eslint-disable class-methods-use-this */
+
 import { nothing } from 'lit';
 
 /**
@@ -60,7 +62,6 @@ export class LoanRenewHelper {
     if (lastTimeFrame !== null && currentTime >= lastTimeFrame) {
       this.result.texts = this.loanRenewMessage;
       this.result.renewNow = true;
-      console.log('manually renewed by page click!');
     }
 
     this.setPageChangedTime();
@@ -95,7 +96,6 @@ export class LoanRenewHelper {
     } else if (pageChangedTime >= pageChangeTimeFrame) {
       this.result.texts = '';
       this.result.renewNow = true; // viewed in last time frame
-      console.log('silently renewed!');
     }
 
     return this.result;
