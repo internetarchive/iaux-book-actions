@@ -129,7 +129,8 @@ export default class TimerCountdown extends LitElement {
 
     return css`
       :host {
-        right: 5px;
+        right: 0;
+        margin-right: 10px;
         position: absolute;
       }
 
