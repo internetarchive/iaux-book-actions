@@ -57,7 +57,7 @@ export default class TimerCountdown extends LitElement {
 
   timerCountdown() {
     // - let just execute setInterval in every 1 minute
-    this.timerExecutionSeconds = 60;
+    this.timerExecutionSeconds = 1;
 
     this.timerInterval = setInterval(() => {
       this.secondsLeftOnLoan -= this.timerExecutionSeconds;
@@ -83,7 +83,7 @@ export default class TimerCountdown extends LitElement {
       }
 
       // clear interval
-      if (secondsLeft <= 60) {
+      if (secondsLeft <= 1) {
         clearInterval(this.timerInterval);
         window?.Sentry?.captureMessage(sentryLogs.clearOneHourTimer);
       }

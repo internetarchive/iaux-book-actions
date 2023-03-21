@@ -11,6 +11,7 @@ import './components/book-title-bar.js';
 import './components/text-group.js';
 import './components/info-icon.js';
 import './components/timer-countdown.js';
+import * as Cookies from './core/services/doc-cookies.js';
 
 import { GetLendingActions } from './core/services/get-lending-actions.js';
 import { mobileContainerWidth } from './core/config/constants.js';
@@ -393,6 +394,9 @@ export default class IABookActions extends LitElement {
     // remove respected key:value for loan-renew
     await this.localCache.delete(`${this.identifier}-loanTime`);
     await this.localCache.delete(`${this.identifier}-pageChangedTime`);
+
+    // remove loan-renew-count-<identifier> cookie
+    Cookies.removeItem(`loan-renew-count-${this.identifier}`);
 
     // show message after browsed book is expired.
     this.loanRenewResult.renewNow = false;

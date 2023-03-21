@@ -132,6 +132,10 @@ export default class ActionsHandler extends LitElement {
       identifier: this.identifier,
       success: data => {
         this.setBrowseTimeSession();
+
+        // consecutive loan renew count
+        this.setConsecutiveLoanCounts(action);
+
         this.dispatchEvent(
           new CustomEvent('loanAutoRenewed', {
             detail: { action, data },
@@ -274,26 +278,40 @@ export default class ActionsHandler extends LitElement {
   // save consecutive loan count for borrow
   async setConsecutiveLoanCounts(action = '') {
     try {
-      let newCount = 1;
-      const storageKey = `loan-count-${this.identifier}`;
-      const existingCount = Cookies.getItem(storageKey);
-
-      // increase browse-count by 1 when you consecutive reading a book.
-      if (action === 'browseAgain' && existingCount !== undefined) {
-        newCount = existingCount ? Number(existingCount) + 1 : 1;
-      }
-
+      const countRecord = await this.getConsecutiveLoanRecord(action);
+      console.log(countRecord);
       const date = new Date();
       date.setHours(date.getHours() + 2); // 2 hours
 
       // set new value
-      Cookies.setItem(storageKey, newCount, date, '/');
+      Cookies.setItem(countRecord?.storageKey, countRecord?.count, date, '/');
     } catch (error) {
+      console.log(error);
       window?.Sentry?.captureException(
         `${sentryLogs.setConsecutiveLoanCounts} - Error: ${error}`
       );
       this.sendEvent('Cookies-Error-Actions', error);
     }
+  }
+
+  async getConsecutiveLoanRecord(action) {
+    let newCount = 1;
+
+    // storage key for consecutive loan count
+    let storageKey = `loan-count-${this.identifier}`;
+
+    if (action === 'renew_loan') {
+      storageKey = `loan-renew-count-${this.identifier}`;
+    }
+
+    const existingCount = Cookies.getItem(storageKey);
+
+    // increase count by 1 when you consecutive reading a book.
+    if (existingCount !== undefined) {
+      newCount = existingCount ? Number(existingCount) + 1 : 1;
+    }
+
+    return { count: newCount, storageKey };
   }
 
   /**
