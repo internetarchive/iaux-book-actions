@@ -334,11 +334,15 @@ export default class IABookActions extends LitElement {
     }
     await iaBookActions.appendChild(toastTemplate);
 
+    // if secondsLeft < 60, consider it 1 minute
+    let { secondsLeft } = this.loanRenewResult;
+    secondsLeft = secondsLeft > 60 ? secondsLeft : 60;
+
     const config = new ToastConfig();
     config.dismisOnClick = true;
     config.texts = this.loanRenewHelper?.getMessageTexts(
       this.loanRenewResult.texts,
-      this.loanRenewResult.secondsLeft
+      secondsLeft
     );
 
     toastTemplate.showToast({

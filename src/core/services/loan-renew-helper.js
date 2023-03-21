@@ -114,28 +114,26 @@ export class LoanRenewHelper {
 
   /**
    * Texts we want to show in toast template including remaining time
-   * - eg. 1 minute, 50 seconds
+   * - eg. 1 minute, 2 minutes
    *
    * @param {String} texts
-   * @param {Number} time
+   * @param {Number} secondsLeft
    *
    * @returns {String} // texts will be appear in toast template
    */
-  getMessageTexts(texts, time) {
-    let unitOfTime = 'second';
+  getMessageTexts(texts, secondsLeft) {
+    const unitOfTime = 'minute';
 
     let toastTexts = texts;
-    let timeLeft = time;
+    let timeLeft = secondsLeft;
 
-    if (timeLeft > 60) {
-      unitOfTime = 'minute';
-      timeLeft = Math.floor(timeLeft / 60);
-    }
+    // convert time from second to minute
+    timeLeft = Math.ceil(timeLeft / 60);
 
-    // replace remaining time
+    // replace #time variable with remaining time
     toastTexts = toastTexts?.replace(/#time/, timeLeft);
 
-    // replace unitsOfTime eg second vs seconds / minute vs /minutes
+    // replace #unitsOfTime variable with minute/minutes
     return toastTexts?.replace(
       /#unitsOfTime/,
       timeLeft !== 1 ? `${unitOfTime}s` : unitOfTime

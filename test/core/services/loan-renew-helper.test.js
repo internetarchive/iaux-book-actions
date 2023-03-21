@@ -80,7 +80,7 @@ describe('Loan Renew Determine', () => {
     );
 
     expect(toastMsg).to.be.equal(
-      'This book will be automatically returned in 1 minute unless you turn a page.'
+      'This book will be automatically returned in 2 minutes unless you turn a page.'
     );
   });
 });

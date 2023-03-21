@@ -56,14 +56,11 @@ export default class TimerCountdown extends LitElement {
   }
 
   timerCountdown() {
-    // Just a QA thing-
-    // if `this.loanTotalTime` less then 600 Seconds (10min)
-    // - let just execute setInterval in each second
-    // - otherwise execute in 60 seconds
-    const timerExecutionSeconds = this.loanTotalTime <= 600 ? 1 : 60;
+    // - let just execute setInterval in every 1 minute
+    this.timerExecutionSeconds = 60;
 
     this.timerInterval = setInterval(() => {
-      this.secondsLeftOnLoan -= timerExecutionSeconds;
+      this.secondsLeftOnLoan -= this.timerExecutionSeconds;
       const secondsLeft = Math.round(this.secondsLeftOnLoan);
 
       /**
@@ -86,11 +83,11 @@ export default class TimerCountdown extends LitElement {
       }
 
       // clear interval
-      if (secondsLeft <= 1) {
+      if (secondsLeft <= 60) {
         clearInterval(this.timerInterval);
         window?.Sentry?.captureMessage(sentryLogs.clearOneHourTimer);
       }
-    }, timerExecutionSeconds * 1000);
+    }, this.timerExecutionSeconds * 1000);
   }
 
   /**
@@ -100,17 +97,11 @@ export default class TimerCountdown extends LitElement {
    * @return string
    */
   get remainingTime() {
-    let unitOfTime = 'second';
+    const unitOfTime = 'minute';
     let timeLeft = Math.round(this.secondsLeftOnLoan);
 
-    if (this.loanTotalTime <= 600) {
-      return `${timeLeft} seconds`;
-    }
-
-    if (timeLeft > 60) {
-      unitOfTime = 'minute';
-      timeLeft = Math.floor(timeLeft / 60);
-    }
+    // convert time from second to minute
+    timeLeft = Math.ceil(timeLeft / 60);
 
     return timeLeft !== 1
       ? `${timeLeft} ${unitOfTime}s`
