@@ -46,17 +46,12 @@ export class LoanRenewHelper {
    */
   async pageChanged() {
     const {
-      loanTotalTime, // 60
       loanRenewAtLast, // 50
     } = this.loanRenewTimeConfig;
     const currentTime = new Date();
     const loanTime = await this.localCache.get(`${this.identifier}-loanTime`);
 
-    const lastTimeFrame = this.changeTime(
-      loanTime,
-      loanTotalTime - loanRenewAtLast,
-      'add'
-    );
+    const lastTimeFrame = this.changeTime(loanTime, loanRenewAtLast, 'sub');
 
     // if user viewed new page in last 10 minutes, renew immediately
     if (lastTimeFrame !== null && currentTime >= lastTimeFrame) {
