@@ -5,8 +5,8 @@ export default class TimerCountdown extends LitElement {
   static get properties() {
     return {
       secondsLeftOnLoan: { type: Number }, // in seconds
+      loanTotalTime: { type: Number }, // in seconds
       loanRenewAtLast: { type: Number }, // in seconds
-      isDevBox: { type: Boolean },
     };
   }
 
@@ -14,10 +14,16 @@ export default class TimerCountdown extends LitElement {
     super();
 
     /**
-     * seconds left in current time
+     * seconds left in current loan
      * @type {number}
      */
     this.secondsLeftOnLoan = 0;
+
+    /**
+     * total seconds a loan does have
+     * @type {number}
+     */
+    this.loanTotalTime = 0;
 
     /**
      * at the remaining time, we attempt to renew current loan
@@ -26,12 +32,16 @@ export default class TimerCountdown extends LitElement {
     this.loanRenewAtLast = 0;
 
     /**
-     * @type {boolean}
+     * setInterval executed interval
+     * @type {number}
      */
-    this.isDevBox = false;
-
-    // private props
     this.timerInterval = undefined;
+
+    /**
+     * delay seconds in setInterval function
+     * @type {number}
+     */
+    this.timerExecutionSeconds = 0;
   }
 
   disconnectedCallback() {
@@ -46,17 +56,19 @@ export default class TimerCountdown extends LitElement {
   }
 
   timerCountdown() {
-    // in-case of isDevBox, execute timer in each second instead of 60
-    const timerIntervalSeconds = this.isDevBox ? 1 : 60;
+    // - let just execute setInterval in every 1 minute
+    this.timerExecutionSeconds = 60;
 
     this.timerInterval = setInterval(() => {
-      // if this.isDevBox, just reduce seconds by 1 instead of 60 (1 min)
-      this.secondsLeftOnLoan -= timerIntervalSeconds;
+      this.secondsLeftOnLoan -= this.timerExecutionSeconds;
       const secondsLeft = Math.round(this.secondsLeftOnLoan);
 
-      // execute from last 10th minute to 0th minute
-      // - 10th - to check if user has viewed
-      // - till 0th - to show warning msg with remaining time to auto expired
+      /**
+       * execute from last 10th minute to 0th minute
+       * - 10th - to check if user has viewed
+       * - till 0th - to show warning msg with remaining time to auto expired
+       * @see IABookActions::bindLoanRenewEvents
+       */
       if (secondsLeft <= this.loanRenewAtLast) {
         this.dispatchEvent(
           new CustomEvent('IABookActions:loanRenew', {
@@ -71,11 +83,11 @@ export default class TimerCountdown extends LitElement {
       }
 
       // clear interval
-      if (secondsLeft <= 1) {
+      if (secondsLeft <= 60) {
         clearInterval(this.timerInterval);
         window?.Sentry?.captureMessage(sentryLogs.clearOneHourTimer);
       }
-    }, timerIntervalSeconds * 1000);
+    }, this.timerExecutionSeconds * 1000);
   }
 
   /**
@@ -85,17 +97,11 @@ export default class TimerCountdown extends LitElement {
    * @return string
    */
   get remainingTime() {
-    let unitOfTime = 'second';
+    const unitOfTime = 'minute';
     let timeLeft = Math.round(this.secondsLeftOnLoan);
 
-    if (this.isDevBox) {
-      return `${timeLeft} seconds`;
-    }
-
-    if (timeLeft > 60) {
-      unitOfTime = 'minute';
-      timeLeft = Math.floor(timeLeft / 60);
-    }
+    // convert time from second to minute
+    timeLeft = Math.ceil(timeLeft / 60);
 
     return timeLeft !== 1
       ? `${timeLeft} ${unitOfTime}s`

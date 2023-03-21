@@ -16,7 +16,6 @@ describe('<timer-countdown>', () => {
           loanTotalTime: 14, // in seconds
           loanRenewAtLast: 5, // in seconds
           pageChangedInLast: 5, // in seconds
-          isDevBox: true,
         },
       })
     );
@@ -33,7 +32,6 @@ describe('<timer-countdown>', () => {
           loanTotalTime: 14, // in seconds
           loanRenewAtLast: 5, // in seconds
           pageChangedInLast: 5, // in seconds
-          isDevBox: true,
         },
       })
     );

@@ -78,10 +78,9 @@ export default class IABookActions extends LitElement {
      * contains one hour auto-loan-renew time configuration
      *
      * @type {object} loanRenewTimeConfig
-     * @property {number} loanTotalTime - number of seconds a loan should last
+     * @property {number} loanTotalTime - total seconds a loan does have
      * @property {number} loanRenewAtLast - check for loan renew at last
      * @property {number} pageChangedInLast - consider loan renew eligible if viewed new page
-     * @property {boolean} isDevBox - testing flag
      */
     this.loanRenewTimeConfig = {};
 
@@ -335,11 +334,15 @@ export default class IABookActions extends LitElement {
     }
     await iaBookActions.appendChild(toastTemplate);
 
+    // if secondsLeft < 60, consider it 1 minute
+    let { secondsLeft } = this.loanRenewResult;
+    secondsLeft = secondsLeft > 60 ? secondsLeft : 60;
+
     const config = new ToastConfig();
     config.dismisOnClick = true;
     config.texts = this.loanRenewHelper?.getMessageTexts(
       this.loanRenewResult.texts,
-      this.loanRenewResult.secondsLeft
+      secondsLeft
     );
 
     toastTemplate.showToast({
@@ -452,8 +455,8 @@ export default class IABookActions extends LitElement {
     return this.borrowType === 'browsed'
       ? html`<timer-countdown
           .secondsLeftOnLoan=${Number(this.lendingStatus.secondsLeftOnLoan)}
+          .loanTotalTime=${this.loanRenewTimeConfig.loanTotalTime}
           .loanRenewAtLast=${this.loanRenewTimeConfig.loanRenewAtLast}
-          .isDevBox=${this.loanRenewTimeConfig.isDevBox}
         ></timer-countdown>`
       : nothing;
   }
