@@ -118,8 +118,7 @@ export default class TimerCountdown extends LitElement {
       >
         <circle class="circle" cx="50" cy="50" r="50" />
       </svg>
-      <span class="sr-only">${this.remainingTime}</span>
-      <span>${this.remainingTime}</span>
+      <span class="sr-only">${this.remainingTime} left</span>
     `;
   }
 
