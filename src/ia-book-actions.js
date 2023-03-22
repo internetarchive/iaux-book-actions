@@ -336,7 +336,11 @@ export default class IABookActions extends LitElement {
 
     // if secondsLeft < 60, consider it 1 minute
     let { secondsLeft } = this.loanRenewResult;
-    secondsLeft = secondsLeft > 60 ? secondsLeft : 60;
+    if (secondsLeft === undefined) {
+      secondsLeft = this.lendingStatus.secondsLeftOnLoan;
+    } else {
+      secondsLeft = secondsLeft > 60 ? secondsLeft : 60;
+    }
 
     const config = new ToastConfig();
     config.dismisOnClick = true;
@@ -498,8 +502,8 @@ export default class IABookActions extends LitElement {
       this.tokenPoller?.disconnectedInterval();
 
       this.suppressToast = false;
-      await this.showToastMessage();
       await this.browseHasRenew();
+      await this.showToastMessage();
       await this.resetTimerCountState();
 
       window?.Sentry?.captureMessage(`${sentryLogs.bookHasRenewed}`);

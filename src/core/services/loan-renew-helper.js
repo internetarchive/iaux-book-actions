@@ -13,7 +13,8 @@ export class LoanRenewHelper {
     this.loanRenewTimeConfig = loanRenewTimeConfig;
 
     // messages for auto return machenism
-    this.loanRenewMessage = 'This book has been renewed for 1 hour.';
+    this.loanRenewMessage =
+      'This book has been renewed for #time #unitsOfTime.';
     this.loanReturnWarning =
       'This book will be automatically returned in #time #unitsOfTime unless you turn a page.';
 
@@ -117,13 +118,19 @@ export class LoanRenewHelper {
    * @returns {String} // texts will be appear in toast template
    */
   getMessageTexts(texts, secondsLeft) {
-    const unitOfTime = 'minute';
+    let unitOfTime = 'minute';
 
     let toastTexts = texts;
     let timeLeft = secondsLeft;
 
     // convert time from second to minute
     timeLeft = Math.ceil(timeLeft / 60);
+
+    // convert minute to hour
+    if (timeLeft === 60) {
+      timeLeft = 1; // 1 hour
+      unitOfTime = 'hour';
+    }
 
     // replace #time variable with remaining time
     toastTexts = toastTexts?.replace(/#time/, timeLeft);

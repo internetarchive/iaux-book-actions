@@ -63,6 +63,12 @@ export default class TimerCountdown extends LitElement {
       this.secondsLeftOnLoan -= this.timerExecutionSeconds;
       const secondsLeft = Math.round(this.secondsLeftOnLoan);
 
+      console.log(
+        'timeLeftInSec',
+        secondsLeft,
+        ' ||| timeLeftInMin',
+        Math.ceil(secondsLeft / 60)
+      );
       /**
        * execute from last 10th minute to 0th minute
        * - 10th - to check if user has viewed
@@ -111,8 +117,8 @@ export default class TimerCountdown extends LitElement {
   render() {
     return html`
       <svg
-        width="16"
-        height="16"
+        width="14"
+        height="14"
         viewBox="0 0 100 100"
         xmlns="http://www.w3.org/2000/svg"
       >
