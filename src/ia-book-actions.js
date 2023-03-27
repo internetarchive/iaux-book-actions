@@ -11,13 +11,15 @@ import './components/book-title-bar.js';
 import './components/text-group.js';
 import './components/info-icon.js';
 import './components/timer-countdown.js';
-import * as Cookies from './core/services/doc-cookies.js';
 
 import { GetLendingActions } from './core/services/get-lending-actions.js';
 import { mobileContainerWidth } from './core/config/constants.js';
 import { sentryLogs } from './core/config/sentry-events.js';
 import { LoanTokenPoller } from './core/services/loan-token-poller.js';
 import { LoanRenewHelper } from './core/services/loan-renew-helper.js';
+
+import './core/config/ia-lending-intervals.js';
+import * as Cookies from './core/services/doc-cookies.js';
 
 export const events = {
   browseExpired: 'IABookReader:BrowsingHasExpired',
@@ -103,7 +105,9 @@ export default class IABookActions extends LitElement {
   }
 
   disconnectedCallback() {
-    this.tokenPoller?.disconnectedInterval();
+    // clear all intervals for lending system
+    window?.IALendingIntervals?.clearAll();
+
     window?.Sentry?.captureMessage(sentryLogs.disconnectedCallback);
     this.disconnectResizeObserver();
   }
@@ -198,7 +202,8 @@ export default class IABookActions extends LitElement {
       if (!this.tokenPoller) {
         window?.Sentry?.captureMessage(sentryLogs.bookWasExpired);
       }
-      this.tokenPoller?.disconnectedInterval();
+      window?.IALendingIntervals?.clearAll();
+
       /** Global event - always fire */
       this.dispatchEvent(
         new Event(events.browseExpired, {
@@ -337,7 +342,11 @@ export default class IABookActions extends LitElement {
 
     // if secondsLeft < 60, consider it 1 minute
     let { secondsLeft } = this.loanRenewResult;
-    secondsLeft = secondsLeft > 60 ? secondsLeft : 60;
+    if (secondsLeft === undefined) {
+      secondsLeft = this.lendingStatus.secondsLeftOnLoan;
+    } else {
+      secondsLeft = secondsLeft > 60 ? secondsLeft : 60;
+    }
 
     const config = new ToastConfig();
     config.dismisOnClick = true;
@@ -386,7 +395,7 @@ export default class IABookActions extends LitElement {
    * Execute when loan is expired
    */
   async browseHasExpired() {
-    this.tokenPoller?.disconnectedInterval();
+    window?.IALendingIntervals?.clearAll();
 
     const currStatus = { ...this.lendingStatus, browsingExpired: true };
     this.lendingStatus = currStatus;
@@ -499,11 +508,11 @@ export default class IABookActions extends LitElement {
    */
   async handleLoanAutoRenewed() {
     if (this.loanRenewResult.renewNow) {
-      this.tokenPoller?.disconnectedInterval();
+      window?.IALendingIntervals?.clearAll();
 
       this.suppressToast = false;
-      await this.showToastMessage();
       await this.browseHasRenew();
+      await this.showToastMessage();
       await this.resetTimerCountState();
 
       window?.Sentry?.captureMessage(`${sentryLogs.bookHasRenewed}`);
@@ -523,10 +532,6 @@ export default class IABookActions extends LitElement {
    * @see LoanTokenPoller
    */
   startLoanTokenPoller() {
-    if (this.tokenPoller) {
-      window?.Sentry?.captureMessage(sentryLogs.clearTokenPoller);
-      this.tokenPoller?.disconnectedInterval();
-    }
     const successCallback = () => {
       this.lendingBarPostInit();
     };
@@ -576,6 +581,9 @@ export default class IABookActions extends LitElement {
     // toggle activity loader
     this.handleToggleActionGroup();
 
+    // clear all intervals for lending system when error occured
+    window?.IALendingIntervals?.clearAll();
+
     const action = event?.detail?.action;
     const errorMsg = event?.detail?.data?.error;
 
@@ -585,8 +593,6 @@ export default class IABookActions extends LitElement {
     // - clear tokenPoller interval
     // - set user_has_browsed to `false`
     if (action === 'create_token') {
-      this.tokenPoller?.disconnectedInterval();
-
       const currStatus = {
         ...this.lendingStatus,
         user_has_browsed: false,

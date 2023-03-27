@@ -32,12 +32,6 @@ export default class TimerCountdown extends LitElement {
     this.loanRenewAtLast = 0;
 
     /**
-     * setInterval executed interval
-     * @type {number}
-     */
-    this.timerInterval = undefined;
-
-    /**
      * delay seconds in setInterval function
      * @type {number}
      */
@@ -45,12 +39,13 @@ export default class TimerCountdown extends LitElement {
   }
 
   disconnectedCallback() {
-    clearInterval(this.timerInterval);
+    window?.IALendingIntervals?.clearTimerCountdown();
   }
 
   updated(changed) {
     if (changed.has('secondsLeftOnLoan') && this.secondsLeftOnLoan > 0) {
-      clearInterval(this.timerInterval);
+      this.disconnectedCallback();
+
       this.timerCountdown();
     }
   }
@@ -59,9 +54,20 @@ export default class TimerCountdown extends LitElement {
     // - let just execute setInterval in every 1 minute
     this.timerExecutionSeconds = 1;
 
-    this.timerInterval = setInterval(() => {
+    /**
+     * set interval in window object
+     * @see ia-lending-intervals.js
+     */
+    window.IALendingIntervals.timerCountdown = setInterval(() => {
       this.secondsLeftOnLoan -= this.timerExecutionSeconds;
       const secondsLeft = Math.round(this.secondsLeftOnLoan);
+
+      console.log(
+        'timeLeftInSec',
+        secondsLeft,
+        ' ||| timeLeftInMin',
+        Math.ceil(secondsLeft / 60)
+      );
 
       /**
        * execute from last 10th minute to 0th minute
@@ -83,8 +89,8 @@ export default class TimerCountdown extends LitElement {
       }
 
       // clear interval
-      if (secondsLeft <= 1) {
-        clearInterval(this.timerInterval);
+      if (secondsLeft <= 60) {
+        this.disconnectedCallback();
         window?.Sentry?.captureMessage(sentryLogs.clearOneHourTimer);
       }
     }, this.timerExecutionSeconds * 1000);
@@ -111,15 +117,14 @@ export default class TimerCountdown extends LitElement {
   render() {
     return html`
       <svg
-        width="16"
-        height="16"
+        width="14"
+        height="14"
         viewBox="0 0 100 100"
         xmlns="http://www.w3.org/2000/svg"
       >
         <circle class="circle" cx="50" cy="50" r="50" />
       </svg>
-      <span class="sr-only">${this.remainingTime}</span>
-      <span>${this.remainingTime}</span>
+      <span class="sr-only">${this.remainingTime} left</span>
     `;
   }
 
@@ -130,7 +135,8 @@ export default class TimerCountdown extends LitElement {
 
     return css`
       :host {
-        right: 5px;
+        right: 0;
+        margin-right: 10px;
         position: absolute;
       }
 

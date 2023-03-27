@@ -135,7 +135,7 @@
     let loanTotalTime5Min = { loanTotalTime: 300, loanRenewAtLast: 180, pageChangedInLast: 15 };
     let loanTotalTime1Hour = { loanTotalTime: 3600, loanRenewAtLast: 600, pageChangedInLast: 900 };
 
-    iaBookActions.loanRenewTimeConfig = loanTotalTime2Min;
+    iaBookActions.loanRenewTimeConfig = loanTotalTime1Hour;
 
     let lendingStatus1 = iaBookActions.lendingStatus;
     let secondsLeftOnLoan = iaBookActions.loanRenewTimeConfig.loanTotalTime;
@@ -210,11 +210,14 @@
           lendingStatus1.secondsLeftOnLoan = secondsLeftOnLoan;
           lendingStatus1.browsingExpired = false;
 
+          const expireDate = new Date(
+            new Date().getTime() + iaBookActions.loanRenewTimeConfig.loanTotalTime * 1000
+          );
           try {
             // set a value
             await localCache.set({
               key: `${identifier}-loanTime`,
-              value: new Date(), // current time
+              value: expireDate,
               ttl: Number(iaBookActions.loanRenewTimeConfig.loanTotalTime),
             });
 

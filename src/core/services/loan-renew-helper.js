@@ -13,7 +13,8 @@ export class LoanRenewHelper {
     this.loanRenewTimeConfig = loanRenewTimeConfig;
 
     // messages for auto return machenism
-    this.loanRenewMessage = 'This book has been renewed for 1 hour.';
+    this.loanRenewMessage =
+      'This book has been renewed for #time #unitsOfTime.';
     this.loanReturnWarning =
       'This book will be automatically returned in #time #unitsOfTime unless you turn a page.';
 
@@ -46,17 +47,12 @@ export class LoanRenewHelper {
    */
   async pageChanged() {
     const {
-      loanTotalTime, // 60
       loanRenewAtLast, // 50
     } = this.loanRenewTimeConfig;
     const currentTime = new Date();
     const loanTime = await this.localCache.get(`${this.identifier}-loanTime`);
 
-    const lastTimeFrame = this.changeTime(
-      loanTime,
-      loanTotalTime - loanRenewAtLast,
-      'add'
-    );
+    const lastTimeFrame = this.changeTime(loanTime, loanRenewAtLast, 'sub');
 
     // if user viewed new page in last 10 minutes, renew immediately
     if (lastTimeFrame !== null && currentTime >= lastTimeFrame) {
@@ -122,13 +118,19 @@ export class LoanRenewHelper {
    * @returns {String} // texts will be appear in toast template
    */
   getMessageTexts(texts, secondsLeft) {
-    const unitOfTime = 'minute';
+    let unitOfTime = 'minute';
 
     let toastTexts = texts;
     let timeLeft = secondsLeft;
 
     // convert time from second to minute
     timeLeft = Math.ceil(timeLeft / 60);
+
+    // convert time from minute to hour
+    if (timeLeft > 59) {
+      timeLeft = 1; // 1 hour
+      unitOfTime = 'hour';
+    }
 
     // replace #time variable with remaining time
     toastTexts = toastTexts?.replace(/#time/, timeLeft);
