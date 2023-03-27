@@ -126,8 +126,8 @@ export class LoanRenewHelper {
     // convert time from second to minute
     timeLeft = Math.ceil(timeLeft / 60);
 
-    // convert minute to hour
-    if (timeLeft === 60) {
+    // convert time from minute to hour
+    if (timeLeft > 59) {
       timeLeft = 1; // 1 hour
       unitOfTime = 'hour';
     }

@@ -32,12 +32,6 @@ export default class TimerCountdown extends LitElement {
     this.loanRenewAtLast = 0;
 
     /**
-     * setInterval executed interval
-     * @type {number}
-     */
-    this.timerInterval = undefined;
-
-    /**
      * delay seconds in setInterval function
      * @type {number}
      */
@@ -45,12 +39,13 @@ export default class TimerCountdown extends LitElement {
   }
 
   disconnectedCallback() {
-    clearInterval(this.timerInterval);
+    window?.IALendingIntervals?.clearTimerCountdown();
   }
 
   updated(changed) {
     if (changed.has('secondsLeftOnLoan') && this.secondsLeftOnLoan > 0) {
-      clearInterval(this.timerInterval);
+      this.disconnectedCallback();
+
       this.timerCountdown();
     }
   }
@@ -59,7 +54,11 @@ export default class TimerCountdown extends LitElement {
     // - let just execute setInterval in every 1 minute
     this.timerExecutionSeconds = 60;
 
-    this.timerInterval = setInterval(() => {
+    /**
+     * set interval in window object
+     * @see ia-lending-intervals.js
+     */
+    window.IALendingIntervals.timerCountdown = setInterval(() => {
       this.secondsLeftOnLoan -= this.timerExecutionSeconds;
       const secondsLeft = Math.round(this.secondsLeftOnLoan);
 
@@ -69,6 +68,7 @@ export default class TimerCountdown extends LitElement {
         ' ||| timeLeftInMin',
         Math.ceil(secondsLeft / 60)
       );
+
       /**
        * execute from last 10th minute to 0th minute
        * - 10th - to check if user has viewed
@@ -90,7 +90,7 @@ export default class TimerCountdown extends LitElement {
 
       // clear interval
       if (secondsLeft <= 60) {
-        clearInterval(this.timerInterval);
+        this.disconnectedCallback();
         window?.Sentry?.captureMessage(sentryLogs.clearOneHourTimer);
       }
     }, this.timerExecutionSeconds * 1000);

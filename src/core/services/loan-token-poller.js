@@ -20,17 +20,8 @@ export class LoanTokenPoller {
     this.bookAccessed();
   }
 
-  disconnectedInterval() {
-    clearInterval(this.loanTokenInterval);
-    this.loanTokenInterval = undefined;
-
-    // temporary disabling sentry notice
-    // as message is informational, not critical nor an error.
-    // also, as of 11/28/2022, JS build maps are not working properly on petabox
-    // and as a result, this comment is not properly grouped.
-    // if (window.Sentry) {
-    //   window?.Sentry?.captureMessage('loan token interval cleared');
-    // }
+  disconnectedCallback() {
+    window?.IALendingIntervals?.clearTokenPoller();
   }
 
   async bookAccessed() {
@@ -59,7 +50,11 @@ export class LoanTokenPoller {
       // - we don't want to fetch token on interval
       // - the initial token is enough to set cookies for reading book and readaloud features
       if (this.borrowType !== 'adminBorrowed') {
-        this.loanTokenInterval = setInterval(() => {
+        /**
+         * set interval in window object
+         * @see ia-lending-intervals.js
+         */
+        window.IALendingIntervals.tokenPoller = setInterval(() => {
           this.handleLoanTokenPoller();
         }, this.pollerDelay * 1000);
       }
@@ -77,7 +72,7 @@ export class LoanTokenPoller {
       );
 
       // if book is not browsed, just clear token polling interval
-      this.disconnectedInterval(); // stop token fetch api
+      this.disconnectedCallback();
     }
   }
 
@@ -95,7 +90,6 @@ export class LoanTokenPoller {
       identifier: this.identifier,
       action,
       error: data => {
-        this.disconnectedInterval(); // stop token fetch api
         this.errorCallback({ detail: { action, data } });
 
         // send error to Sentry
