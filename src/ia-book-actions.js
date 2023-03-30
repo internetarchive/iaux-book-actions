@@ -263,6 +263,7 @@ export default class IABookActions extends LitElement {
      */
     window.addEventListener('BookReader:userAction', () => {
       if (this.borrowType === 'browsed') {
+        console.log('user action executed');
         this.suppressToast = false;
         this.autoLoanRenewChecker(true);
       }
@@ -489,7 +490,8 @@ export default class IABookActions extends LitElement {
         .loanTotalTime=${this.loanRenewTimeConfig.loanTotalTime}
         ?hasAdminAccess=${this.hasAdminAccess}
         ?disabled=${this.disableActionGroup}
-        ?renewNow=${this.loanRenewResult.renewNow}
+        ?loanRenewNow=${this.loanRenewResult.renewNow}
+        ?loanExpired=${this.lendingStatus.browsingExpired}
         @loanAutoRenewed=${this.handleLoanAutoRenewed}
         @lendingActionError=${this.handleLendingActionError}
         @toggleActionGroup=${this.handleToggleActionGroup}

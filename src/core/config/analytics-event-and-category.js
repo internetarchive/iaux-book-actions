@@ -14,6 +14,7 @@ export const analyticsActions = {
   browse: 'Borrow-1Hour',
   browseAgain: 'Borrow-Again',
   browseLoanRenew: 'Borrow-Loan-Renew',
+  browseLoanExpired: 'Borrow-Loan-Expired',
   borrow: 'Borrow-14Days',
   waitlistJoin: 'JoinWaitlist',
   waitlistLeave: 'LeaveWaitlist',

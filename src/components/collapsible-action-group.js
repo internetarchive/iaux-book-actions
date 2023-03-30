@@ -32,7 +32,8 @@ export class CollapsibleActionGroup extends ActionsHandler {
       dropdownArrow: { type: String },
       disabled: { type: Boolean },
       returnUrl: { type: String },
-      renewNow: { type: Boolean },
+      loanRenewNow: { type: Boolean },
+      loanExpired: { type: Boolean },
     };
   }
 
@@ -52,7 +53,8 @@ export class CollapsibleActionGroup extends ActionsHandler {
     this.loaderIcon = 'https://archive.org/upload/images/tree/loading.gif';
     this.disabled = false;
     this.returnUrl = '';
-    this.renewNow = false;
+    this.loanRenewNow = false;
+    this.loanExpired = false;
   }
 
   updated(changed) {
@@ -63,21 +65,33 @@ export class CollapsibleActionGroup extends ActionsHandler {
       this.resetActions();
     }
 
-    if (changed.has('renewNow') && this.renewNow === true) {
-      this.dispatchLoanRenewEvent();
+    if (changed.has('loanRenewNow') && this.loanRenewNow === true) {
+      this.dispatchLoanEvent('loanRenewNow');
+    }
+
+    if (changed.has('loanExpired') && this.loanExpired === true) {
+      this.dispatchLoanEvent('loanExpired');
     }
   }
 
-  // dispatch this event to loan renew handler
-  dispatchLoanRenewEvent() {
-    const { category, action } = {
-      category: analyticsCategories.browse,
-      action: analyticsActions.browseLoanRenew,
-    };
+  /**
+   * dispatch event when book is auto renewed / returned
+   * listen these events in action-handler.js
+   * @see ActionsHandler
+   *
+   * @param {string} event - loanRenewNow|loanExpired
+   * @memberof CollapsibleActionGroup
+   */
+  dispatchLoanEvent(event) {
+    const category = analyticsCategories.browse;
+    const action =
+      event === 'loanRenewNow'
+        ? analyticsActions.browseLoanRenew
+        : analyticsActions.browseLoanExpired;
 
     // listen in action-handler.js to execute ajax call on petabox.
     this.dispatchEvent(
-      new CustomEvent('loanRenew', {
+      new CustomEvent(event, {
         detail: {
           event: { category, action },
         },
