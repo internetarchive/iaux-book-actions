@@ -260,8 +260,9 @@ export default class IABookActions extends LitElement {
      * dispatched this event from bookreader page changed
      */
     window.addEventListener('BookReader:userAction', () => {
+      this.suppressToast = true;
+
       if (this.borrowType === 'browsed') {
-        this.suppressToast = false;
         this.autoLoanRenewChecker(true);
       }
 
