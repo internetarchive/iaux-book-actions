@@ -240,7 +240,7 @@ export default class IABookActions extends LitElement {
      */
     setTimeout(
       () => {
-        this.startLoanTokenPoller();
+        if (!hasExpired) this.startLoanTokenPoller();
       },
 
       // if book is renew while reading, let's wait to execute create-token api
@@ -260,12 +260,13 @@ export default class IABookActions extends LitElement {
      * dispatched this event from bookreader page changed
      */
     window.addEventListener('BookReader:userAction', () => {
+      console.log('user action');
+      this.suppressToast = true;
+      this.closeToastManager();
+
       if (this.borrowType === 'browsed') {
-        this.suppressToast = false;
         this.autoLoanRenewChecker(true);
       }
-
-      return nothing;
     });
 
     /**
@@ -321,6 +322,16 @@ export default class IABookActions extends LitElement {
   }
 
   /**
+   * close/hide toast message
+   */
+  async closeToastManager() {
+    const toastTemplate = this.shadowRoot.querySelector('toast-template');
+    if (toastTemplate) {
+      toastTemplate?.remove();
+    }
+  }
+
+  /**
    * Show toast messages on some specific loan renew features. e.g.
    * - show message when book is auto renewed
    * - show message when book is expired
@@ -329,14 +340,11 @@ export default class IABookActions extends LitElement {
   async showToastMessage() {
     if (this.suppressToast) return;
 
-    const iaBookActions = document.querySelector('ia-book-actions')?.shadowRoot;
-    if (!iaBookActions) return;
-
-    let toastTemplate = iaBookActions.querySelector('toast-template');
+    let toastTemplate = this.shadowRoot.querySelector('toast-template');
     if (!toastTemplate) {
       toastTemplate = document.createElement('toast-template');
     }
-    await iaBookActions.appendChild(toastTemplate);
+    await this.shadowRoot.appendChild(toastTemplate);
 
     // if secondsLeft < 60, consider it 1 minute
     let { secondsLeft } = this.loanRenewResult;
@@ -573,8 +581,7 @@ export default class IABookActions extends LitElement {
    *  @param {string} event.detail.data.error - error message
    */
   handleLendingActionError(event) {
-    // toggle activity loader
-    this.handleToggleActionGroup();
+    this.disableActionGroup = false;
 
     // clear all intervals for lending system when error occured
     window?.IALendingIntervals?.clearAll();
@@ -582,7 +589,9 @@ export default class IABookActions extends LitElement {
     const action = event?.detail?.action;
     const errorMsg = event?.detail?.data?.error;
 
-    if (errorMsg) this.showErrorModal(errorMsg, action);
+    // template not show create_token errors
+    if (errorMsg && action !== 'create_token')
+      this.showErrorModal(errorMsg, action);
 
     // if error related to loan token
     // - clear tokenPoller interval
@@ -616,8 +625,6 @@ export default class IABookActions extends LitElement {
 
   /* show error message if something went wrong */
   async showErrorModal(errorMsg, action) {
-    this.disableActionGroup = false;
-
     // check if this.modal passed as prop
     if (!this.modal) {
       this.modal = document.querySelector('modal-manager');
