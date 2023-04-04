@@ -93,7 +93,6 @@ export class LoanRenewHelper {
       this.result.texts = '';
       this.result.renewNow = true; // viewed in last time frame
     }
-    console.log('loan-auto-renew-attempt');
 
     return this.result;
   }

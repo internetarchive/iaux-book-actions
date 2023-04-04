@@ -32,8 +32,8 @@ export class CollapsibleActionGroup extends ActionsHandler {
       dropdownArrow: { type: String },
       disabled: { type: Boolean },
       returnUrl: { type: String },
-      loanRenewNow: { type: Boolean },
-      loanExpired: { type: Boolean },
+      autoRenew: { type: Boolean },
+      autoReturn: { type: Boolean },
     };
   }
 
@@ -53,8 +53,8 @@ export class CollapsibleActionGroup extends ActionsHandler {
     this.loaderIcon = 'https://archive.org/upload/images/tree/loading.gif';
     this.disabled = false;
     this.returnUrl = '';
-    this.loanRenewNow = false;
-    this.loanExpired = false;
+    this.autoRenew = false;
+    this.autoReturn = false;
   }
 
   updated(changed) {
@@ -65,12 +65,12 @@ export class CollapsibleActionGroup extends ActionsHandler {
       this.resetActions();
     }
 
-    if (changed.has('loanRenewNow') && this.loanRenewNow === true) {
-      this.dispatchLoanEvent('loanRenewNow');
+    if (changed.has('autoRenew') && this.autoRenew === true) {
+      this.dispatchLoanEvent('autoRenew');
     }
 
-    if (changed.has('loanExpired') && this.loanExpired === true) {
-      this.dispatchLoanEvent('loanExpired');
+    if (changed.has('autoReturn') && this.autoReturn === true) {
+      this.dispatchLoanEvent('autoReturn');
     }
   }
 
@@ -79,15 +79,15 @@ export class CollapsibleActionGroup extends ActionsHandler {
    * listen these events in action-handler.js
    * @see ActionsHandler
    *
-   * @param {string} event - loanRenewNow|loanExpired
+   * @param {string} event - autoRenew|autoReturn
    * @memberof CollapsibleActionGroup
    */
   dispatchLoanEvent(event) {
     const category = analyticsCategories.browse;
     const action =
-      event === 'loanRenewNow'
-        ? analyticsActions.browseLoanRenew
-        : analyticsActions.browseLoanExpired;
+      event === 'autoRenew'
+        ? analyticsActions.browseAutoRenew
+        : analyticsActions.browseAutoReturn;
 
     // listen in action-handler.js to execute ajax call on petabox.
     this.dispatchEvent(

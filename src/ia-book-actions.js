@@ -238,16 +238,10 @@ export default class IABookActions extends LitElement {
     /**
      * tokenPoller determines if user has loan token for this book
      * - if book is going to renew, need to wait until renew is completed
-     * - otherwise execute immediately
      */
-    setTimeout(
-      () => {
-        if (!hasExpired) this.startLoanTokenPoller();
-      },
-
-      // if book is renew while reading, let's wait to execute create-token api
-      this.loanRenewResult.renewNow ? this.tokenDelay * 1000 : 100
-    );
+    setTimeout(() => {
+      if (!hasExpired) this.startLoanTokenPoller();
+    }, 100);
   }
 
   /**
@@ -262,7 +256,6 @@ export default class IABookActions extends LitElement {
      * dispatched this event from bookreader page changed
      */
     window.addEventListener('BookReader:userAction', () => {
-      console.log('user action');
       this.suppressToast = true;
       this.closeToastManager();
 
@@ -497,8 +490,8 @@ export default class IABookActions extends LitElement {
         .loanTotalTime=${this.loanRenewTimeConfig.loanTotalTime}
         ?hasAdminAccess=${this.hasAdminAccess}
         ?disabled=${this.disableActionGroup}
-        ?loanRenewNow=${this.loanRenewResult.renewNow}
-        ?loanExpired=${this.lendingStatus.browsingExpired}
+        ?autoRenew=${this.loanRenewResult.renewNow}
+        ?autoReturn=${this.lendingStatus.browsingExpired}
         @loanAutoRenewed=${this.handleLoanAutoRenewed}
         @lendingActionError=${this.handleLendingActionError}
         @toggleActionGroup=${this.handleToggleActionGroup}

@@ -2,6 +2,7 @@ import { LitElement } from 'lit';
 
 import { URLHelper } from '../../config/url-helper.js';
 import { sentryLogs } from '../../config/sentry-events.js';
+import { analyticsCategories } from '../../config/analytics-event-and-category.js';
 
 import ActionsHandlerService from './actions-handler-service.js';
 import * as Cookies from '../doc-cookies.js';
@@ -24,16 +25,6 @@ export default class ActionsHandler extends LitElement {
      */
     this.waitUntillBorrowComplete = 6; // in seconds
 
-    /**
-     * counts that we store in cookies to send google analytics
-     */
-    this.lendingEventCounts = {
-      loan_count: 0,
-      loan_auto_renew: 0,
-      loan_auto_expired: 0,
-    };
-
-    // console.log(this.getLoanCountStorageKey)
     this.bindEvents();
   }
 
@@ -44,22 +35,23 @@ export default class ActionsHandler extends LitElement {
    * @param {string} eventAction
    * @memberof ActionsHandler
    */
-  sendEvent(eventCategory, eventAction) {
-    window?.archive_analytics?.send_event(
+  sendEvent(eventCategory, eventAction, label, extraParams) {
+    window?.archive_analytics?.send_event_no_sampling(
       eventCategory,
       eventAction,
-      `identifier=${this.identifier}`
+      label || `identifier=${this.identifier}`,
+      extraParams
     );
   }
 
   get getLoanCountStorageKey() {
-    return `book-loan-counts-${this.identifier}`;
+    return `br-browse-${this.identifier}`;
   }
 
   bindEvents() {
     this.addEventListener('browseBook', ({ detail }) => {
       this.handleBrowseIt();
-      this.setConsecutiveLoanCounts();
+      this.setConsecutiveLoanCounts('browseBook');
       const { category, action } = detail.event;
       this.sendEvent(category, action);
     });
@@ -71,15 +63,17 @@ export default class ActionsHandler extends LitElement {
       this.sendEvent(category, action);
     });
 
-    this.addEventListener('loanRenewNow', ({ detail }) => {
+    this.addEventListener('autoRenew', ({ detail }) => {
       this.handleLoanRenewNow();
-      this.setConsecutiveLoanCounts('loanRenewNow');
+      this.setConsecutiveLoanCounts('autoRenew');
       const { category, action } = detail.event;
       this.sendEvent(category, action);
     });
 
-    this.addEventListener('loanExpired', () => {
-      this.setConsecutiveLoanCounts('loanExpired');
+    this.addEventListener('autoReturn', ({ detail }) => {
+      this.setConsecutiveLoanCounts('autoReturn');
+      const { category, action } = detail.event;
+      this.sendEvent(category, action);
     });
 
     this.addEventListener('returnNow', ({ detail }) => {
@@ -133,8 +127,101 @@ export default class ActionsHandler extends LitElement {
     });
   }
 
+  /**
+   * store consecutive one hour loan counts in cookies for GA
+   *
+   * There are two possible way of consecutive loan
+   * - book is browsed again just after getting expired
+   * - book loan is auto renewed for another hour
+   *
+   * @param {string} action - user action on book
+   * @return {void}
+   * @memberof ActionsHandler
+   */
+  async setConsecutiveLoanCounts(action = '') {
+    try {
+      await this.getConsecutiveLoanRecord(action);
+
+      const date = new Date();
+      date.setHours(date.getHours() + 2); // 2 hours
+
+      // set new value
+      Cookies.setItem(
+        this.getLoanCountStorageKey,
+        JSON.stringify(this.lendingEventCounts),
+        date,
+        '/'
+      );
+    } catch (error) {
+      console.log(error);
+      window?.Sentry?.captureException(
+        `${sentryLogs.setConsecutiveLoanCounts} - Error: ${error}`
+      );
+      this.sendEvent('Cookies-Error-Actions', error);
+    }
+  }
+
+  /**
+   * Get consecutive loan count records from cookies for GA
+   *
+   * @param {string} action
+   * @memberof ActionsHandler
+   */
+  async getConsecutiveLoanRecord(action) {
+    const gaStats = { browse: 0, renew: 0, expire: 0 };
+
+    this.lendingEventCounts = JSON.parse(
+      Cookies.getItem(this.getLoanCountStorageKey)
+    );
+
+    let browse = this.lendingEventCounts?.browse ?? 0;
+    let renew = this.lendingEventCounts?.renew ?? 0;
+    let expire = this.lendingEventCounts?.expire ?? 0;
+
+    if (this.lendingEventCounts !== null) {
+      switch (action) {
+        case 'browseBook' || 'browseBookAgain':
+          browse = browse ? Number(browse) + 1 : 1;
+          gaStats.browse = browse;
+          break;
+
+        case 'autoRenew':
+          renew = renew ? Number(renew) + 1 : 1;
+          gaStats.renew = renew;
+          this.sendEvent(
+            analyticsCategories.browse,
+            `BookAutoRenewedFor${renew}`
+          );
+          break;
+
+        case 'autoReturn':
+          expire = expire ? Number(expire) + 1 : 1;
+          gaStats.expire = expire;
+
+          renew = 0; // reset renew count when book is expired
+          break;
+        default:
+          break;
+      }
+    }
+
+    // store these counts in cookies
+    this.lendingEventCounts = { browse, renew, expire };
+
+    // send google analytics events
+    this.sendEvent(
+      analyticsCategories.browse,
+      `browse${gaStats.browse}-autoRenew${gaStats.renew}-autoExpire${gaStats.expire}`,
+      '',
+      {
+        browse: gaStats.browse,
+        renew: gaStats.renew,
+        expire: gaStats.expire,
+      }
+    );
+  }
+
   handleBrowseIt() {
-    console.log(this.identifier);
     const action = 'browse_book';
     this.dispatchToggleActionGroup();
 
@@ -296,80 +383,6 @@ export default class ActionsHandler extends LitElement {
     setTimeout(() => {
       URLHelper.goToUrl(redirectTo, true);
     }, this.waitUntillBorrowComplete * 1000);
-  }
-
-  /**
-   * store consecutive one hour loan counts in cookies for GA
-   *
-   * There are two possible way of consecutive loan
-   * - book is browsed again just after getting expired
-   * - book loan is auto renewed for another hour
-   *
-   * @param {string} action - user action on book
-   * @return {void}
-   * @memberof ActionsHandler
-   */
-  async setConsecutiveLoanCounts(action = '') {
-    try {
-      await this.getConsecutiveLoanRecord(action);
-
-      const date = new Date();
-      date.setHours(date.getHours() + 2); // 2 hours
-
-      // set new value
-      Cookies.setItem(
-        this.getLoanCountStorageKey,
-        JSON.stringify(this.lendingEventCounts),
-        date,
-        '/'
-      );
-    } catch (error) {
-      console.log(error);
-      window?.Sentry?.captureException(
-        `${sentryLogs.setConsecutiveLoanCounts} - Error: ${error}`
-      );
-      this.sendEvent('Cookies-Error-Actions', error);
-    }
-  }
-
-  /**
-   * Get consecutive loan count records from cookies for GA
-   *
-   * @param {string} action
-   * @return {object} { count, storageKey }
-   * @memberof ActionsHandler
-   */
-  async getConsecutiveLoanRecord(action) {
-    let newCount = 1;
-    let existingCount = 1;
-
-    // storage key for consecutive loan count
-    let storageKey = `loan_count`;
-
-    if (action === 'loanRenewNow') {
-      storageKey = `loan_auto_renew`;
-    }
-
-    if (action === 'loanExpired') {
-      storageKey = `loan_auto_expired`;
-    }
-
-    // browseBookAgain and loanRenew events needs to track
-    if (['browseBookAgain', 'loanRenewNow', 'loanExpired'].includes(action)) {
-      const loanCountRecords = JSON.parse(
-        Cookies.getItem(this.getLoanCountStorageKey)
-      );
-      if (loanCountRecords !== null) {
-        existingCount = loanCountRecords[`${storageKey}`];
-
-        // if found existingCount, just increase by 1
-        newCount = existingCount ? Number(existingCount) + 1 : 1;
-
-        console.log(existingCount, newCount);
-      }
-    }
-
-    this.lendingEventCounts[`${storageKey}`] = newCount;
   }
 
   /**

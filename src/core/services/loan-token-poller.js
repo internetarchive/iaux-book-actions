@@ -77,7 +77,7 @@ export class LoanTokenPoller {
   }
 
   sendEvent(eventCategory, eventAction) {
-    window?.archive_analytics?.send_event(
+    window?.archive_analytics?.send_event_no_sampling(
       eventCategory,
       eventAction,
       `identifier=${this.identifier}`
