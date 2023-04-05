@@ -1,4 +1,5 @@
 import ActionsHandlerService from './actions-handler/actions-handler-service.js';
+import LoanAnanlytics from './loan-analytics.js';
 import { sentryLogs } from '../config/sentry-events.js';
 
 import * as Cookies from './doc-cookies.js';
@@ -17,6 +18,13 @@ export class LoanTokenPoller {
     this.pollerDelay = pollerDelay; // value in seconds
 
     this.loanTokenInterval = undefined;
+
+    /**
+     * loan analytics instance
+     * @see loan-analytics.js
+     */
+    this.loanAnalytics = new LoanAnanlytics();
+
     this.bookAccessed();
   }
 
@@ -39,7 +47,6 @@ export class LoanTokenPoller {
           window?.Sentry?.captureException(
             `${sentryLogs.enableBookAcces} - CookieError: ${error}`
           );
-          this.sendEvent('Cookies-Error-Token', error);
         }
       }
 
@@ -65,7 +72,11 @@ export class LoanTokenPoller {
         this.borrowType === 'browsed' ? 'BrowseCounts-' : 'Counts-'
       }${consecutiveLoanCounts}`;
 
-      this.sendEvent(category, action);
+      this.loanAnalytics?.sendEvent(
+        category,
+        action,
+        `identifier=${this.identifier}`
+      );
     } else {
       window?.Sentry?.captureMessage(
         `${sentryLogs.bookAccessed} - not borrowed`
@@ -74,14 +85,6 @@ export class LoanTokenPoller {
       // if book is not browsed, just clear token polling interval
       this.disconnectedCallback();
     }
-  }
-
-  sendEvent(eventCategory, eventAction) {
-    window?.archive_analytics?.send_event_no_sampling(
-      eventCategory,
-      eventAction,
-      `identifier=${this.identifier}`
-    );
   }
 
   async handleLoanTokenPoller(isInitial = false) {
@@ -98,7 +101,11 @@ export class LoanTokenPoller {
         );
 
         // send LendingServiceError to GA
-        this.sendEvent('LendingServiceLoanError', action);
+        this.loanAnalytics?.sendEvent(
+          'LendingServiceLoanError',
+          action,
+          `identifier=${this.identifier}`
+        );
       },
       success: () => {
         if (isInitial) this.successCallback();

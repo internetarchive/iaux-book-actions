@@ -1,18 +1,16 @@
 import { LitElement } from 'lit';
 
 import { URLHelper } from '../../config/url-helper.js';
-import { sentryLogs } from '../../config/sentry-events.js';
-import { analyticsCategories } from '../../config/analytics-event-and-category.js';
 
 import ActionsHandlerService from './actions-handler-service.js';
+import LoanAnanlytics from '../loan-analytics.js';
 import * as Cookies from '../doc-cookies.js';
 
 /**
  * These are callback functions calling from actions-config.js file.
  *
- * ActionsHandlerService is a function being used to execute
- * APIs based of the request made by user. It consist some parameters are as follows:-
- * 1. identifier: book name.
+ * ActionsHandlerService is a function being used to execute APIs based of the request made by user.
+ *
  */
 
 export default class ActionsHandler extends LitElement {
@@ -25,200 +23,149 @@ export default class ActionsHandler extends LitElement {
      */
     this.waitUntillBorrowComplete = 6; // in seconds
 
+    /**
+     * bind events for lending bar
+     * @type {object}
+     */
+    this.loanAnanlytics = new LoanAnanlytics();
+
+    /**
+     * bind events for lending bar
+     * @type {Function}
+     */
     this.bindEvents();
-  }
-
-  /**
-   * reponsible to sent events to GA
-   *
-   * @param {string} eventCategory
-   * @param {string} eventAction
-   * @memberof ActionsHandler
-   */
-  sendEvent(eventCategory, eventAction, label, extraParams) {
-    window?.archive_analytics?.send_event_no_sampling(
-      eventCategory,
-      eventAction,
-      label || `identifier=${this.identifier}`,
-      extraParams
-    );
-  }
-
-  get getLoanCountStorageKey() {
-    return `br-browse-${this.identifier}`;
   }
 
   bindEvents() {
     this.addEventListener('browseBook', ({ detail }) => {
       this.handleBrowseIt();
-      this.setConsecutiveLoanCounts('browseBook');
+      this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'browse');
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(
+        category,
+        action,
+        `identifier=${this.identifier}`
+      );
     });
 
     this.addEventListener('browseBookAgain', ({ detail }) => {
       this.handleBrowseIt();
-      this.setConsecutiveLoanCounts('browseBookAgain');
+      this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'browseagain');
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(
+        category,
+        action,
+        `identifier=${this.identifier}`
+      );
     });
 
     this.addEventListener('autoRenew', ({ detail }) => {
       this.handleLoanRenewNow();
-      this.setConsecutiveLoanCounts('autoRenew');
+      this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'autorenew');
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(
+        category,
+        action,
+        `identifier=${this.identifier}`
+      );
     });
 
     this.addEventListener('autoReturn', ({ detail }) => {
-      this.setConsecutiveLoanCounts('autoReturn');
+      this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'autoreturn');
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(
+        category,
+        action,
+        `identifier=${this.identifier}`
+      );
     });
 
     this.addEventListener('returnNow', ({ detail }) => {
+      this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'return');
       this.handleReturnIt();
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(
+        category,
+        action,
+        `identifier=${this.identifier}`
+      );
     });
 
     this.addEventListener('borrowBook', ({ detail }) => {
       this.handleBorrowIt();
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(
+        category,
+        action,
+        `identifier=${this.identifier}`
+      );
     });
 
     this.addEventListener('loginAndBorrow', ({ detail }) => {
       this.handleLoginOk();
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(
+        category,
+        action,
+        `identifier=${this.identifier}`
+      );
     });
 
     this.addEventListener('leaveWaitlist', ({ detail }) => {
       this.handleRemoveFromWaitingList();
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(
+        category,
+        action,
+        `identifier=${this.identifier}`
+      );
     });
 
     this.addEventListener('joinWaitlist', ({ detail }) => {
       this.handleReserveIt();
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(
+        category,
+        action,
+        `identifier=${this.identifier}`
+      );
     });
 
     this.addEventListener('purchaseBook', ({ detail }) => {
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(
+        category,
+        action,
+        `identifier=${this.identifier}`
+      );
     });
 
     this.addEventListener('adminAccess', ({ detail }) => {
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(
+        category,
+        action,
+        `identifier=${this.identifier}`
+      );
     });
 
     this.addEventListener('exitAdminAccess', ({ detail }) => {
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(
+        category,
+        action,
+        `identifier=${this.identifier}`
+      );
     });
 
     this.addEventListener('bookTitleBar', ({ detail }) => {
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(
+        category,
+        action,
+        `identifier=${this.identifier}`
+      );
     });
-  }
-
-  /**
-   * store consecutive one hour loan counts in cookies for GA
-   *
-   * There are two possible way of consecutive loan
-   * - book is browsed again just after getting expired
-   * - book loan is auto renewed for another hour
-   *
-   * @param {string} action - user action on book
-   * @return {void}
-   * @memberof ActionsHandler
-   */
-  async setConsecutiveLoanCounts(action = '') {
-    try {
-      await this.getConsecutiveLoanRecord(action);
-
-      const date = new Date();
-      date.setHours(date.getHours() + 2); // 2 hours
-
-      // set new value
-      Cookies.setItem(
-        this.getLoanCountStorageKey,
-        JSON.stringify(this.lendingEventCounts),
-        date,
-        '/'
-      );
-    } catch (error) {
-      console.log(error);
-      window?.Sentry?.captureException(
-        `${sentryLogs.setConsecutiveLoanCounts} - Error: ${error}`
-      );
-      this.sendEvent('Cookies-Error-Actions', error);
-    }
-  }
-
-  /**
-   * Get consecutive loan count records from cookies for GA
-   *
-   * @param {string} action
-   * @memberof ActionsHandler
-   */
-  async getConsecutiveLoanRecord(action) {
-    const gaStats = { browse: 0, renew: 0, expire: 0 };
-
-    this.lendingEventCounts = JSON.parse(
-      Cookies.getItem(this.getLoanCountStorageKey)
-    );
-
-    let browse = this.lendingEventCounts?.browse ?? 0;
-    let renew = this.lendingEventCounts?.renew ?? 0;
-    let expire = this.lendingEventCounts?.expire ?? 0;
-
-    if (this.lendingEventCounts !== null) {
-      switch (action) {
-        case 'browseBook' || 'browseBookAgain':
-          browse = browse ? Number(browse) + 1 : 1;
-          gaStats.browse = browse;
-          break;
-
-        case 'autoRenew':
-          renew = renew ? Number(renew) + 1 : 1;
-          gaStats.renew = renew;
-          this.sendEvent(
-            analyticsCategories.browse,
-            `BookAutoRenewedFor${renew}`
-          );
-          break;
-
-        case 'autoReturn':
-          expire = expire ? Number(expire) + 1 : 1;
-          gaStats.expire = expire;
-
-          renew = 0; // reset renew count when book is expired
-          break;
-        default:
-          break;
-      }
-    }
-
-    // store these counts in cookies
-    this.lendingEventCounts = { browse, renew, expire };
-
-    // send google analytics events
-    this.sendEvent(
-      analyticsCategories.browse,
-      `browse${gaStats.browse}-autoRenew${gaStats.renew}-autoExpire${gaStats.expire}`,
-      '',
-      {
-        browse: gaStats.browse,
-        renew: gaStats.renew,
-        expire: gaStats.expire,
-      }
-    );
   }
 
   handleBrowseIt() {
@@ -334,7 +281,7 @@ export default class ActionsHandler extends LitElement {
    */
   dispatchActionError(action, data = {}) {
     // send LendingServiceError to GA
-    this.sendEvent('LendingServiceError', action);
+    this.loanAnanlytics?.sendEvent('LendingServiceError', action);
 
     this.dispatchEvent(
       new CustomEvent('lendingActionError', {
