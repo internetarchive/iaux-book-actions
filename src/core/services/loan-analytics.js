@@ -46,11 +46,7 @@ export default class LoanAnanlytics {
       );
     } catch (error) {
       console.log(error);
-      this.sendEvent(
-        'Cookies-Error-Actions',
-        error,
-        `identifier=${this.identifier}`
-      );
+      this.sendEvent('Cookies-Error-Actions', error, this.identifier);
     }
   }
 
@@ -78,7 +74,7 @@ export default class LoanAnanlytics {
         browse = browse ? Number(browse) + 1 : 1;
         this.gaStats.browse = browse;
 
-        // reset renew and expire count when browse
+        // reset renew and expire count
         renew = 0;
         expire = 0;
         break;
@@ -92,7 +88,7 @@ export default class LoanAnanlytics {
         expire = expire ? Number(expire) + 1 : 1;
         this.gaStats.expire = expire;
 
-        // reset renew and expire count when browse
+        // reset renew and expire count
         renew = 0;
         expire = 0;
         break;
@@ -104,37 +100,13 @@ export default class LoanAnanlytics {
     this.lendingEventCounts = { browse, renew, expire };
 
     // obtain GA category, event
-    // const { category, event } = await this.getGACategoryAction(action);
     const category = analyticsCategories.browse;
     const event = `browse${this.paddedNumber(
       this.gaStats?.browse
     )}-autorenew${this.paddedNumber(this.gaStats?.renew)}:${action}`;
 
     // send google analytics events
-    this.sendEvent(category, event, `identifier=${this.identifier}`, {
-      browse: this.gaStats?.browse,
-      renew: this.gaStats?.renew,
-      expire: this.gaStats?.expire,
-    });
-  }
-
-  /**
-   *
-   *
-   * @param {string} action - like 'browse|autorenew|etc...'
-   * @return {object} - contains GA category and event
-   * - @param {string}
-   * - @param {string}
-   *
-   * @memberof LoanAnanlytics
-   */
-  getGACategoryAction(action) {
-    const GACategory = analyticsCategories.browse;
-    const GAAction = `browse${this.paddedNumber(
-      this.gaStats?.browse
-    )}-autorenew${this.paddedNumber(this.gaStats?.renew)}:${action}`;
-
-    return { GACategory, GAAction };
+    this.sendEvent(category, event, this.identifier);
   }
 
   /**
@@ -168,21 +140,19 @@ export default class LoanAnanlytics {
    * @memberof LoanAnanlytics
    */
   sendEvent(eventCategory, eventAction, label, extraParams) {
-    console.debug(
-      'eventCategory:- ',
+    console.log(
+      'eventCategory:-',
       eventCategory,
-      '\neventAction:- ',
+      '\t||\teventAction:-',
       eventAction,
-      '\nlabel:- ',
-      label,
-      '\nextraParams:- ',
-      extraParams
+      '\t||\tlabel:-',
+      label
     );
 
     window?.archive_analytics?.send_event_no_sampling(
       eventCategory,
       eventAction,
-      label || `identifier=${this.identifier}`,
+      label || this.identifier,
       extraParams
     );
   }

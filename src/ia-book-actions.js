@@ -11,15 +11,13 @@ import './components/book-title-bar.js';
 import './components/text-group.js';
 import './components/info-icon.js';
 import './components/timer-countdown.js';
+import './core/config/ia-lending-intervals.js';
 
 import { GetLendingActions } from './core/services/get-lending-actions.js';
 import { mobileContainerWidth } from './core/config/constants.js';
 import { sentryLogs } from './core/config/sentry-events.js';
 import { LoanTokenPoller } from './core/services/loan-token-poller.js';
 import { LoanRenewHelper } from './core/services/loan-renew-helper.js';
-
-import './core/config/ia-lending-intervals.js';
-import * as Cookies from './core/services/doc-cookies.js';
 
 export const events = {
   browseExpired: 'IABookReader:BrowsingHasExpired',
@@ -75,6 +73,7 @@ export default class IABookActions extends LitElement {
     this.borrowType = ''; // (browsed|borrowed)
     this.consecutiveLoanCounts = 1; // consecutive loan count
     this.suppressToast = false;
+    this.suppressAutoRenew = false;
     this.browseTimer = undefined;
 
     /**
@@ -173,6 +172,7 @@ export default class IABookActions extends LitElement {
 
   async setupLendingToolbarActions() {
     this.suppressToast = false;
+    this.suppressAutoRenew = false;
 
     this.lendingOptions = new GetLendingActions(
       this.userid,
@@ -259,6 +259,10 @@ export default class IABookActions extends LitElement {
       this.suppressToast = true;
       this.closeToastManager();
 
+      if (this.suppressAutoRenew) {
+        return;
+      }
+
       if (this.borrowType === 'browsed') {
         this.autoLoanRenewChecker(true);
       }
@@ -289,6 +293,11 @@ export default class IABookActions extends LitElement {
      */
     this.addEventListener('IABookActions:loanRenew', async event => {
       await this.autoLoanRenewChecker(false);
+
+      // maybe the renew with-in last 1 minute is too short of a transition time between xhr, loading images etc... let NOT renew in last 50 seconds.
+      if (event?.detail?.secondsLeft < 50) {
+        this.suppressAutoRenew = true;
+      }
 
       // show warning message with remaining time to auto returned it.
       if (this.loanRenewResult.renewNow === false) {
@@ -405,9 +414,6 @@ export default class IABookActions extends LitElement {
     await this.localCache.delete(`${this.identifier}-loanTime`);
     await this.localCache.delete(`${this.identifier}-pageChangedTime`);
 
-    // remove loan-renew-count-<identifier> cookie
-    Cookies.removeItem(`loan-renew-count-${this.identifier}`);
-
     // show message after browsed book is expired.
     this.loanRenewResult.renewNow = false;
     this.loanRenewResult.texts =
@@ -507,8 +513,10 @@ export default class IABookActions extends LitElement {
    * - show success message
    * - then change the remaining time
    * - reset timer state
+   * @param {object} event
    */
-  async handleLoanAutoRenewed() {
+  async handleLoanAutoRenewed(event) {
+    // TODO: just read DATA variable here to apply security { action, data }
     if (this.loanRenewResult.renewNow) {
       window?.IALendingIntervals?.clearAll();
 
@@ -518,12 +526,12 @@ export default class IABookActions extends LitElement {
       await this.resetTimerCountState();
 
       window?.Sentry?.captureMessage(`${sentryLogs.bookHasRenewed}`);
-      // TODO: analytics?? for consecutive renew.....
 
       // testing console....
-      console.log(sentryLogs.bookHasRenewed, {
+      console.log('IABookActions: AutoRenewed:- ', {
+        ajaxResponse: event?.detail?.data,
         loanRenewResult: this.loanRenewResult,
-        browseHasRenew: this.lendingStatus.secondsLeftOnLoan,
+        secondsLeftOnLoan: Math.round(this.lendingStatus.secondsLeftOnLoan),
         resetTimerCountState: this._shadowRoot.querySelector('timer-countdown'),
       });
     }

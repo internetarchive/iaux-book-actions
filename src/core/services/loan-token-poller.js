@@ -2,8 +2,6 @@ import ActionsHandlerService from './actions-handler/actions-handler-service.js'
 import LoanAnanlytics from './loan-analytics.js';
 import { sentryLogs } from '../config/sentry-events.js';
 
-import * as Cookies from './doc-cookies.js';
-
 /**
  * This class is used to create loan token for borrowed books
  *
@@ -33,22 +31,22 @@ export class LoanTokenPoller {
   }
 
   async bookAccessed() {
-    let consecutiveLoanCounts = 1;
+    // let consecutiveLoanCounts = 1;
 
     if (this.borrowType) {
       // send consecutiveLoanCounts for browsed books only.
-      if (this.borrowType === 'browsed') {
-        try {
-          const existingCount = Cookies.getItem(
-            `loan-count-${this.identifier}`
-          );
-          consecutiveLoanCounts = existingCount ?? 1;
-        } catch (error) {
-          window?.Sentry?.captureException(
-            `${sentryLogs.enableBookAcces} - CookieError: ${error}`
-          );
-        }
-      }
+      // if (this.borrowType === 'browsed') {
+      //   try {
+      //     const existingCount = Cookies.getItem(
+      //       `loan-count-${this.identifier}`
+      //     );
+      //     consecutiveLoanCounts = existingCount ?? 1;
+      //   } catch (error) {
+      //     window?.Sentry?.captureException(
+      //       `${sentryLogs.enableBookAcces} - CookieError: ${error}`
+      //     );
+      //   }
+      // }
 
       // Do an initial token, then set an interval
       this.handleLoanTokenPoller(true);
@@ -67,16 +65,12 @@ export class LoanTokenPoller {
       }
 
       // event category and action for browsing book access
-      const category = `${this.borrowType}BookAccess`;
-      const action = `${
-        this.borrowType === 'browsed' ? 'BrowseCounts-' : 'Counts-'
-      }${consecutiveLoanCounts}`;
+      // const category = `${this.borrowType}BookAccess`;
+      // const action = `${
+      //   this.borrowType === 'browsed' ? 'BrowseCounts-' : 'Counts-'
+      // }${consecutiveLoanCounts}`;
 
-      this.loanAnalytics?.sendEvent(
-        category,
-        action,
-        `identifier=${this.identifier}`
-      );
+      // this.loanAnalytics?.sendEvent(category, action, this.identifier);
     } else {
       window?.Sentry?.captureMessage(
         `${sentryLogs.bookAccessed} - not borrowed`
@@ -104,7 +98,7 @@ export class LoanTokenPoller {
         this.loanAnalytics?.sendEvent(
           'LendingServiceLoanError',
           action,
-          `identifier=${this.identifier}`
+          this.identifier
         );
       },
       success: () => {

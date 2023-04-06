@@ -37,134 +37,83 @@ export default class ActionsHandler extends LitElement {
   }
 
   bindEvents() {
-    this.addEventListener('browseBook', ({ detail }) => {
+    this.addEventListener('browseBook', () => {
       this.handleBrowseIt();
       this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'browse');
-      const { category, action } = detail.event;
-      this.loanAnanlytics?.sendEvent(
-        category,
-        action,
-        `identifier=${this.identifier}`
-      );
     });
 
-    this.addEventListener('browseBookAgain', ({ detail }) => {
+    this.addEventListener('browseBookAgain', () => {
       this.handleBrowseIt();
       this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'browseagain');
-      const { category, action } = detail.event;
-      this.loanAnanlytics?.sendEvent(
-        category,
-        action,
-        `identifier=${this.identifier}`
-      );
     });
 
-    this.addEventListener('autoRenew', ({ detail }) => {
+    this.addEventListener('autoRenew', () => {
       this.handleLoanRenewNow();
       this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'autorenew');
-      const { category, action } = detail.event;
-      this.loanAnanlytics?.sendEvent(
-        category,
-        action,
-        `identifier=${this.identifier}`
-      );
     });
 
-    this.addEventListener('autoReturn', ({ detail }) => {
+    this.addEventListener('autoReturn', () => {
+      this.deleteLoanCookies();
       this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'autoreturn');
-      const { category, action } = detail.event;
-      this.loanAnanlytics?.sendEvent(
-        category,
-        action,
-        `identifier=${this.identifier}`
-      );
     });
 
     this.addEventListener('returnNow', ({ detail }) => {
-      this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'return');
+      // use loan stats count when 1-hour borrow is active
+      if (detail?.borrowType === 'browse') {
+        this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'return');
+      }
+
       this.handleReturnIt();
-      const { category, action } = detail.event;
-      this.loanAnanlytics?.sendEvent(
-        category,
-        action,
-        `identifier=${this.identifier}`
-      );
+
+      // send these events if 14-day borrow return
+      if (detail?.borrowType === 'borrow') {
+        const { category, action } = detail.event;
+        this.loanAnanlytics?.sendEvent(category, action, this.identifier);
+      }
     });
 
     this.addEventListener('borrowBook', ({ detail }) => {
       this.handleBorrowIt();
       const { category, action } = detail.event;
-      this.loanAnanlytics?.sendEvent(
-        category,
-        action,
-        `identifier=${this.identifier}`
-      );
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
     });
 
     this.addEventListener('loginAndBorrow', ({ detail }) => {
       this.handleLoginOk();
       const { category, action } = detail.event;
-      this.loanAnanlytics?.sendEvent(
-        category,
-        action,
-        `identifier=${this.identifier}`
-      );
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
     });
 
     this.addEventListener('leaveWaitlist', ({ detail }) => {
       this.handleRemoveFromWaitingList();
       const { category, action } = detail.event;
-      this.loanAnanlytics?.sendEvent(
-        category,
-        action,
-        `identifier=${this.identifier}`
-      );
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
     });
 
     this.addEventListener('joinWaitlist', ({ detail }) => {
       this.handleReserveIt();
       const { category, action } = detail.event;
-      this.loanAnanlytics?.sendEvent(
-        category,
-        action,
-        `identifier=${this.identifier}`
-      );
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
     });
 
     this.addEventListener('purchaseBook', ({ detail }) => {
       const { category, action } = detail.event;
-      this.loanAnanlytics?.sendEvent(
-        category,
-        action,
-        `identifier=${this.identifier}`
-      );
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
     });
 
     this.addEventListener('adminAccess', ({ detail }) => {
       const { category, action } = detail.event;
-      this.loanAnanlytics?.sendEvent(
-        category,
-        action,
-        `identifier=${this.identifier}`
-      );
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
     });
 
     this.addEventListener('exitAdminAccess', ({ detail }) => {
       const { category, action } = detail.event;
-      this.loanAnanlytics?.sendEvent(
-        category,
-        action,
-        `identifier=${this.identifier}`
-      );
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
     });
 
     this.addEventListener('bookTitleBar', ({ detail }) => {
       const { category, action } = detail.event;
-      this.loanAnanlytics?.sendEvent(
-        category,
-        action,
-        `identifier=${this.identifier}`
-      );
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
     });
   }
 
@@ -214,7 +163,10 @@ export default class ActionsHandler extends LitElement {
       identifier: this.identifier,
       success: () => {
         this.deleteLoanCookies();
-        URLHelper.goToUrl(this.returnUrl, true);
+        // URLHelper.goToUrl(this.returnUrl, true);
+        setTimeout(() => {
+          URLHelper.goToUrl(this.returnUrl, true);
+        }, this.waitUntillBorrowComplete * 1000);
       },
       error: data => {
         this.dispatchActionError(action, data);

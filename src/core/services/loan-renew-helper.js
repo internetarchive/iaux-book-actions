@@ -89,6 +89,7 @@ export class LoanRenewHelper {
     ) {
       this.result.texts = this.loanReturnWarning;
       this.result.renewNow = false; // not viewed
+      console.log('warning msg appears');
     } else if (pageChangedTime >= pageChangeTimeFrame) {
       this.result.texts = '';
       this.result.renewNow = true; // viewed in last time frame

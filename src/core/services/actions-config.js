@@ -70,6 +70,7 @@ export default class ActionsConfig {
         category: eventCategory,
         action: this.analyticsActions.doneBorrowing,
       },
+      borrowType: this.lendingStatus.user_has_browsed ? 'browse' : 'borrow',
     };
   }
 
