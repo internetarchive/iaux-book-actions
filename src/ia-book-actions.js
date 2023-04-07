@@ -309,6 +309,7 @@ export default class IABookActions extends LitElement {
       // show warning message with remaining time to auto returned it.
       if (this.loanRenewResult.renewNow === false) {
         this.loanRenewResult.secondsLeft = event.detail.secondsLeft;
+        this.suppressToast = false;
         this.showToastMessage();
       }
     });
