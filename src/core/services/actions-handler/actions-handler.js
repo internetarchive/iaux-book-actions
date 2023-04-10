@@ -1,17 +1,16 @@
 import { LitElement } from 'lit';
 
 import { URLHelper } from '../../config/url-helper.js';
-import { sentryLogs } from '../../config/sentry-events.js';
 
 import ActionsHandlerService from './actions-handler-service.js';
+import LoanAnanlytics from '../loan-analytics.js';
 import * as Cookies from '../doc-cookies.js';
 
 /**
  * These are callback functions calling from actions-config.js file.
  *
- * ActionsHandlerService is a function being used to execute
- * APIs based of the request made by user. It consist some parameters are as follows:-
- * 1. identifier: book name.
+ * ActionsHandlerService is a function being used to execute APIs based of the request made by user.
+ *
  */
 
 export default class ActionsHandler extends LitElement {
@@ -24,86 +23,97 @@ export default class ActionsHandler extends LitElement {
      */
     this.waitUntillBorrowComplete = 6; // in seconds
 
+    /**
+     * bind events for lending bar
+     * @type {object}
+     */
+    this.loanAnanlytics = new LoanAnanlytics();
+
+    /**
+     * bind events for lending bar
+     * @type {Function}
+     */
     this.bindEvents();
   }
 
-  sendEvent(eventCategory, eventAction) {
-    window?.archive_analytics?.send_event(
-      eventCategory,
-      eventAction,
-      `identifier=${this.identifier}`
-    );
-  }
-
   bindEvents() {
-    this.addEventListener('browseBook', ({ detail }) => {
+    this.addEventListener('browseBook', () => {
       this.handleBrowseIt();
-      this.setConsecutiveLoanCounts();
-      const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'browse');
     });
 
-    this.addEventListener('browseBookAgain', ({ detail }) => {
+    this.addEventListener('browseBookAgain', () => {
       this.handleBrowseIt();
-      this.setConsecutiveLoanCounts('browseAgain');
-      const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'browseagain');
     });
 
-    this.addEventListener('loanRenew', ({ detail }) => {
-      this.handleLoanRenew();
-      const { category, action } = detail.event;
-      this.sendEvent(category, action);
+    this.addEventListener('autoRenew', () => {
+      this.handleLoanRenewNow();
+      this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'autorenew');
+    });
+
+    this.addEventListener('autoReturn', () => {
+      this.deleteLoanCookies();
+      this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'autoreturn');
     });
 
     this.addEventListener('returnNow', ({ detail }) => {
+      // use loan stats count when 1-hour borrow is active
+      if (detail?.borrowType === 'browse') {
+        this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'return');
+      }
+
       this.handleReturnIt();
-      const { category, action } = detail.event;
-      this.sendEvent(category, action);
+
+      // send these events if 14-day borrow return
+      if (detail?.borrowType === 'borrow') {
+        const { category, action } = detail.event;
+        this.loanAnanlytics?.sendEvent(category, action, this.identifier);
+      }
     });
 
     this.addEventListener('borrowBook', ({ detail }) => {
       this.handleBorrowIt();
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
     });
 
     this.addEventListener('loginAndBorrow', ({ detail }) => {
       this.handleLoginOk();
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
     });
 
     this.addEventListener('leaveWaitlist', ({ detail }) => {
       this.handleRemoveFromWaitingList();
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
     });
 
     this.addEventListener('joinWaitlist', ({ detail }) => {
       this.handleReserveIt();
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
     });
 
     this.addEventListener('purchaseBook', ({ detail }) => {
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
     });
 
     this.addEventListener('adminAccess', ({ detail }) => {
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
     });
 
     this.addEventListener('exitAdminAccess', ({ detail }) => {
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
     });
 
     this.addEventListener('bookTitleBar', ({ detail }) => {
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
     });
   }
 
@@ -124,7 +134,7 @@ export default class ActionsHandler extends LitElement {
     });
   }
 
-  handleLoanRenew() {
+  handleLoanRenewNow() {
     const action = 'renew_loan';
 
     ActionsHandlerService({
@@ -220,7 +230,7 @@ export default class ActionsHandler extends LitElement {
    */
   dispatchActionError(action, data = {}) {
     // send LendingServiceError to GA
-    this.sendEvent('LendingServiceError', action);
+    this.loanAnanlytics?.sendEvent('LendingServiceError', action);
 
     this.dispatchEvent(
       new CustomEvent('lendingActionError', {
@@ -269,31 +279,6 @@ export default class ActionsHandler extends LitElement {
     setTimeout(() => {
       URLHelper.goToUrl(redirectTo, true);
     }, this.waitUntillBorrowComplete * 1000);
-  }
-
-  // save consecutive loan count for borrow
-  async setConsecutiveLoanCounts(action = '') {
-    try {
-      let newCount = 1;
-      const storageKey = `loan-count-${this.identifier}`;
-      const existingCount = Cookies.getItem(storageKey);
-
-      // increase browse-count by 1 when you consecutive reading a book.
-      if (action === 'browseAgain' && existingCount !== undefined) {
-        newCount = existingCount ? Number(existingCount) + 1 : 1;
-      }
-
-      const date = new Date();
-      date.setHours(date.getHours() + 2); // 2 hours
-
-      // set new value
-      Cookies.setItem(storageKey, newCount, date, '/');
-    } catch (error) {
-      window?.Sentry?.captureException(
-        `${sentryLogs.setConsecutiveLoanCounts} - Error: ${error}`
-      );
-      this.sendEvent('Cookies-Error-Actions', error);
-    }
   }
 
   /**

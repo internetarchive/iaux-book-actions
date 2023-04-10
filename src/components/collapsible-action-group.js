@@ -32,7 +32,8 @@ export class CollapsibleActionGroup extends ActionsHandler {
       dropdownArrow: { type: String },
       disabled: { type: Boolean },
       returnUrl: { type: String },
-      renewNow: { type: Boolean },
+      autoRenew: { type: Boolean },
+      autoReturn: { type: Boolean },
     };
   }
 
@@ -52,7 +53,8 @@ export class CollapsibleActionGroup extends ActionsHandler {
     this.loaderIcon = 'https://archive.org/upload/images/tree/loading.gif';
     this.disabled = false;
     this.returnUrl = '';
-    this.renewNow = false;
+    this.autoRenew = false;
+    this.autoReturn = false;
   }
 
   updated(changed) {
@@ -63,21 +65,33 @@ export class CollapsibleActionGroup extends ActionsHandler {
       this.resetActions();
     }
 
-    if (changed.has('renewNow') && this.renewNow === true) {
-      this.dispatchLoanRenewEvent();
+    if (changed.has('autoRenew') && this.autoRenew === true) {
+      this.dispatchLoanEvent('autoRenew');
+    }
+
+    if (changed.has('autoReturn') && this.autoReturn === true) {
+      this.dispatchLoanEvent('autoReturn');
     }
   }
 
-  // dispatch this event to loan renew handler
-  dispatchLoanRenewEvent() {
-    const { category, action } = {
-      category: analyticsCategories.browse,
-      action: analyticsActions.browseLoanRenew,
-    };
+  /**
+   * dispatch event when book is auto renewed / returned
+   * listen these events in action-handler.js
+   * @see ActionsHandler
+   *
+   * @param {string} event - autoRenew|autoReturn
+   * @memberof CollapsibleActionGroup
+   */
+  dispatchLoanEvent(event) {
+    const category = analyticsCategories.browse;
+    const action =
+      event === 'autoRenew'
+        ? analyticsActions.browseAutoRenew
+        : analyticsActions.browseAutoReturn;
 
     // listen in action-handler.js to execute ajax call on petabox.
     this.dispatchEvent(
-      new CustomEvent('loanRenew', {
+      new CustomEvent(event, {
         detail: {
           event: { category, action },
         },
@@ -190,7 +204,11 @@ export class CollapsibleActionGroup extends ActionsHandler {
         href="${action.url}"
         target=${action.target}
         @click=${() => {
-          this.clickHandler(action.id, action.analyticsEvent);
+          this.clickHandler(
+            action.id,
+            action.analyticsEvent,
+            action?.borrowType
+          );
         }}
       >
         ${action.id === 'purchaseBook' ? purchaseIcon : ''} ${action.text}
@@ -211,7 +229,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
     return html`<button
       class="ia-button ${action.className} ${initialButton ? 'initial' : ''}"
       @click=${() => {
-        this.clickHandler(action.id, analyticsEvent);
+        this.clickHandler(action.id, analyticsEvent, action?.borrowType);
       }}
     >
       ${action.text}
@@ -224,10 +242,10 @@ export class CollapsibleActionGroup extends ActionsHandler {
    * @param { object } gaEvent - contains analytics event action and category
    *   @param { string } gaEvent.category
    *   @param { string } gaEvent.action
-   *
+   * @param { string } borrowType browse|borrow
    * @fires CollapsibleActionGroup#{eventName} - (will be browseBook, borrowBook etc...)
    */
-  clickHandler(eventName, gaEvent) {
+  clickHandler(eventName, gaEvent, borrowType = '') {
     this.dropdownState = 'close';
     this.dropdownArrow = dropdownClosed;
 
@@ -237,6 +255,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
       new CustomEvent(eventName, {
         detail: {
           event: { category, action },
+          borrowType,
         },
       })
     );

@@ -41,7 +41,7 @@ export default class TimerCountdown extends LitElement {
      * delay seconds in setInterval function
      * @type {number}
      */
-    this.timerExecutionSeconds = 0;
+    this.timerExecutionSeconds = 60;
   }
 
   disconnectedCallback() {
@@ -61,8 +61,6 @@ export default class TimerCountdown extends LitElement {
   timerCountdown() {
     this.disconnectedCallback();
 
-    // - let just execute setInterval in every 1 minute
-    this.timerExecutionSeconds = 60;
     let secondsLeft = this.secondsLeftOnLoan;
 
     // store current time

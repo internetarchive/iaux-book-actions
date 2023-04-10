@@ -128,14 +128,14 @@
     iaBookActions.modalConfig = modalConfig;
     iaBookActions.lendingBarPostInit = lendingBarPostInit;
     iaBookActions.tokenDelay = 2; // 2 seconds
-    iaBookActions.returnUrl = 'https://openlibrary.org';
+    iaBookActions.returnUrl = '';
     iaBookActions.localCache = localCache;
 
-    let loanTotalTime2Min = { loanTotalTime: 20, loanRenewAtLast: 15, pageChangedInLast: 5 };
-    let loanTotalTime5Min = { loanTotalTime: 300, loanRenewAtLast: 290, pageChangedInLast: 15 };
+    let loanTotalTime2Min = { loanTotalTime: 10, loanRenewAtLast: 5, pageChangedInLast: 5 };
+    let loanTotalTime5Min = { loanTotalTime: 300, loanRenewAtLast: 180, pageChangedInLast: 15 };
     let loanTotalTime1Hour = { loanTotalTime: 3600, loanRenewAtLast: 600, pageChangedInLast: 900 };
 
-    iaBookActions.loanRenewTimeConfig = loanTotalTime5Min;
+    iaBookActions.loanRenewTimeConfig = loanTotalTime2Min;
 
     let lendingStatus1 = iaBookActions.lendingStatus;
     let secondsLeftOnLoan = iaBookActions.loanRenewTimeConfig.loanTotalTime;

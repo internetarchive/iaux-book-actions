@@ -73,6 +73,7 @@ export default class IABookActions extends LitElement {
     this.borrowType = ''; // (browsed|borrowed)
     this.consecutiveLoanCounts = 1; // consecutive loan count
     this.suppressToast = false;
+    this.suppressAutoRenew = false;
     this.browseTimer = undefined;
 
     /**
@@ -171,6 +172,7 @@ export default class IABookActions extends LitElement {
 
   async setupLendingToolbarActions() {
     this.suppressToast = false;
+    this.suppressAutoRenew = false;
 
     this.lendingOptions = new GetLendingActions(
       this.userid,
@@ -236,16 +238,10 @@ export default class IABookActions extends LitElement {
     /**
      * tokenPoller determines if user has loan token for this book
      * - if book is going to renew, need to wait until renew is completed
-     * - otherwise execute immediately
      */
-    setTimeout(
-      () => {
-        if (!hasExpired) this.startLoanTokenPoller();
-      },
-
-      // if book is renew while reading, let's wait to execute create-token api
-      this.loanRenewResult.renewNow ? this.tokenDelay * 1000 : 100
-    );
+    setTimeout(() => {
+      if (!hasExpired) this.startLoanTokenPoller();
+    }, 100);
   }
 
   /**
@@ -260,9 +256,17 @@ export default class IABookActions extends LitElement {
      * dispatched this event from bookreader page changed
      */
     window.addEventListener('BookReader:userAction', () => {
-      console.log('user action');
+      console.log('** BR user Action', {
+        suppressAutoRenew: this.suppressAutoRenew,
+        borrowType: this.borrowType,
+      });
+
       this.suppressToast = true;
       this.closeToastManager();
+
+      if (this.suppressAutoRenew) {
+        return;
+      }
 
       if (this.borrowType === 'browsed') {
         this.autoLoanRenewChecker(true);
@@ -273,6 +277,7 @@ export default class IABookActions extends LitElement {
      * detect click-event on document to close toast-template
      */
     document.addEventListener('click', e => {
+      console.log('*** top level click handler to remove toast on click');
       if (this.loanRenewHelper && this.loanRenewResult.secondsLeft > 0) {
         this.suppressToast = true;
       }
@@ -293,7 +298,15 @@ export default class IABookActions extends LitElement {
      * @see TimerCountdown::timerCountdown
      */
     this.addEventListener('IABookActions:loanRenew', async event => {
+      console.log('** IABookActions:loanRenew', event.detail);
       await this.autoLoanRenewChecker(false);
+
+      // renew in last seconds (let say 50 second) not possible because,
+      // - very short to renew on datanodes by hitting petabox API
+      // - loading images by create loan token
+      if (event?.detail?.secondsLeft < 50) {
+        this.suppressAutoRenew = true;
+      }
 
       // show warning message with remaining time to auto returned it.
       if (this.loanRenewResult.renewNow === false) {
@@ -325,6 +338,7 @@ export default class IABookActions extends LitElement {
    * close/hide toast message
    */
   async closeToastManager() {
+    console.log('** closeToastManager');
     const toastTemplate = this.shadowRoot.querySelector('toast-template');
     if (toastTemplate) {
       toastTemplate?.remove();
@@ -338,6 +352,10 @@ export default class IABookActions extends LitElement {
    * - show message having remaining time when book is about to auto returned
    */
   async showToastMessage() {
+    console.log('** showToastMessage', {
+      suppressToast: this.suppressToast,
+      loanRenewResult: this.loanRenewResult,
+    });
     if (this.suppressToast) return;
 
     let toastTemplate = this.shadowRoot.querySelector('toast-template');
@@ -492,7 +510,8 @@ export default class IABookActions extends LitElement {
         .loanTotalTime=${this.loanRenewTimeConfig.loanTotalTime}
         ?hasAdminAccess=${this.hasAdminAccess}
         ?disabled=${this.disableActionGroup}
-        ?renewNow=${this.loanRenewResult.renewNow}
+        ?autoRenew=${this.loanRenewResult.renewNow}
+        ?autoReturn=${this.lendingStatus.browsingExpired}
         @loanAutoRenewed=${this.handleLoanAutoRenewed}
         @lendingActionError=${this.handleLendingActionError}
         @toggleActionGroup=${this.handleToggleActionGroup}
@@ -508,8 +527,10 @@ export default class IABookActions extends LitElement {
    * - show success message
    * - then change the remaining time
    * - reset timer state
+   * @param {object} event
    */
-  async handleLoanAutoRenewed() {
+  async handleLoanAutoRenewed(event) {
+    // TODO: just read DATA variable here to apply security { action, data }
     if (this.loanRenewResult.renewNow) {
       window?.IALendingIntervals?.clearAll();
 
@@ -519,13 +540,12 @@ export default class IABookActions extends LitElement {
       await this.resetTimerCountState();
 
       window?.Sentry?.captureMessage(`${sentryLogs.bookHasRenewed}`);
-      // TODO: analytics?? for consecutive renew.....
 
       // testing console....
-      console.log(sentryLogs.bookHasRenewed, {
+      console.log('IABookActions: AutoRenewed:- ', {
+        ajaxResponse: event?.detail?.data,
         loanRenewResult: this.loanRenewResult,
-        browseHasRenew: this.lendingStatus.secondsLeftOnLoan,
-        resetTimerCountState: this._shadowRoot.querySelector('timer-countdown'),
+        secondsLeftOnLoan: Math.round(this.lendingStatus.secondsLeftOnLoan),
       });
     }
   }

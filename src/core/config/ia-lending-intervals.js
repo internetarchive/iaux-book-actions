@@ -12,6 +12,18 @@
  */
 window.IALendingIntervals = {
   /**
+   * store loan token poller interval
+   * @see LoanTokenPoller::bookAccessed
+   */
+  tokenPoller: 0,
+
+  /**
+   * store timer-countdown interval
+   * @see TimerCountdown::timerCountdown
+   */
+  timerCountdown: 0,
+
+  /**
    * clear interval for create_token api
    */
   clearTokenPoller: () => {

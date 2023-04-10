@@ -1,7 +1,6 @@
 import ActionsHandlerService from './actions-handler/actions-handler-service.js';
+import LoanAnanlytics from './loan-analytics.js';
 import { sentryLogs } from '../config/sentry-events.js';
-
-import * as Cookies from './doc-cookies.js';
 
 /**
  * This class is used to create loan token for borrowed books
@@ -17,6 +16,13 @@ export class LoanTokenPoller {
     this.pollerDelay = pollerDelay; // value in seconds
 
     this.loanTokenInterval = undefined;
+
+    /**
+     * loan analytics instance
+     * @see loan-analytics.js
+     */
+    this.loanAnalytics = new LoanAnanlytics();
+
     this.bookAccessed();
   }
 
@@ -25,24 +31,7 @@ export class LoanTokenPoller {
   }
 
   async bookAccessed() {
-    let consecutiveLoanCounts = 1;
-
     if (this.borrowType) {
-      // send consecutiveLoanCounts for browsed books only.
-      if (this.borrowType === 'browsed') {
-        try {
-          const existingCount = Cookies.getItem(
-            `loan-count-${this.identifier}`
-          );
-          consecutiveLoanCounts = existingCount ?? 1;
-        } catch (error) {
-          window?.Sentry?.captureException(
-            `${sentryLogs.enableBookAcces} - CookieError: ${error}`
-          );
-          this.sendEvent('Cookies-Error-Token', error);
-        }
-      }
-
       // Do an initial token, then set an interval
       this.handleLoanTokenPoller(true);
 
@@ -58,14 +47,6 @@ export class LoanTokenPoller {
           this.handleLoanTokenPoller();
         }, this.pollerDelay * 1000);
       }
-
-      // event category and action for browsing book access
-      const category = `${this.borrowType}BookAccess`;
-      const action = `${
-        this.borrowType === 'browsed' ? 'BrowseCounts-' : 'Counts-'
-      }${consecutiveLoanCounts}`;
-
-      this.sendEvent(category, action);
     } else {
       window?.Sentry?.captureMessage(
         `${sentryLogs.bookAccessed} - not borrowed`
@@ -74,14 +55,6 @@ export class LoanTokenPoller {
       // if book is not browsed, just clear token polling interval
       this.disconnectedCallback();
     }
-  }
-
-  sendEvent(eventCategory, eventAction) {
-    window?.archive_analytics?.send_event(
-      eventCategory,
-      eventAction,
-      `identifier=${this.identifier}`
-    );
   }
 
   async handleLoanTokenPoller(isInitial = false) {
@@ -98,7 +71,11 @@ export class LoanTokenPoller {
         );
 
         // send LendingServiceError to GA
-        this.sendEvent('LendingServiceLoanError', action);
+        this.loanAnalytics?.sendEvent(
+          'LendingServiceLoanError',
+          action,
+          this.identifier
+        );
       },
       success: () => {
         if (isInitial) this.successCallback();
