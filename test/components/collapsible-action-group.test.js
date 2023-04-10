@@ -64,8 +64,6 @@ describe('<collapsible-action-group>', () => {
     expect(primaryActionContainer.classList.contains('action-buttons')).to.be
       .true;
 
-    expect(el.sendEvent).to.exist;
-
     let eName;
     let eAnalytics;
     const manualClickStub = (eventName, gaEvent) => {

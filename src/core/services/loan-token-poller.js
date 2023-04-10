@@ -31,23 +31,7 @@ export class LoanTokenPoller {
   }
 
   async bookAccessed() {
-    // let consecutiveLoanCounts = 1;
-
     if (this.borrowType) {
-      // send consecutiveLoanCounts for browsed books only.
-      // if (this.borrowType === 'browsed') {
-      //   try {
-      //     const existingCount = Cookies.getItem(
-      //       `loan-count-${this.identifier}`
-      //     );
-      //     consecutiveLoanCounts = existingCount ?? 1;
-      //   } catch (error) {
-      //     window?.Sentry?.captureException(
-      //       `${sentryLogs.enableBookAcces} - CookieError: ${error}`
-      //     );
-      //   }
-      // }
-
       // Do an initial token, then set an interval
       this.handleLoanTokenPoller(true);
 
@@ -63,14 +47,6 @@ export class LoanTokenPoller {
           this.handleLoanTokenPoller();
         }, this.pollerDelay * 1000);
       }
-
-      // event category and action for browsing book access
-      // const category = `${this.borrowType}BookAccess`;
-      // const action = `${
-      //   this.borrowType === 'browsed' ? 'BrowseCounts-' : 'Counts-'
-      // }${consecutiveLoanCounts}`;
-
-      // this.loanAnalytics?.sendEvent(category, action, this.identifier);
     } else {
       window?.Sentry?.captureMessage(
         `${sentryLogs.bookAccessed} - not borrowed`

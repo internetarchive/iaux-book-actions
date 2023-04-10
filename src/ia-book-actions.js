@@ -301,7 +301,9 @@ export default class IABookActions extends LitElement {
       console.log('** IABookActions:loanRenew', event.detail);
       await this.autoLoanRenewChecker(false);
 
-      // maybe the renew with-in last 1 minute is too short of a transition time between xhr, loading images etc... let NOT renew in last 50 seconds.
+      // renew in last seconds (let say 50 second) not possible because,
+      // - very short to renew on datanodes by hitting petabox API
+      // - loading images by create loan token
       if (event?.detail?.secondsLeft < 50) {
         this.suppressAutoRenew = true;
       }
@@ -309,7 +311,6 @@ export default class IABookActions extends LitElement {
       // show warning message with remaining time to auto returned it.
       if (this.loanRenewResult.renewNow === false) {
         this.loanRenewResult.secondsLeft = event.detail.secondsLeft;
-        this.suppressToast = false;
         this.showToastMessage();
       }
     });
@@ -545,7 +546,6 @@ export default class IABookActions extends LitElement {
         ajaxResponse: event?.detail?.data,
         loanRenewResult: this.loanRenewResult,
         secondsLeftOnLoan: Math.round(this.lendingStatus.secondsLeftOnLoan),
-        resetTimerCountState: this._shadowRoot.querySelector('timer-countdown'),
       });
     }
   }

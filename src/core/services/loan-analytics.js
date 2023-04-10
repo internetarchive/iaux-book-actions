@@ -38,7 +38,7 @@ export default class LoanAnanlytics {
       date.setHours(date.getHours() + 2); // 2 hours
 
       // set new value
-      Cookies.setItem(
+      await Cookies.setItem(
         this.getLoanCountStorageKey,
         JSON.stringify(this.lendingEventCounts),
         date,
@@ -53,12 +53,12 @@ export default class LoanAnanlytics {
   /**
    * get loan stats count from cookies for GA
    *
-   * @param {string} action 'browse'|'autorenew'|etc...
+   * @param {string} action browse|autorenew|etc...
    * @memberof ActionsHandler
    */
   async getLoanStatsCount(action) {
     this.lendingEventCounts = JSON.parse(
-      Cookies.getItem(this.getLoanCountStorageKey)
+      await Cookies.getItem(this.getLoanCountStorageKey)
     );
 
     this.gaStats = this.lendingEventCounts ?? {
@@ -67,7 +67,9 @@ export default class LoanAnanlytics {
       expire: 0,
     };
 
-    let { browse, renew, expire } = this.lendingEventCounts ?? 0;
+    let browse = this.lendingEventCounts?.browse ?? 0;
+    let renew = this.lendingEventCounts?.renew ?? 0;
+    let expire = this.lendingEventCounts?.expire ?? 0;
 
     switch (action) {
       case 'browse' || 'browseagain':
@@ -113,11 +115,13 @@ export default class LoanAnanlytics {
    * get zero padded number
    *
    * @param {number} number
-   * @return {string} browse001|autorenew001
+   * @return {string} 001|010
    * @memberof LoanAnanlytics
    */
   paddedNumber(number) {
-    return number.toString().padStart(3, '0');
+    if (number) return number.toString().padStart(3, '0');
+
+    return '000';
   }
 
   /**

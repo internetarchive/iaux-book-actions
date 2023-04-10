@@ -163,10 +163,7 @@ export default class ActionsHandler extends LitElement {
       identifier: this.identifier,
       success: () => {
         this.deleteLoanCookies();
-        // URLHelper.goToUrl(this.returnUrl, true);
-        setTimeout(() => {
-          URLHelper.goToUrl(this.returnUrl, true);
-        }, this.waitUntillBorrowComplete * 1000);
+        URLHelper.goToUrl(this.returnUrl, true);
       },
       error: data => {
         this.dispatchActionError(action, data);

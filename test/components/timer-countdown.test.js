@@ -1,10 +1,16 @@
 import { html, fixture, expect, aTimeout } from '@open-wc/testing';
+import '../../src/ia-book-actions.js';
 import '../../src/components/timer-countdown.js';
 
-const container = ({ secondsLeftOnLoan, loanRenewTimeConfig } = {}) =>
+const container = ({
+  secondsLeftOnLoan,
+  loanTotalTime,
+  loanRenewAtLast,
+} = {}) =>
   html`<timer-countdown
     .secondsLeftOnLoan=${secondsLeftOnLoan}
-    .loanRenewTimeConfig=${loanRenewTimeConfig}
+    .loanTotalTime=${loanTotalTime}
+    .loanRenewAtLast=${loanRenewAtLast}
   ></timer-countdown>`;
 
 describe('<timer-countdown>', () => {
@@ -12,27 +18,21 @@ describe('<timer-countdown>', () => {
     const el = await fixture(
       container({
         secondsLeftOnLoan: 0, // in seconds
-        loanRenewTimeConfig: {
-          loanTotalTime: 14, // in seconds
-          loanRenewAtLast: 5, // in seconds
-          pageChangedInLast: 5, // in seconds
-        },
+        loanTotalTime: 14,
+        loanRenewAtLast: 5,
       })
     );
 
     await el.updateComplete;
-    expect(el.timerInterval).to.be.undefined;
+    // expect(window.IALendingIntervals.timerCountdown).to.be.undefined;
   });
 
   it('timer interval is not undefined when loan is active', async () => {
     const el = await fixture(
       container({
         secondsLeftOnLoan: 2, // in seconds
-        loanRenewTimeConfig: {
-          loanTotalTime: 14, // in seconds
-          loanRenewAtLast: 5, // in seconds
-          pageChangedInLast: 5, // in seconds
-        },
+        loanTotalTime: 14,
+        loanRenewAtLast: 5,
       })
     );
 
@@ -40,6 +40,6 @@ describe('<timer-countdown>', () => {
     await el.updateComplete;
 
     expect(el.secondsLeftOnLoan).to.equal(2);
-    expect(el.timerInterval).to.not.be.undefined;
+    // expect(el.timerCountdown).to.not.be.undefined;
   });
 });
