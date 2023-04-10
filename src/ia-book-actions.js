@@ -256,6 +256,11 @@ export default class IABookActions extends LitElement {
      * dispatched this event from bookreader page changed
      */
     window.addEventListener('BookReader:userAction', () => {
+      console.log('** BR user Action', {
+        suppressAutoRenew: this.suppressAutoRenew,
+        borrowType: this.borrowType,
+      });
+
       this.suppressToast = true;
       this.closeToastManager();
 
@@ -272,6 +277,7 @@ export default class IABookActions extends LitElement {
      * detect click-event on document to close toast-template
      */
     document.addEventListener('click', e => {
+      console.log('*** top level click handler to remove toast on click');
       if (this.loanRenewHelper && this.loanRenewResult.secondsLeft > 0) {
         this.suppressToast = true;
       }
@@ -292,6 +298,7 @@ export default class IABookActions extends LitElement {
      * @see TimerCountdown::timerCountdown
      */
     this.addEventListener('IABookActions:loanRenew', async event => {
+      console.log('** IABookActions:loanRenew', event.detail);
       await this.autoLoanRenewChecker(false);
 
       // maybe the renew with-in last 1 minute is too short of a transition time between xhr, loading images etc... let NOT renew in last 50 seconds.
@@ -302,6 +309,7 @@ export default class IABookActions extends LitElement {
       // show warning message with remaining time to auto returned it.
       if (this.loanRenewResult.renewNow === false) {
         this.loanRenewResult.secondsLeft = event.detail.secondsLeft;
+        this.suppressToast = false;
         this.showToastMessage();
       }
     });
@@ -329,6 +337,7 @@ export default class IABookActions extends LitElement {
    * close/hide toast message
    */
   async closeToastManager() {
+    console.log('** closeToastManager');
     const toastTemplate = this.shadowRoot.querySelector('toast-template');
     if (toastTemplate) {
       toastTemplate?.remove();
@@ -342,6 +351,10 @@ export default class IABookActions extends LitElement {
    * - show message having remaining time when book is about to auto returned
    */
   async showToastMessage() {
+    console.log('** showToastMessage', {
+      suppressToast: this.suppressToast,
+      loanRenewResult: this.loanRenewResult,
+    });
     if (this.suppressToast) return;
 
     let toastTemplate = this.shadowRoot.querySelector('toast-template');
