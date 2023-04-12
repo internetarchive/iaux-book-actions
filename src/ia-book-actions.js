@@ -539,7 +539,7 @@ export default class IABookActions extends LitElement {
       await this.showToastMessage();
       await this.resetTimerCountState();
 
-      window?.Sentry?.captureMessage(`${sentryLogs.bookHasRenewed}`);
+      window?.Sentry?.captureMessage(sentryLogs.bookHasRenewed);
 
       // testing console....
       console.log('IABookActions: AutoRenewed:- ', {
