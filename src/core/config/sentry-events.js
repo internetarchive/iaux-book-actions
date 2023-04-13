@@ -5,6 +5,7 @@ export const sentryLogs = {
   disconnectedCallback: 'IABookActions:disconnectedCallback',
   bookHasRenewed:
     'IABookActions:handleLoanAutoRenewed - book has renewed for next one hour',
+  bookRenewFailed: 'IABookActions:handleLoanRenewNow - failed to renew',
   browseHasExpired:
     'IABookActions:browseHasExpired - one-hour loan has been expired',
   bookWasExpired:
