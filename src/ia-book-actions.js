@@ -302,7 +302,7 @@ export default class IABookActions extends LitElement {
       await this.autoLoanRenewChecker(false);
 
       /**
-       * renew in last seconds (let say 50 second) not possible because,
+       * renew in not possible in last seconds (let say 50 second) because,
        * 1. less time to execute ajax call
        * 2. less time to write loan on datanodes
        * 3. less time to load images by create_token api
@@ -323,7 +323,7 @@ export default class IABookActions extends LitElement {
         secondsLeft -= 60;
 
         this.loanRenewResult.secondsLeft = secondsLeft;
-        this.showToastMessage('warning');
+        this.showToastMessage();
       }
     });
   }
