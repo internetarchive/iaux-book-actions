@@ -10,10 +10,6 @@ import CollapsibleActionGroupStyle from '../assets/styles/collapsible-action-gro
 import { tabletContainerWidth } from '../core/config/constants.js';
 import { purchaseIcon } from '../assets/data/purchase.js';
 import {
-  analyticsCategories,
-  analyticsActions,
-} from '../core/config/analytics-event-and-category.js';
-import {
   dropdownOpened,
   dropdownClosed,
 } from '../assets/data/dropdown-arrow.js';
@@ -76,25 +72,16 @@ export class CollapsibleActionGroup extends ActionsHandler {
 
   /**
    * dispatch event when book is auto renewed / returned
-   * listen these events in action-handler.js
+   * listen these events in action-handler.js to execute ajax call on petabox.
    * @see ActionsHandler
    *
    * @param {string} event - autoRenew|autoReturn
    * @memberof CollapsibleActionGroup
    */
   dispatchLoanEvent(event) {
-    const category = analyticsCategories.browse;
-    const action =
-      event === 'autoRenew'
-        ? analyticsActions.browseAutoRenew
-        : analyticsActions.browseAutoReturn;
-
-    // listen in action-handler.js to execute ajax call on petabox.
     this.dispatchEvent(
       new CustomEvent(event, {
-        detail: {
-          event: { category, action },
-        },
+        detail: {},
       })
     );
   }
