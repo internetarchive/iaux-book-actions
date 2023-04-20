@@ -79,11 +79,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
    * @memberof CollapsibleActionGroup
    */
   dispatchLoanEvent(event) {
-    this.dispatchEvent(
-      new CustomEvent(event, {
-        detail: {},
-      })
-    );
+    this.dispatchEvent(new Event(event));
   }
 
   /**

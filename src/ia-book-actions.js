@@ -542,7 +542,6 @@ export default class IABookActions extends LitElement {
    * @param {object} event
    */
   async handleLoanAutoRenewed(event) {
-    // TODO: just read DATA variable here to apply security { action, data }
     if (this.loanRenewResult.renewNow) {
       window?.IALendingIntervals?.clearAll();
 
@@ -551,7 +550,7 @@ export default class IABookActions extends LitElement {
       await this.showToastMessage();
       await this.resetTimerCountState();
 
-      window?.Sentry?.captureMessage(`${sentryLogs.bookHasRenewed}`);
+      window?.Sentry?.captureMessage(sentryLogs.bookHasRenewed);
 
       // testing console....
       console.log('IABookActions: AutoRenewed:- ', {

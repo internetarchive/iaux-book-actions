@@ -1,6 +1,7 @@
 import { LitElement } from 'lit';
 
 import { URLHelper } from '../../config/url-helper.js';
+import { sentryLogs } from '../../config/sentry-events.js';
 
 import ActionsHandlerService from './actions-handler-service.js';
 import LoanAnanlytics from '../loan-analytics.js';
@@ -141,12 +142,18 @@ export default class ActionsHandler extends LitElement {
       action,
       identifier: this.identifier,
       success: data => {
-        this.setBrowseTimeSession();
-        this.dispatchEvent(
-          new CustomEvent('loanAutoRenewed', {
-            detail: { action, data },
-          })
-        );
+        if (data?.success === true && data?.loan?.renewal === true) {
+          this.setBrowseTimeSession();
+          this.dispatchEvent(
+            new CustomEvent('loanAutoRenewed', {
+              detail: { action, data },
+            })
+          );
+        } else {
+          window?.Sentry?.captureMessage(
+            `${sentryLogs.bookRenewFailed} - Error: ${JSON.stringify(data)}`
+          );
+        }
       },
       error: data => {
         this.dispatchActionError(action, data);

@@ -47,6 +47,12 @@ export default async function ActionsHandlerService(options) {
 
         // return success response for /demo/ server...
         if (baseHost == '/demo/1' || baseHost == '/demo/') {
+          if (option?.action == 'renew_loan') {
+            return {
+              success: true,
+              loan: { renewal: true },
+            };
+          }
           return {
             success: true,
             message: 'operation executed successfully!',
