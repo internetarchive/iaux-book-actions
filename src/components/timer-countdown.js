@@ -74,7 +74,7 @@ export default class TimerCountdown extends LitElement {
       secondsLeft -= this.timerExecutionSeconds;
       secondsLeft = Math.round(secondsLeft); // round number
 
-      // re-sync timer is gone off
+      // re-sync timer if gone off because of background window
       await this.reSyncTimerIfGoneOff(secondsLeft);
 
       /**

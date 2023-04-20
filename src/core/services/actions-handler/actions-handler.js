@@ -54,7 +54,7 @@ export default class ActionsHandler extends LitElement {
     });
 
     this.addEventListener('autoReturn', () => {
-      this.deleteLoanCookies();
+      this.handleReturnIt();
       this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'autoreturn');
     });
 
@@ -64,7 +64,7 @@ export default class ActionsHandler extends LitElement {
         this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'return');
       }
 
-      this.handleReturnIt();
+      this.handleReturnIt('returnNow');
 
       // send these events if 14-day borrow return
       if (detail?.borrowType === 'borrow') {
@@ -161,16 +161,23 @@ export default class ActionsHandler extends LitElement {
     });
   }
 
-  handleReturnIt() {
+  /**
+   * excute function when loan is returning
+   *
+   * @param {string} type - loan return type returnNow|''
+   */
+  handleReturnIt(type = '') {
     const action = 'return_loan';
-    this.dispatchToggleActionGroup();
+
+    if (type === 'returnNow') this.dispatchToggleActionGroup();
 
     ActionsHandlerService({
       action,
       identifier: this.identifier,
       success: () => {
         this.deleteLoanCookies();
-        URLHelper.goToUrl(this.returnUrl, true);
+
+        if (type === 'returnNow') URLHelper.goToUrl(this.returnUrl, true);
       },
       error: data => {
         this.dispatchActionError(action, data);

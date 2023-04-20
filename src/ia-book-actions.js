@@ -301,16 +301,28 @@ export default class IABookActions extends LitElement {
       console.log('** IABookActions:loanRenew', event.detail);
       await this.autoLoanRenewChecker(false);
 
-      // renew in last seconds (let say 50 second) not possible because,
-      // - very short to renew on datanodes by hitting petabox API
-      // - loading images by create loan token
-      if (event?.detail?.secondsLeft < 50) {
+      /**
+       * auto-renew is not possible in last seconds (let say 50 second) because,
+       * 1. less time to execute ajax call
+       * 2. less time to write loan on datanodes
+       * 3. less time to load images by create_token api
+       * so if seconds left is < 50, just expire the loan
+       */
+      let secondsLeft = event?.detail?.secondsLeft;
+      if (secondsLeft < 50) {
         this.suppressAutoRenew = true;
+        this.browseHasExpired();
       }
 
       // show warning message with remaining time to auto returned it.
       if (this.loanRenewResult.renewNow === false) {
-        this.loanRenewResult.secondsLeft = event.detail.secondsLeft;
+        /**
+         * so compensate for the 50 second buffer to handle above race conditions
+         * let's reduce 1 min from warning texts and early return the book when 1 min left.
+         */
+        secondsLeft -= 60;
+
+        this.loanRenewResult.secondsLeft = secondsLeft;
         this.showToastMessage();
       }
     });
@@ -530,7 +542,6 @@ export default class IABookActions extends LitElement {
    * @param {object} event
    */
   async handleLoanAutoRenewed(event) {
-    // TODO: just read DATA variable here to apply security { action, data }
     if (this.loanRenewResult.renewNow) {
       window?.IALendingIntervals?.clearAll();
 
