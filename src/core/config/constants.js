@@ -1,2 +1,9 @@
-export const mobileContainerWidth = 550;
-export const tabletContainerWidth = 767;
+/**
+ * hide the primary texts below this resolution
+ */
+export const mobileContainerWidth = 700;
+
+/**
+ * shift the actions buttons in dropdown
+ */
+export const tabletContainerWidth = 895;
