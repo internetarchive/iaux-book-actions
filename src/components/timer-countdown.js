@@ -194,6 +194,8 @@ export default class TimerCountdown extends LitElement {
         right: 0;
         margin-right: 10px;
         position: absolute;
+        height: 20px;
+        width: 20px;
       }
 
       @keyframes circletimer {
