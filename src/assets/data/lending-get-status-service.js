@@ -100,7 +100,7 @@ export const canBrowseAndBorrow = {
   // userid: "",
   bookUrl: '/details/practicalorganic00plim',
   daysLeftOnLoan: 0,
-  isAdmin: true,
+  isAdmin: false,
   isArchiveOrgLending: true,
   isAvailable: false,
   isAvailableForBrowsing: false,

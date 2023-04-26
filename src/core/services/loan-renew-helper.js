@@ -16,7 +16,7 @@ export class LoanRenewHelper {
     this.loanRenewMessage =
       'This book has been renewed for #time #unitsOfTime.';
     this.loanReturnWarning =
-      'This book will be automatically returned in #time #unitsOfTime unless you turn a page.';
+      'With no action, this book will be auto-returned in #time #unitsOfTime.';
 
     // private props
     this.result = {

@@ -23,6 +23,15 @@ export const events = {
   browseExpired: 'IABookReader:BrowsingHasExpired',
 };
 
+export const modalButtonStyle = {
+  iaButton:
+    'min-height:3rem;cursor:pointer;color:white;border-radius:0.4rem;border:1px solid transparent;padding:4px 8px;',
+  renew: 'background:#194880;border:1px solid #c5d1df;',
+  return: 'background:#d9534f;color:white;border:1px solid #c5d1df;',
+  refresh:
+    'background:none;font-size:inherit;border:0;padding:0;color:#0000ee;cursor:pointer;text-decoration:underline',
+};
+
 export default class IABookActions extends LitElement {
   static get properties() {
     return {
@@ -62,6 +71,7 @@ export default class IABookActions extends LitElement {
     this.sharedObserver = undefined;
     this.disableActionGroup = false;
     this.modal = undefined;
+    this.toast = undefined;
     this.tokenDelay = 120; // in seconds
 
     // private props
@@ -287,7 +297,7 @@ export default class IABookActions extends LitElement {
         'browsingExpired' in this.lendingStatus &&
         this.lendingStatus?.browsingExpired;
       if (hasExpired && e.target.nodeName !== 'IA-BOOK-ACTIONS') {
-        window.location?.reload();
+        // window.location?.reload();
       }
     });
 
@@ -323,7 +333,9 @@ export default class IABookActions extends LitElement {
         secondsLeft -= 60;
 
         this.loanRenewResult.secondsLeft = secondsLeft;
-        this.showToastMessage();
+
+        // this.showToastMessage();
+        this.showModalManager();
       }
     });
   }
@@ -347,17 +359,126 @@ export default class IABookActions extends LitElement {
   }
 
   /**
-   * close/hide toast message
+   * create / select the modal-manager component on DOM
+   *
+   * @memberof IABookActions
    */
-  async closeToastManager() {
-    console.log('** closeToastManager');
-    const toastTemplate = this.shadowRoot.querySelector('toast-template');
-    if (toastTemplate) {
-      toastTemplate?.remove();
+  async useModalManager() {
+    if (!this.modal) {
+      this.modal = document.querySelector('modal-manager');
+
+      if (!this.modal) this.modal = document.createElement('modal-manager');
+    }
+
+    this.modal.id = 'action-bar-modal';
+    await document.body.appendChild(this.modal);
+  }
+
+  async showModalManager(type = '') {
+    if (this.suppressToast) return;
+
+    await this.useModalManager();
+
+    // if secondsLeft < 60, consider it 1 minute
+    let { secondsLeft } = this.loanRenewResult;
+    if (secondsLeft === undefined) {
+      secondsLeft = this.lendingStatus.secondsLeftOnLoan;
+    } else {
+      secondsLeft = secondsLeft > 60 ? secondsLeft : 60;
+    }
+
+    let customContent = '';
+
+    const config = new ModalConfig();
+
+    config.headline = 'Are you still here?';
+    config.showCloseButton = false;
+    config.closeOnBackdropClick = false;
+
+    if (type === 'expired') {
+      config.message = 'This book has been returned due to inactivity.';
+      customContent = html`<br />
+        <div style="text-align: center">
+          <button
+            style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
+            @click=${() => {
+              window.location?.reload();
+            }}
+          >
+            Okay
+          </button>
+        </div> `;
+    } else {
+      config.message = this.loanRenewHelper?.getMessageTexts(
+        this.loanRenewResult.texts,
+        secondsLeft
+      );
+      customContent = html`<br />
+        <div style="text-align: center">
+          <button
+            style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
+            @click=${() => {
+              this.autoLoanRenewChecker(true);
+            }}
+          >
+            Keep reading
+          </button>
+          <button
+            style="${modalButtonStyle.iaButton} ${modalButtonStyle.return}"
+            @click=${() => {
+              this.dispatchEvent(new CustomEvent('returnNow', {}));
+              // this.browseHasExpired();
+            }}
+          >
+            Return the book
+          </button>
+        </div> `;
+    }
+
+    this.modal.showModal({ config, customModalContent: customContent });
+  }
+
+  /**
+   * close/hide modal-manager
+   */
+  async closeModalManager() {
+    console.log('** closeModalManager');
+    this.modal = document.querySelector('modal-manager');
+    if (this.modal) {
+      this.modal?.closeModal();
     }
   }
 
   /**
+   * @deprecated
+   * create / select the toast-template component on DOM
+   *
+   * @memberof IABookActions
+   */
+  async useToastManager() {
+    if (!this.toast) {
+      this.toast = this.shadowRoot.querySelector('toast-template');
+
+      if (!this.toast) this.toast = document.createElement('toast-template');
+    }
+
+    await this.shadowRoot.appendChild(this.toast);
+  }
+
+  /**
+   * @deprecated
+   * close/hide toast message
+   */
+  async closeToastManager() {
+    console.log('** closeToastManager');
+    this.toast = this.shadowRoot.querySelector('toast-template');
+    if (this.toast) {
+      this.toast?.remove();
+    }
+  }
+
+  /**
+   * @deprecated
    * Show toast messages on some specific loan renew features. e.g.
    * - show message when book is auto renewed
    * - show message when book is expired
@@ -370,11 +491,7 @@ export default class IABookActions extends LitElement {
     });
     if (this.suppressToast) return;
 
-    let toastTemplate = this.shadowRoot.querySelector('toast-template');
-    if (!toastTemplate) {
-      toastTemplate = document.createElement('toast-template');
-    }
-    await this.shadowRoot.appendChild(toastTemplate);
+    await this.useToastManager();
 
     // if secondsLeft < 60, consider it 1 minute
     let { secondsLeft } = this.loanRenewResult;
@@ -391,7 +508,7 @@ export default class IABookActions extends LitElement {
       secondsLeft
     );
 
-    toastTemplate.showToast({
+    this.toast?.showToast({
       config,
     });
   }
@@ -445,8 +562,9 @@ export default class IABookActions extends LitElement {
     this.loanRenewResult.texts =
       'This book has been automatically returned due to inactivity.';
 
-    this.suppressToast = false;
-    this.showToastMessage();
+    // this.suppressToast = false;
+    // this.showToastMessage();
+    this.showModalManager('expired');
 
     window?.Sentry?.captureMessage(sentryLogs.browseHasExpired);
   }
@@ -547,8 +665,11 @@ export default class IABookActions extends LitElement {
 
       this.suppressToast = false;
       await this.browseHasRenew();
-      await this.showToastMessage();
+      // await this.showToastMessage();
       await this.resetTimerCountState();
+
+      // close the modal
+      await this.modal?.closeModal();
 
       window?.Sentry?.captureMessage(sentryLogs.bookHasRenewed);
 
@@ -656,16 +777,7 @@ export default class IABookActions extends LitElement {
 
   /* show error message if something went wrong */
   async showErrorModal(errorMsg, action) {
-    // check if this.modal passed as prop
-    if (!this.modal) {
-      this.modal = document.querySelector('modal-manager');
-
-      // check the DOM if <modal-manager> already there
-      if (!this.modal) this.modal = document.createElement('modal-manager');
-    }
-
-    this.modal.id = 'action-bar-modal';
-    await document.body.appendChild(this.modal);
+    await this.useModalManager();
 
     const modalConfig = new ModalConfig({
       title: 'Lending error',
@@ -676,7 +788,7 @@ export default class IABookActions extends LitElement {
 
     if (action === 'create_token') {
       const refreshButton = html`<button
-        style="background:none;font-size:inherit;border:0;padding:0;color:#0000ee;cursor:pointer;text-decoration:underline"
+        style="${modalButtonStyle.refresh}"
         @click=${() => window.location.reload(true)}
       >
         refresh
