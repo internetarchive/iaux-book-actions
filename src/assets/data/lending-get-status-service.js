@@ -118,7 +118,7 @@ export const canBrowseAndBorrow = {
   loanStartDate: '2021-07-30 09:57:40',
   loansUrl: '/details/@neeraj-archive?tab=loans#loans-on-loan',
   maxLoans: 10,
-  secondsLeftOnLoan: 3591,
+  secondsLeftOnLoan: 155,
   shouldProtectImages: true,
   totalWaitlistCount: 0,
   userHasBorrowed: false,

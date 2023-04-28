@@ -25,9 +25,11 @@ export const events = {
 
 export const modalButtonStyle = {
   iaButton:
-    'min-height:3rem;cursor:pointer;color:white;border-radius:0.4rem;border:1px solid #c5d1df;padding:4px 8px;',
-  renew: 'background:#194880;',
+    'min-height:3.5rem;cursor:pointer;color:white;border-radius:0.4rem;border:1px solid #c5d1df;padding:4px 8px;width:auto;user-select:none;',
+  renew: 'background:#194880;width:110px;',
   return: 'background:#d9534f;',
+  loaderIcon:
+    'display:inline-block;width:20px;height:20px;margin-top:2px;color:white; --activityIndicatorLoadingRingColor:#fff;--activityIndicatorLoadingDotColor:#fff;',
   refresh:
     'background:none;font-size:inherit;border:0;padding:0;color:#0000ee;cursor:pointer;text-decoration:underline',
 };
@@ -54,6 +56,7 @@ export default class IABookActions extends LitElement {
       localCache: { type: Object },
       loanRenewTimeConfig: { type: Object },
       loanRenewResult: { type: Object },
+      _active: { state: true },
     };
   }
 
@@ -84,10 +87,10 @@ export default class IABookActions extends LitElement {
     this.suppressToast = false;
     this.suppressAutoRenew = false;
     this.browseTimer = undefined;
+    this._attemptToRenew = false;
 
     /**
      * when user click on [return the book] button on warning modal
-0
      */
     this.returnNow = false;
 
@@ -339,7 +342,6 @@ export default class IABookActions extends LitElement {
 
   /**
    * create / select the modal-manager component on DOM
-   *
    * @memberof IABookActions
    */
   async useModalManager() {
@@ -377,20 +379,32 @@ export default class IABookActions extends LitElement {
     );
 
     const customContent = html`<br />
-      <div style="text-align: center">
+      <div
+        id="custom-buttons"
+        style="display:flex;justify-content:center;${this._attemptToRenew
+          ? 'pointer-events:none;opacity:0.8'
+          : ''}"
+      >
         <button
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
           @click=${() => {
             console.log('clicked on keep reading button');
+            // e.target.parentNode.style.pointerEvents = "none";
+            // e.target.parentNode.style.opacity = "0.8";
+            this._attemptToRenew = true;
             this.autoLoanRenewChecker(true);
           }}
         >
-          Keep reading
+          ${this._attemptToRenew
+            ? html` <ia-activity-indicator
+                mode="processing"
+                style=${modalButtonStyle.loaderIcon}
+              ></ia-activity-indicator>`
+            : 'Keep reading'}
         </button>
         <button
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.return}"
           @click=${() => {
-            console.log('clicked on return the book button');
             this.returnNow = true;
           }}
         >
@@ -651,13 +665,14 @@ export default class IABookActions extends LitElement {
   async handleLoanAutoRenewed(event) {
     if (this.loanRenewResult.renewNow) {
       window?.IALendingIntervals?.clearAll();
+      this._attemptToRenew = false;
 
       this.suppressToast = false;
       await this.browseHasRenew();
       await this.resetTimerCountState();
 
       // close the modal
-      await this.modal?.closeModal();
+      await this.modal.closeModal();
 
       window?.Sentry?.captureMessage(sentryLogs.bookHasRenewed);
 
@@ -711,7 +726,7 @@ export default class IABookActions extends LitElement {
     this.disableActionGroup = !this.disableActionGroup;
   }
 
-  /*
+  /**
    * handle lending errors occure during different operation like
    * browse book, borrow book, borrowed book token etc...
    *

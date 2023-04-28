@@ -39,7 +39,7 @@ export class LoanRenewHelper {
   }
 
   /**
-   * Trigger this function when user has browsed a book and change the post
+   * Trigger this function when user has browsed a book and change the page
    * - every time user change the page, we set current time in indexedDB
    * - also check if need to auto renew current loan
    *
