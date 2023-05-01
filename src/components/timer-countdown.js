@@ -41,7 +41,7 @@ export default class TimerCountdown extends LitElement {
      * delay seconds in setInterval function
      * @type {number}
      */
-    this.timerExecutionSeconds = 60;
+    this.timerExecutionSeconds = 30;
   }
 
   disconnectedCallback() {
@@ -67,7 +67,6 @@ export default class TimerCountdown extends LitElement {
     this.timeWhenTimerStart = new Date();
 
     // this.dispatchLoanRenewEvent(secondsLeft);
-
     /**
      * set interval in window object
      * @see ia-lending-intervals.js

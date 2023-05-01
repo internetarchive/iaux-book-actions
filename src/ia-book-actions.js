@@ -399,6 +399,7 @@ export default class IABookActions extends LitElement {
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.return}"
           @click=${async event => {
             this.changeModalState(event);
+            document.querySelector('ia-book-actions').disableActionGroup = true;
             this.returnNow = true;
           }}
         >
@@ -686,8 +687,8 @@ export default class IABookActions extends LitElement {
       await this.resetTimerCountState();
 
       // close the modal
-      this.modal.remove();
-      this.modal.showModal({ config: {}, customModalContent: `` });
+      this.modal?.remove();
+      this.modal?.showModal({ config: {}, customModalContent: `` });
 
       window?.Sentry?.captureMessage(sentryLogs.bookHasRenewed);
 
