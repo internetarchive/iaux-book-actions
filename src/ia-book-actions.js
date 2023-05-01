@@ -1,4 +1,5 @@
 /* eslint-disable camelcase */
+/* eslint-disable class-methods-use-this */
 import { html, css, LitElement, nothing } from 'lit';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
@@ -23,13 +24,17 @@ export const events = {
   browseExpired: 'IABookReader:BrowsingHasExpired',
 };
 
+/**
+ * custom styling for modal-manager buttons
+ * TODO: lets allow modal-manager to know ia-button classes
+ */
 export const modalButtonStyle = {
   iaButton:
     'min-height:3.5rem;cursor:pointer;color:white;border-radius:0.4rem;border:1px solid #c5d1df;padding:4px 8px;width:auto;user-select:none;',
   renew: 'background:#194880;width:110px;',
-  return: 'background:#d9534f;',
+  return: 'background:#d9534f;width:120px;',
   loaderIcon:
-    'display:inline-block;width:20px;height:20px;margin-top:2px;color:white; --activityIndicatorLoadingRingColor:#fff;--activityIndicatorLoadingDotColor:#fff;',
+    'display:inline-block;width:20px;height:20px;margin-top:2px;color:white;--activityIndicatorLoadingRingColor:#fff;--activityIndicatorLoadingDotColor:#fff;',
   refresh:
     'background:none;font-size:inherit;border:0;padding:0;color:#0000ee;cursor:pointer;text-decoration:underline',
 };
@@ -56,7 +61,6 @@ export default class IABookActions extends LitElement {
       localCache: { type: Object },
       loanRenewTimeConfig: { type: Object },
       loanRenewResult: { type: Object },
-      _active: { state: true },
     };
   }
 
@@ -74,7 +78,6 @@ export default class IABookActions extends LitElement {
     this.sharedObserver = undefined;
     this.disableActionGroup = false;
     this.modal = undefined;
-    this.toast = undefined;
     this.tokenDelay = 120; // in seconds
 
     // private props
@@ -84,10 +87,14 @@ export default class IABookActions extends LitElement {
     this.secondaryActions = [];
     this.lendingOptions = {};
     this.borrowType = ''; // (browsed|borrowed)
-    this.suppressToast = false;
-    this.suppressAutoRenew = false;
     this.browseTimer = undefined;
-    this._attemptToRenew = false;
+
+    /** @deprecated */
+    this.toast = undefined;
+    /** @deprecated */
+    this.suppressToast = false;
+    /** @deprecated */
+    this.suppressAutoRenew = false;
 
     /**
      * when user click on [return the book] button on warning modal
@@ -292,7 +299,6 @@ export default class IABookActions extends LitElement {
      * @see TimerCountdown::timerCountdown
      */
     this.addEventListener('IABookActions:loanRenew', async event => {
-      console.log('** IABookActions:loanRenew', event.detail);
       await this.autoLoanRenewChecker(false);
 
       /**
@@ -379,32 +385,20 @@ export default class IABookActions extends LitElement {
     );
 
     const customContent = html`<br />
-      <div
-        id="custom-buttons"
-        style="display:flex;justify-content:center;${this._attemptToRenew
-          ? 'pointer-events:none;opacity:0.8'
-          : ''}"
-      >
+      <div id="custom-buttons" style="display:flex;justify-content:center;">
         <button
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
-          @click=${() => {
-            console.log('clicked on keep reading button');
-            // e.target.parentNode.style.pointerEvents = "none";
-            // e.target.parentNode.style.opacity = "0.8";
-            this._attemptToRenew = true;
+          @click=${async event => {
+            this.changeModalState(event);
             this.autoLoanRenewChecker(true);
           }}
         >
-          ${this._attemptToRenew
-            ? html` <ia-activity-indicator
-                mode="processing"
-                style=${modalButtonStyle.loaderIcon}
-              ></ia-activity-indicator>`
-            : 'Keep reading'}
+          Keep reading
         </button>
         <button
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.return}"
-          @click=${() => {
+          @click=${async event => {
+            this.changeModalState(event);
             this.returnNow = true;
           }}
         >
@@ -413,6 +407,27 @@ export default class IABookActions extends LitElement {
       </div> `;
 
     this.modal.showModal({ config, customModalContent: customContent });
+  }
+
+  /**
+   * helper function to change button click states on modal-manager
+   * - add loader on button click
+   * - change button appearance
+   *
+   * @param {Event} event
+   */
+  changeModalState(event) {
+    if (event.target === undefined) return;
+
+    const button = event.target;
+    button.innerHTML = `<ia-activity-indicator
+      mode="processing"
+      style=${modalButtonStyle.loaderIcon}
+    ></ia-activity-indicator>`;
+
+    const parentElement = event.target.parentNode;
+    parentElement.style.pointerEvents = 'none';
+    parentElement.style.opacity = 0.8;
   }
 
   /**
@@ -665,14 +680,14 @@ export default class IABookActions extends LitElement {
   async handleLoanAutoRenewed(event) {
     if (this.loanRenewResult.renewNow) {
       window?.IALendingIntervals?.clearAll();
-      this._attemptToRenew = false;
 
       this.suppressToast = false;
       await this.browseHasRenew();
       await this.resetTimerCountState();
 
       // close the modal
-      await this.modal.closeModal();
+      this.modal.remove();
+      this.modal.showModal({ config: {}, customModalContent: `` });
 
       window?.Sentry?.captureMessage(sentryLogs.bookHasRenewed);
 

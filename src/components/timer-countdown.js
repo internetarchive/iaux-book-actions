@@ -66,6 +66,8 @@ export default class TimerCountdown extends LitElement {
     // store current time
     this.timeWhenTimerStart = new Date();
 
+    // this.dispatchLoanRenewEvent(secondsLeft);
+
     /**
      * set interval in window object
      * @see ia-lending-intervals.js
