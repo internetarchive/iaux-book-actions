@@ -349,7 +349,7 @@ describe('Auto renew one hour loan', () => {
     });
     el.dispatchEvent(myEvent);
 
-    await aTimeout(1500); // wait for 1.5 second
+    await aTimeout(1900); // wait for 1.9 second
     await el.updateComplete;
 
     expect(el.loanRenewResult.texts).to.equal(

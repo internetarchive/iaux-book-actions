@@ -243,8 +243,9 @@ export default class IABookActions extends LitElement {
     }
 
     if (this.borrowType === 'browsed') {
+      console.log('this.borrowType', this.borrowType);
       // start timer for browsed.
-      this.startBrowseTimer();
+      await this.startBrowseTimer();
     }
 
     // early return if not borrowed or no action-bar
@@ -280,13 +281,6 @@ export default class IABookActions extends LitElement {
      * dispatched this event from bookreader page changed
      */
     window.addEventListener('BookReader:userAction', () => {
-      this.suppressToast = true;
-      this.closeToastManager();
-
-      if (this.suppressAutoRenew) {
-        return;
-      }
-
       if (this.borrowType === 'browsed') {
         this.autoLoanRenewChecker(true);
       }
@@ -365,6 +359,7 @@ export default class IABookActions extends LitElement {
    * Show the waring modal to ask user if they are still reading
    */
   async showWarningModal() {
+    console.log('****** showWarningModal ******');
     await this.useModalManager();
 
     // if secondsLeft < 60, consider it 1 minute
@@ -388,7 +383,7 @@ export default class IABookActions extends LitElement {
       <div id="custom-buttons" style="display:flex;justify-content:center;">
         <button
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
-          @click=${async event => {
+          @click=${event => {
             this.changeModalState(event);
             this.autoLoanRenewChecker(true);
           }}
@@ -397,7 +392,7 @@ export default class IABookActions extends LitElement {
         </button>
         <button
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.return}"
-          @click=${async event => {
+          @click=${event => {
             this.changeModalState(event);
             document.querySelector('ia-book-actions').disableActionGroup = true;
             this.returnNow = true;
@@ -462,11 +457,8 @@ export default class IABookActions extends LitElement {
    * close/hide modal-manager
    */
   async closeModalManager() {
-    console.log('** closeModalManager');
     this.modal = document.querySelector('modal-manager');
-    if (this.modal) {
-      this.modal?.closeModal();
-    }
+    this.modal?.closeModal();
   }
 
   /**
@@ -490,11 +482,8 @@ export default class IABookActions extends LitElement {
    * close/hide toast message
    */
   async closeToastManager() {
-    console.log('** closeToastManager');
     this.toast = this.shadowRoot.querySelector('toast-template');
-    if (this.toast) {
-      this.toast?.remove();
-    }
+    this.toast?.remove();
   }
 
   /**
@@ -534,6 +523,9 @@ export default class IABookActions extends LitElement {
   }
 
   async browseHasRenew() {
+    console.log('****** browseHasRenew ******');
+    window?.IALendingIntervals?.clearAll();
+
     const loanTime = await this.localCache.get(`${this.identifier}-loanTime`);
     const secondsLeft = (loanTime - new Date()) / 1000; // different in seconds
 
@@ -544,24 +536,6 @@ export default class IABookActions extends LitElement {
       secondsLeftOnLoan: secondsLeft,
     };
     this.lendingStatus = currStatus;
-
-    this.startBrowseTimer();
-  }
-
-  startBrowseTimer() {
-    clearTimeout(this.browseTimer);
-    const {
-      browsingExpired,
-      user_has_browsed,
-      secondsLeftOnLoan,
-    } = this.lendingStatus;
-    if (!user_has_browsed || browsingExpired) {
-      return;
-    }
-
-    this.browseTimer = setTimeout(() => {
-      this.browseHasExpired();
-    }, secondsLeftOnLoan * 1000);
   }
 
   /**
@@ -585,6 +559,26 @@ export default class IABookActions extends LitElement {
     this.showExpiredModal();
 
     window?.Sentry?.captureMessage(sentryLogs.browseHasExpired);
+  }
+
+  async startBrowseTimer() {
+    clearTimeout(this.browseTimer);
+
+    const {
+      browsingExpired,
+      user_has_browsed,
+      secondsLeftOnLoan,
+    } = this.lendingStatus;
+    if (!user_has_browsed || browsingExpired) {
+      console.log('user not browsed', this.lendingStatus);
+      return;
+    }
+
+    console.log('user browsed', this.lendingStatus);
+
+    this.browseTimer = setTimeout(() => {
+      this.browseHasExpired();
+    }, secondsLeftOnLoan * 1000);
   }
 
   /**
@@ -682,7 +676,13 @@ export default class IABookActions extends LitElement {
     if (this.loanRenewResult.renewNow) {
       window?.IALendingIntervals?.clearAll();
 
-      this.suppressToast = false;
+      // testing console....
+      console.log('IABookActions: AutoRenewed:- ', {
+        ajaxResponse: event?.detail?.data,
+        loanRenewResult: this.loanRenewResult,
+        secondsLeftOnLoan: Math.round(this.lendingStatus.secondsLeftOnLoan),
+      });
+
       await this.browseHasRenew();
       await this.resetTimerCountState();
 
@@ -691,13 +691,6 @@ export default class IABookActions extends LitElement {
       this.modal?.showModal({ config: {}, customModalContent: `` });
 
       window?.Sentry?.captureMessage(sentryLogs.bookHasRenewed);
-
-      // testing console....
-      console.log('IABookActions: AutoRenewed:- ', {
-        ajaxResponse: event?.detail?.data,
-        loanRenewResult: this.loanRenewResult,
-        secondsLeftOnLoan: Math.round(this.lendingStatus.secondsLeftOnLoan),
-      });
     }
   }
 
