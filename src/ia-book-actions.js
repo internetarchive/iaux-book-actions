@@ -1,4 +1,5 @@
 /* eslint-disable camelcase */
+/* eslint-disable class-methods-use-this */
 import { html, css, LitElement, nothing } from 'lit';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
@@ -21,6 +22,21 @@ import { LoanRenewHelper } from './core/services/loan-renew-helper.js';
 
 export const events = {
   browseExpired: 'IABookReader:BrowsingHasExpired',
+};
+
+/**
+ * custom styling for modal-manager buttons
+ * TODO: lets allow modal-manager to know ia-button classes
+ */
+export const modalButtonStyle = {
+  iaButton:
+    'min-height:3.5rem;cursor:pointer;color:white;border-radius:0.4rem;border:1px solid #c5d1df;padding:4px 8px;width:auto;user-select:none;',
+  renew: 'background:#194880;width:110px;',
+  return: 'background:#d9534f;width:120px;',
+  loaderIcon:
+    'display:inline-block;width:20px;height:20px;margin-top:2px;color:white;--activityIndicatorLoadingRingColor:#fff;--activityIndicatorLoadingDotColor:#fff;',
+  refresh:
+    'background:none;font-size:inherit;border:0;padding:0;color:#0000ee;cursor:pointer;text-decoration:underline',
 };
 
 export default class IABookActions extends LitElement {
@@ -71,10 +87,19 @@ export default class IABookActions extends LitElement {
     this.secondaryActions = [];
     this.lendingOptions = {};
     this.borrowType = ''; // (browsed|borrowed)
-    this.consecutiveLoanCounts = 1; // consecutive loan count
-    this.suppressToast = false;
-    this.suppressAutoRenew = false;
     this.browseTimer = undefined;
+
+    /** @deprecated */
+    this.toast = undefined;
+    /** @deprecated */
+    this.suppressToast = false;
+    /** @deprecated */
+    this.suppressAutoRenew = false;
+
+    /**
+     * when user click on [return the book] button on warning modal
+     */
+    this.returnNow = false;
 
     /**
      * contains one hour auto-loan-renew time configuration
@@ -218,8 +243,9 @@ export default class IABookActions extends LitElement {
     }
 
     if (this.borrowType === 'browsed') {
+      console.log('this.borrowType', this.borrowType);
       // start timer for browsed.
-      this.startBrowseTimer();
+      await this.startBrowseTimer();
     }
 
     // early return if not borrowed or no action-bar
@@ -248,57 +274,25 @@ export default class IABookActions extends LitElement {
    * Bind 1 hour loan auto renew event,
    * There are two events we want to use,
    * 1. BookReader:userAction - dispatched from bookreader side
-   * 2. click event to refresh the page when book is auto expired
-   * 3. IABookActions:loanRenew - dispatched from timer-countdown component
+   * 2. IABookActions:loanRenew - dispatched from timer-countdown component
    */
   bindLoanRenewEvents() {
     /**
      * dispatched this event from bookreader page changed
      */
     window.addEventListener('BookReader:userAction', () => {
-      console.log('** BR user Action', {
-        suppressAutoRenew: this.suppressAutoRenew,
-        borrowType: this.borrowType,
-      });
-
-      this.suppressToast = true;
-      this.closeToastManager();
-
-      if (this.suppressAutoRenew) {
-        return;
-      }
-
       if (this.borrowType === 'browsed') {
         this.autoLoanRenewChecker(true);
       }
     });
 
     /**
-     * detect click-event on document to close toast-template
-     */
-    document.addEventListener('click', e => {
-      console.log('*** top level click handler to remove toast on click');
-      if (this.loanRenewHelper && this.loanRenewResult.secondsLeft > 0) {
-        this.suppressToast = true;
-      }
-
-      // reload when user click on book-page and book is EXPIRED
-      const hasExpired =
-        'browsingExpired' in this.lendingStatus &&
-        this.lendingStatus?.browsingExpired;
-      if (hasExpired && e.target.nodeName !== 'IA-BOOK-ACTIONS') {
-        window.location?.reload();
-      }
-    });
-
-    /**
      * this event dispatched from timer-countdown component for:
-     * 1. user turned book page after showing auto-returned warning message
-     * 2. show warning message having remaining time
+     * 1. user turned book page after showing auto-returned warning modal
+     * 2. show warning modal having remaining time
      * @see TimerCountdown::timerCountdown
      */
     this.addEventListener('IABookActions:loanRenew', async event => {
-      console.log('** IABookActions:loanRenew', event.detail);
       await this.autoLoanRenewChecker(false);
 
       /**
@@ -314,16 +308,16 @@ export default class IABookActions extends LitElement {
         this.browseHasExpired();
       }
 
-      // show warning message with remaining time to auto returned it.
+      // show warning modal with remaining time to auto returned it.
       if (this.loanRenewResult.renewNow === false) {
         /**
          * so compensate for the 50 second buffer to handle above race conditions
          * let's reduce 1 min from warning texts and early return the book when 1 min left.
          */
         secondsLeft -= 60;
-
         this.loanRenewResult.secondsLeft = secondsLeft;
-        this.showToastMessage();
+
+        this.showWarningModal();
       }
     });
   }
@@ -347,17 +341,153 @@ export default class IABookActions extends LitElement {
   }
 
   /**
-   * close/hide toast message
+   * create / select the modal-manager component on DOM
+   * @memberof IABookActions
    */
-  async closeToastManager() {
-    console.log('** closeToastManager');
-    const toastTemplate = this.shadowRoot.querySelector('toast-template');
-    if (toastTemplate) {
-      toastTemplate?.remove();
+  async useModalManager() {
+    if (!this.modal) {
+      this.modal = document.querySelector('modal-manager');
+
+      if (!this.modal) this.modal = document.createElement('modal-manager');
     }
+
+    this.modal.id = 'action-bar-modal';
+    await document.body.appendChild(this.modal);
   }
 
   /**
+   * Show the waring modal to ask user if they are still reading
+   */
+  async showWarningModal() {
+    console.log('****** showWarningModal ******');
+    await this.useModalManager();
+
+    // if secondsLeft < 60, consider it 1 minute
+    let { secondsLeft } = this.loanRenewResult;
+    if (secondsLeft === undefined) {
+      secondsLeft = this.lendingStatus.secondsLeftOnLoan;
+    } else {
+      secondsLeft = secondsLeft > 60 ? secondsLeft : 60;
+    }
+
+    const config = new ModalConfig();
+    config.headline = 'Are you still here?';
+    config.showCloseButton = false;
+    config.closeOnBackdropClick = false;
+    config.message = this.loanRenewHelper?.getMessageTexts(
+      this.loanRenewResult.texts,
+      secondsLeft
+    );
+
+    const customContent = html`<br />
+      <div id="custom-buttons" style="display:flex;justify-content:center;">
+        <button
+          style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
+          @click=${event => {
+            this.changeModalState(event);
+            this.autoLoanRenewChecker(true);
+          }}
+        >
+          Keep reading
+        </button>
+        <button
+          style="${modalButtonStyle.iaButton} ${modalButtonStyle.return}"
+          @click=${event => {
+            this.changeModalState(event);
+            document.querySelector('ia-book-actions').disableActionGroup = true;
+            this.returnNow = true;
+          }}
+        >
+          Return the book
+        </button>
+      </div> `;
+
+    this.modal.showModal({ config, customModalContent: customContent });
+  }
+
+  /**
+   * helper function to change button click states on modal-manager
+   * - add loader on button click
+   * - change button appearance
+   *
+   * @param {Event} event
+   */
+  changeModalState(event) {
+    if (event.target === undefined) return;
+
+    const button = event.target;
+    button.innerHTML = `<ia-activity-indicator
+      mode="processing"
+      style=${modalButtonStyle.loaderIcon}
+    ></ia-activity-indicator>`;
+
+    const parentElement = event.target.parentNode;
+    parentElement.style.pointerEvents = 'none';
+    parentElement.style.opacity = 0.8;
+  }
+
+  /**
+   * Show modal when book is auto returned
+   */
+  async showExpiredModal() {
+    await this.useModalManager();
+
+    const config = new ModalConfig();
+    config.headline = '';
+    config.showCloseButton = false;
+    config.closeOnBackdropClick = false;
+    config.message = 'This book has been returned due to inactivity.';
+
+    const customContent = html`<br />
+      <div style="text-align: center">
+        <button
+          style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
+          @click=${() => {
+            window.location?.reload();
+          }}
+        >
+          Okay
+        </button>
+      </div> `;
+
+    this.modal?.showModal({ config, customModalContent: customContent });
+  }
+
+  /**
+   * close/hide modal-manager
+   */
+  async closeModalManager() {
+    this.modal = document.querySelector('modal-manager');
+    this.modal?.closeModal();
+  }
+
+  /**
+   * @deprecated
+   * create / select the toast-template component on DOM
+   *
+   * @memberof IABookActions
+   */
+  async useToastManager() {
+    if (!this.toast) {
+      this.toast = this.shadowRoot.querySelector('toast-template');
+
+      if (!this.toast) this.toast = document.createElement('toast-template');
+    }
+
+    await this.shadowRoot.appendChild(this.toast);
+  }
+
+  /**
+   * @deprecated
+   * close/hide toast message
+   */
+  async closeToastManager() {
+    this.toast = this.shadowRoot.querySelector('toast-template');
+    this.toast?.remove();
+  }
+
+  /**
+   * @deprecated
    * Show toast messages on some specific loan renew features. e.g.
    * - show message when book is auto renewed
    * - show message when book is expired
@@ -370,11 +500,7 @@ export default class IABookActions extends LitElement {
     });
     if (this.suppressToast) return;
 
-    let toastTemplate = this.shadowRoot.querySelector('toast-template');
-    if (!toastTemplate) {
-      toastTemplate = document.createElement('toast-template');
-    }
-    await this.shadowRoot.appendChild(toastTemplate);
+    await this.useToastManager();
 
     // if secondsLeft < 60, consider it 1 minute
     let { secondsLeft } = this.loanRenewResult;
@@ -391,12 +517,15 @@ export default class IABookActions extends LitElement {
       secondsLeft
     );
 
-    toastTemplate.showToast({
+    this.toast?.showToast({
       config,
     });
   }
 
   async browseHasRenew() {
+    console.log('****** browseHasRenew ******');
+    window?.IALendingIntervals?.clearAll();
+
     const loanTime = await this.localCache.get(`${this.identifier}-loanTime`);
     const secondsLeft = (loanTime - new Date()) / 1000; // different in seconds
 
@@ -407,24 +536,6 @@ export default class IABookActions extends LitElement {
       secondsLeftOnLoan: secondsLeft,
     };
     this.lendingStatus = currStatus;
-
-    this.startBrowseTimer();
-  }
-
-  startBrowseTimer() {
-    clearTimeout(this.browseTimer);
-    const {
-      browsingExpired,
-      user_has_browsed,
-      secondsLeftOnLoan,
-    } = this.lendingStatus;
-    if (!user_has_browsed || browsingExpired) {
-      return;
-    }
-
-    this.browseTimer = setTimeout(() => {
-      this.browseHasExpired();
-    }, secondsLeftOnLoan * 1000);
   }
 
   /**
@@ -443,12 +554,31 @@ export default class IABookActions extends LitElement {
     // show message after browsed book is expired.
     this.loanRenewResult.renewNow = false;
     this.loanRenewResult.texts =
-      'This book has been automatically returned due to inactivity.';
+      'This book has been returned due to inactivity.';
 
-    this.suppressToast = false;
-    this.showToastMessage();
+    this.showExpiredModal();
 
     window?.Sentry?.captureMessage(sentryLogs.browseHasExpired);
+  }
+
+  async startBrowseTimer() {
+    clearTimeout(this.browseTimer);
+
+    const {
+      browsingExpired,
+      user_has_browsed,
+      secondsLeftOnLoan,
+    } = this.lendingStatus;
+    if (!user_has_browsed || browsingExpired) {
+      console.log('user not browsed', this.lendingStatus);
+      return;
+    }
+
+    console.log('user browsed', this.lendingStatus);
+
+    this.browseTimer = setTimeout(() => {
+      this.browseHasExpired();
+    }, secondsLeftOnLoan * 1000);
   }
 
   /**
@@ -524,6 +654,7 @@ export default class IABookActions extends LitElement {
         ?disabled=${this.disableActionGroup}
         ?autoRenew=${this.loanRenewResult.renewNow}
         ?autoReturn=${this.lendingStatus.browsingExpired}
+        ?returnNow=${this.returnNow}
         @loanAutoRenewed=${this.handleLoanAutoRenewed}
         @lendingActionError=${this.handleLendingActionError}
         @toggleActionGroup=${this.handleToggleActionGroup}
@@ -545,19 +676,21 @@ export default class IABookActions extends LitElement {
     if (this.loanRenewResult.renewNow) {
       window?.IALendingIntervals?.clearAll();
 
-      this.suppressToast = false;
-      await this.browseHasRenew();
-      await this.showToastMessage();
-      await this.resetTimerCountState();
-
-      window?.Sentry?.captureMessage(sentryLogs.bookHasRenewed);
-
       // testing console....
       console.log('IABookActions: AutoRenewed:- ', {
         ajaxResponse: event?.detail?.data,
         loanRenewResult: this.loanRenewResult,
         secondsLeftOnLoan: Math.round(this.lendingStatus.secondsLeftOnLoan),
       });
+
+      await this.browseHasRenew();
+      await this.resetTimerCountState();
+
+      // close the modal
+      this.modal?.remove();
+      this.modal?.showModal({ config: {}, customModalContent: `` });
+
+      window?.Sentry?.captureMessage(sentryLogs.bookHasRenewed);
     }
   }
 
@@ -602,7 +735,7 @@ export default class IABookActions extends LitElement {
     this.disableActionGroup = !this.disableActionGroup;
   }
 
-  /*
+  /**
    * handle lending errors occure during different operation like
    * browse book, borrow book, borrowed book token etc...
    *
@@ -656,16 +789,7 @@ export default class IABookActions extends LitElement {
 
   /* show error message if something went wrong */
   async showErrorModal(errorMsg, action) {
-    // check if this.modal passed as prop
-    if (!this.modal) {
-      this.modal = document.querySelector('modal-manager');
-
-      // check the DOM if <modal-manager> already there
-      if (!this.modal) this.modal = document.createElement('modal-manager');
-    }
-
-    this.modal.id = 'action-bar-modal';
-    await document.body.appendChild(this.modal);
+    await this.useModalManager();
 
     const modalConfig = new ModalConfig({
       title: 'Lending error',
@@ -676,7 +800,7 @@ export default class IABookActions extends LitElement {
 
     if (action === 'create_token') {
       const refreshButton = html`<button
-        style="background:none;font-size:inherit;border:0;padding:0;color:#0000ee;cursor:pointer;text-decoration:underline"
+        style="${modalButtonStyle.refresh}"
         @click=${() => window.location.reload(true)}
       >
         refresh

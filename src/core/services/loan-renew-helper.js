@@ -16,7 +16,7 @@ export class LoanRenewHelper {
     this.loanRenewMessage =
       'This book has been renewed for #time #unitsOfTime.';
     this.loanReturnWarning =
-      'This book will be automatically returned in #time #unitsOfTime unless you turn a page.';
+      'With no action, this book will be auto-returned in #time #unitsOfTime.';
 
     // private props
     this.result = {
@@ -39,7 +39,7 @@ export class LoanRenewHelper {
   }
 
   /**
-   * Trigger this function when user has browsed a book and change the post
+   * Trigger this function when user has browsed a book and change the page
    * - every time user change the page, we set current time in indexedDB
    * - also check if need to auto renew current loan
    *

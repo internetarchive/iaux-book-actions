@@ -30,6 +30,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
       returnUrl: { type: String },
       autoRenew: { type: Boolean },
       autoReturn: { type: Boolean },
+      returnNow: { type: Boolean },
     };
   }
 
@@ -51,6 +52,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
     this.returnUrl = '';
     this.autoRenew = false;
     this.autoReturn = false;
+    this.returnNow = false;
   }
 
   updated(changed) {
@@ -68,18 +70,22 @@ export class CollapsibleActionGroup extends ActionsHandler {
     if (changed.has('autoReturn') && this.autoReturn === true) {
       this.dispatchLoanEvent('autoReturn');
     }
+
+    if (changed.has('returnNow') && this.returnNow === true) {
+      this.dispatchLoanEvent('returnNow', { borrowType: 'browse' });
+    }
   }
 
   /**
-   * dispatch event when book is auto renewed / returned
+   * dispatch event when book is auto auto-renewed / auto-returned / returned
    * listen these events in action-handler.js to execute ajax call on petabox.
    * @see ActionsHandler
    *
-   * @param {string} event - autoRenew|autoReturn
+   * @param {string} event - autoRenew|autoReturn|returnNow
    * @memberof CollapsibleActionGroup
    */
-  dispatchLoanEvent(event) {
-    this.dispatchEvent(new Event(event));
+  dispatchLoanEvent(event, detail) {
+    this.dispatchEvent(new CustomEvent(event, { detail }));
   }
 
   /**

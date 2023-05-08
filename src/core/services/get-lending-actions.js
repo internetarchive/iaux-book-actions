@@ -40,7 +40,7 @@ import ActionsConfig from './actions-config.js';
  * @enum {string}
  */
 export const bookTitles = {
-  available_1hr: 'Renews each hour as long as pages are turned.',
+  available_1hr: 'Renews automatically as long as pages are turned.',
   available_14d: 'This book can be borrowed for 14 days.',
   available_pd: 'Book available to patrons with print disabilities.',
   available_waitlist: 'A waitlist is available.',
@@ -49,7 +49,7 @@ export const bookTitles = {
   being_borrowed: 'Another patron is using this book. Please check back later.',
   eligible_pd: 'You are eligible for print-disabled access.',
   on_waitlist: 'You are on the waitlist for this book.',
-  session_expired: '',
+  session_expired: 'Renews automatically as long as pages are turned.',
   unavailable: 'This book is not available at this time.',
 };
 
@@ -98,8 +98,7 @@ export class GetLendingActions {
     let isBrowsing =
       lendingStatus.user_has_browsed && !lendingStatus.browsingExpired;
     if (isBrowsing) {
-      primaryTitleText =
-        'Returns automatically after 25 minutes of inactivity.';
+      primaryTitleText = bookTitles.available_1hr;
     } else {
       primaryTitleText = `Your loan of this book has ${lendingStatus.daysLeftOnLoan} days left.`;
     }

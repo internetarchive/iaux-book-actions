@@ -188,7 +188,9 @@ describe('Borrow status actions', () => {
       },
     ];
 
-    expect(el.primaryTitle).to.equal('');
+    expect(el.primaryTitle).to.equal(
+      'Renews automatically as long as pages are turned.'
+    );
     expect(el.primaryActions.length).to.equal(2);
     expect(el.primaryActions[0].text).to.equal('Log In and Borrow');
     expect(el.primaryActions[0].text).to.equal(expectedPrimaryActions[0].text);
@@ -274,7 +276,7 @@ describe('Browsing expired status', () => {
     expect(el.loanRenewResult.renewNow).to.equal(false);
     expect(el.loanRenewResult.secondsLeft).to.equal(0);
     expect(el.loanRenewResult.texts).to.equal(
-      'This book has been automatically returned due to inactivity.'
+      'This book has been returned due to inactivity.'
     );
   });
 
@@ -347,7 +349,7 @@ describe('Auto renew one hour loan', () => {
     });
     el.dispatchEvent(myEvent);
 
-    await aTimeout(1500); // wait for 1.5 second
+    await aTimeout(1900); // wait for 1.9 second
     await el.updateComplete;
 
     expect(el.loanRenewResult.texts).to.equal(
