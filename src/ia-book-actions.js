@@ -86,15 +86,12 @@ export default class IABookActions extends LitElement {
     this.primaryColor = 'primary';
     this.secondaryActions = [];
     this.lendingOptions = {};
-    this.borrowType = ''; // (browsed|borrowed)
+    this.borrowType = null; // (browsed|borrowed)
     this.browseTimer = undefined;
+    this.timerExecutionSeconds = 30;
 
     /** @deprecated */
     this.toast = undefined;
-    /** @deprecated */
-    this.suppressToast = false;
-    /** @deprecated */
-    this.suppressAutoRenew = false;
 
     /**
      * when user click on [return the book] button on warning modal
@@ -196,9 +193,6 @@ export default class IABookActions extends LitElement {
   /** End SharedObserver resize handler */
 
   async setupLendingToolbarActions() {
-    this.suppressToast = false;
-    this.suppressAutoRenew = false;
-
     this.lendingOptions = new GetLendingActions(
       this.userid,
       this.identifier,
@@ -218,7 +212,7 @@ export default class IABookActions extends LitElement {
       return action != null;
     });
 
-    this.borrowType = actions.borrowType;
+    this.borrowType = actions.borrowType ? actions.borrowType : null;
 
     const hasExpired =
       'browsingExpired' in this.lendingStatus &&
@@ -243,7 +237,9 @@ export default class IABookActions extends LitElement {
     }
 
     if (this.borrowType === 'browsed') {
-      console.log('this.borrowType', this.borrowType);
+      // start timer for loan-renew
+      await this.startTimerCountdown();
+
       // start timer for browsed.
       await this.startBrowseTimer();
     }
@@ -283,41 +279,6 @@ export default class IABookActions extends LitElement {
     window.addEventListener('BookReader:userAction', () => {
       if (this.borrowType === 'browsed') {
         this.autoLoanRenewChecker(true);
-      }
-    });
-
-    /**
-     * this event dispatched from timer-countdown component for:
-     * 1. user turned book page after showing auto-returned warning modal
-     * 2. show warning modal having remaining time
-     * @see TimerCountdown::timerCountdown
-     */
-    this.addEventListener('IABookActions:loanRenew', async event => {
-      await this.autoLoanRenewChecker(false);
-
-      /**
-       * auto-renew is not possible in last seconds (let say 50 second) because,
-       * 1. less time to execute ajax call
-       * 2. less time to write loan on datanodes
-       * 3. less time to load images by create_token api
-       * so if seconds left is < 50, just expire the loan
-       */
-      let secondsLeft = event?.detail?.secondsLeft;
-      if (secondsLeft < 50) {
-        this.suppressAutoRenew = true;
-        this.browseHasExpired();
-      }
-
-      // show warning modal with remaining time to auto returned it.
-      if (this.loanRenewResult.renewNow === false) {
-        /**
-         * so compensate for the 50 second buffer to handle above race conditions
-         * let's reduce 1 min from warning texts and early return the book when 1 min left.
-         */
-        secondsLeft -= 60;
-        this.loanRenewResult.secondsLeft = secondsLeft;
-
-        this.showWarningModal();
       }
     });
   }
@@ -383,9 +344,9 @@ export default class IABookActions extends LitElement {
       <div id="custom-buttons" style="display:flex;justify-content:center;">
         <button
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
-          @click=${event => {
-            this.changeModalState(event);
-            this.autoLoanRenewChecker(true);
+          @click=${async event => {
+            await this.changeModalState(event);
+            this.loanRenewResult = { texts: '', renewNow: true };
           }}
         >
           Keep reading
@@ -402,7 +363,7 @@ export default class IABookActions extends LitElement {
         </button>
       </div> `;
 
-    this.modal.showModal({ config, customModalContent: customContent });
+    this.modal?.showModal({ config, customModalContent: customContent });
   }
 
   /**
@@ -430,6 +391,7 @@ export default class IABookActions extends LitElement {
    * Show modal when book is auto returned
    */
   async showExpiredModal() {
+    console.log('showExpiredModal()');
     await this.useModalManager();
 
     const config = new ModalConfig();
@@ -494,12 +456,6 @@ export default class IABookActions extends LitElement {
    * - show message having remaining time when book is about to auto returned
    */
   async showToastMessage() {
-    console.log('** showToastMessage', {
-      suppressToast: this.suppressToast,
-      loanRenewResult: this.loanRenewResult,
-    });
-    if (this.suppressToast) return;
-
     await this.useToastManager();
 
     // if secondsLeft < 60, consider it 1 minute
@@ -523,7 +479,6 @@ export default class IABookActions extends LitElement {
   }
 
   async browseHasRenew() {
-    console.log('****** browseHasRenew ******');
     window?.IALendingIntervals?.clearAll();
 
     const loanTime = await this.localCache.get(`${this.identifier}-loanTime`);
@@ -556,7 +511,7 @@ export default class IABookActions extends LitElement {
     this.loanRenewResult.texts =
       'This book has been returned due to inactivity.';
 
-    this.showExpiredModal();
+    await this.showExpiredModal();
 
     window?.Sentry?.captureMessage(sentryLogs.browseHasExpired);
   }
@@ -573,8 +528,6 @@ export default class IABookActions extends LitElement {
       console.log('user not browsed', this.lendingStatus);
       return;
     }
-
-    console.log('user browsed', this.lendingStatus);
 
     this.browseTimer = setTimeout(() => {
       this.browseHasExpired();
@@ -631,8 +584,6 @@ export default class IABookActions extends LitElement {
     return this.borrowType === 'browsed'
       ? html`<timer-countdown
           .secondsLeftOnLoan=${Number(this.lendingStatus.secondsLeftOnLoan)}
-          .loanTotalTime=${this.loanRenewTimeConfig.loanTotalTime}
-          .loanRenewAtLast=${this.loanRenewTimeConfig.loanRenewAtLast}
         ></timer-countdown>`
       : nothing;
   }
@@ -683,7 +634,14 @@ export default class IABookActions extends LitElement {
         secondsLeftOnLoan: Math.round(this.lendingStatus.secondsLeftOnLoan),
       });
 
+      /**
+       * update the lendingStatus property
+       */
       await this.browseHasRenew();
+
+      /**
+       * reset timer countdown states
+       */
       await this.resetTimerCountState();
 
       // close the modal
@@ -691,6 +649,127 @@ export default class IABookActions extends LitElement {
       this.modal?.showModal({ config: {}, customModalContent: `` });
 
       window?.Sentry?.captureMessage(sentryLogs.bookHasRenewed);
+    }
+  }
+
+  /**
+   * start timer countdown interval after loan auto-renewed
+   *
+   * @memberof IABookActions
+   */
+  startTimerCountdown() {
+    console.log('startTimerCountdown()');
+    window?.IALendingIntervals?.clearTimerCountdown();
+
+    let secondsLeft = Number(this.lendingStatus.secondsLeftOnLoan);
+    this.timeWhenTimerStart = new Date();
+
+    window.IALendingIntervals.timerCountdown = setInterval(async () => {
+      secondsLeft -= this.timerExecutionSeconds;
+      secondsLeft = Math.round(secondsLeft); // round number
+
+      // re-sync timer if gone off because of background window
+      await this.reSyncTimerIfGoneOff(secondsLeft);
+
+      /**
+       * execute from last 10th minute to 0th minute
+       * - 10th - to check if user has viewed
+       * - till 0th - to show warning msg with remaining time to auto expired
+       * @see IABookActions::bindLoanRenewEvents
+       */
+      if (secondsLeft <= this.loanRenewTimeConfig.loanRenewAtLast) {
+        await this.loanRenewAttempt(secondsLeft);
+      }
+
+      // clear interval in secondsLeft if less
+      if (secondsLeft <= this.timerExecutionSeconds) {
+        this.disconnectedCallback();
+        window?.Sentry?.captureMessage(sentryLogs.clearOneHourTimer);
+      }
+    }, this.timerExecutionSeconds * 1000);
+  }
+
+  /**
+   * helper function to determine if timer is not in sync properly
+   *
+   * @param {number} timerSecondsLeft - actual seconds left get from setInterval
+   *
+   * @memberof TimerCountdown
+   */
+  async reSyncTimerIfGoneOff(timerSecondsLeft) {
+    // debug info
+    console.log(
+      new Date().toLocaleTimeString(),
+      'timeLeftInSec',
+      timerSecondsLeft,
+      ' ||| timeLeftInMin',
+      Math.ceil(timerSecondsLeft / 60)
+    );
+
+    const currentTime = new Date();
+
+    // current time - loan time
+    const diffInSeconds =
+      currentTime.getTime() / 1000 - this.timeWhenTimerStart.getTime() / 1000;
+
+    const secondsShouldLeft =
+      this.lendingStatus.secondsLeftOnLoan - diffInSeconds;
+
+    // convert in minutes
+    const whatIsleft = Math.round(timerSecondsLeft);
+    const whatShouldLeft = Math.round(secondsShouldLeft);
+
+    if (whatIsleft !== whatShouldLeft) {
+      // debug info
+      console.log(
+        `timer is gone off, let's re-sync, whatIsleft -> ${whatIsleft}, whatShouldLeft -> ${whatShouldLeft}`
+      );
+
+      // the seconds should left in timer again
+      const currStatus = {
+        ...this.lendingStatus,
+        secondsLeftOnLoan: secondsShouldLeft,
+      };
+      this.lendingStatus = currStatus;
+    }
+  }
+
+  /**
+   * attmept to loan renew from
+   * - timer countdown
+   * - onclick on [keep reading] button
+   *
+   * @param {*} secondsLeft
+   * @memberof IABookActions
+   */
+  async loanRenewAttempt(secondsLeft) {
+    console.log('loanRenewAttempt()');
+    let loanSecondsLeft = secondsLeft;
+    /**
+     * auto-renew is not possible in last seconds (let say 50 second) because,
+     * 1. less time to execute ajax call
+     * 2. less time to write loan on datanodes
+     * 3. less time to load images by create_token api
+     * so if seconds left is < 50, just expire the loan
+     */
+    if (loanSecondsLeft < 50) {
+      console.log('if (loanSecondsLeft < 50) {');
+      await this.browseHasExpired();
+      return;
+    }
+
+    await this.autoLoanRenewChecker(false);
+
+    // show warning modal with remaining time to auto returned it.
+    if (this.loanRenewResult.renewNow === false) {
+      /**
+       * so compensate for the 50 second buffer to handle above race conditions
+       * let's reduce 1 min from warning texts and early return the book when 1 min left.
+       */
+      loanSecondsLeft -= 60;
+      this.loanRenewResult.secondsLeft = loanSecondsLeft;
+
+      this.showWarningModal();
     }
   }
 
@@ -817,7 +896,7 @@ export default class IABookActions extends LitElement {
         <code>errorLog: ${errorMsg}</code>`;
     }
 
-    this.modal.showModal({
+    this.modal?.showModal({
       config: modalConfig,
     });
   }
