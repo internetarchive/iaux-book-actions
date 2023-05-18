@@ -1,12 +1,9 @@
 import { html, css, LitElement } from 'lit';
-import { sentryLogs } from '../core/config/sentry-events.js';
 
 export default class TimerCountdown extends LitElement {
   static get properties() {
     return {
       secondsLeftOnLoan: { type: Number }, // in seconds
-      loanTotalTime: { type: Number }, // in seconds
-      loanRenewAtLast: { type: Number }, // in seconds
     };
   }
 
@@ -18,139 +15,6 @@ export default class TimerCountdown extends LitElement {
      * @type {number}
      */
     this.secondsLeftOnLoan = 0;
-
-    /**
-     * total seconds a loan does have
-     * @type {number}
-     */
-    this.loanTotalTime = 0;
-
-    /**
-     * at the remaining time, we attempt to renew current loan
-     * @type {number}
-     */
-    this.loanRenewAtLast = 0;
-
-    /**
-     * store time when timer is started
-     * @type {string}
-     */
-    this.timeWhenTimerStart = '';
-
-    /**
-     * delay seconds in setInterval function
-     * @type {number}
-     */
-    this.timerExecutionSeconds = 30;
-  }
-
-  disconnectedCallback() {
-    window?.IALendingIntervals?.clearTimerCountdown();
-  }
-
-  firstUpdated() {
-    this.timerCountdown();
-  }
-
-  updated(changed) {
-    if (changed.has('secondsLeftOnLoan') && this.secondsLeftOnLoan > 0) {
-      this.timerCountdown();
-    }
-  }
-
-  timerCountdown() {
-    this.disconnectedCallback();
-
-    let secondsLeft = this.secondsLeftOnLoan;
-
-    // store current time
-    this.timeWhenTimerStart = new Date();
-
-    // this.dispatchLoanRenewEvent(secondsLeft);
-    /**
-     * set interval in window object
-     * @see ia-lending-intervals.js
-     */
-    window.IALendingIntervals.timerCountdown = setInterval(async () => {
-      secondsLeft -= this.timerExecutionSeconds;
-      secondsLeft = Math.round(secondsLeft); // round number
-
-      // re-sync timer if gone off because of background window
-      await this.reSyncTimerIfGoneOff(secondsLeft);
-
-      /**
-       * execute from last 10th minute to 0th minute
-       * - 10th - to check if user has viewed
-       * - till 0th - to show warning msg with remaining time to auto expired
-       * @see IABookActions::bindLoanRenewEvents
-       */
-      if (secondsLeft <= this.loanRenewAtLast) {
-        this.dispatchLoanRenewEvent(secondsLeft);
-      }
-
-      // clear interval in secondsLeft if less
-      if (secondsLeft <= this.timerExecutionSeconds) {
-        this.disconnectedCallback();
-        window?.Sentry?.captureMessage(sentryLogs.clearOneHourTimer);
-      }
-    }, this.timerExecutionSeconds * 1000);
-  }
-
-  /**
-   * dispatch loan renew attempt event
-   *
-   * @param {number} secondsLeft
-   * @memberof TimerCountdown
-   */
-  dispatchLoanRenewEvent(secondsLeft) {
-    this.dispatchEvent(
-      new CustomEvent('IABookActions:loanRenew', {
-        detail: {
-          hasPageChanged: false,
-          secondsLeft,
-        },
-        bubbles: true,
-        composed: true,
-      })
-    );
-  }
-
-  /**
-   * helper function to determine if timer is not in sync properly
-   *
-   * @param {number} timerSecondsLeft - actual seconds left get from setInterval
-   *
-   * @memberof TimerCountdown
-   */
-  async reSyncTimerIfGoneOff(timerSecondsLeft) {
-    // debug info
-    console.log(
-      new Date().toLocaleTimeString(),
-      'timeLeftInSec',
-      timerSecondsLeft,
-      ' ||| timeLeftInMin',
-      Math.ceil(timerSecondsLeft / 60)
-    );
-
-    const currentTime = new Date();
-
-    // current time - loan time
-    const diffInSeconds =
-      currentTime.getTime() / 1000 - this.timeWhenTimerStart.getTime() / 1000;
-
-    const secondsShouldLeft = this.secondsLeftOnLoan - diffInSeconds;
-
-    // convert in minutes
-    const whatIsleft = Math.round(timerSecondsLeft);
-    const whatShouldLeft = Math.round(secondsShouldLeft);
-
-    if (whatIsleft !== whatShouldLeft) {
-      // debug info
-      console.log(
-        `timer is gone off, let's re-sync, whatIsleft -> ${whatIsleft}, whatShouldLeft -> ${whatShouldLeft}`
-      );
-      this.secondsLeftOnLoan = secondsShouldLeft; // the seconds should left in timer again
-    }
   }
 
   /**
