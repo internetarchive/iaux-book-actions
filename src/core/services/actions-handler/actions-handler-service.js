@@ -21,7 +21,7 @@ export default async function ActionsHandlerService(options) {
   const tokenError = 'loan token not found. please try again later.';
   const borrowError =
     'This book is not available to borrow at this time. Please try again later.';
-  const erroneousActions = ['browse_book', 'borrow_book', 'create_token'];
+  const erroneousActions = ['browse_book', 'borrow_book', 'create_token', 'renew_loan'];
   const shouldReturnError =
     location?.href?.indexOf('?error=true') !== -1 &&
     location?.hostname !== 'archive.org';

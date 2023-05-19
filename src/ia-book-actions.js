@@ -77,7 +77,6 @@ export default class IABookActions extends LitElement {
     this.barType = 'action'; // 'title'|'action'
     this.sharedObserver = undefined;
     this.disableActionGroup = false;
-    this.modal = undefined;
     this.tokenDelay = 120; // in seconds
 
     // private props
@@ -308,19 +307,12 @@ export default class IABookActions extends LitElement {
     this.loanRenewResult = this.loanRenewHelper.result;
   }
 
-  /**
-   * create / select the modal-manager component on DOM
-   * @memberof IABookActions
-   */
-  async useModalManager() {
-    if (!this.modal) {
-      this.modal = document.querySelector('modal-manager');
+  /** @returns HTMLElement */
+  get modal() {
+    const modalOnDom = document.querySelector('modal-manager');
 
-      if (!this.modal) this.modal = document.createElement('modal-manager');
-    }
-
-    this.modal.id = 'action-bar-modal';
-    await document.body.appendChild(this.modal);
+    modalOnDom.id = 'action-bar-modal';
+    return modalOnDom;
   }
 
   /**
@@ -328,7 +320,11 @@ export default class IABookActions extends LitElement {
    */
   async showWarningModal() {
     console.log('****** showWarningModal ******');
-    await this.useModalManager();
+    // clear modal
+    this.modal.customModalContent = nothing;
+    this.modal?.closeModal();
+    console.log("MODAL CLOSED ___ ", this.modal.customModalContent);
+    this.loanRenewResult = { texts: '', renewNow: false };
 
     // if secondsLeft < 60, consider it 1 minute
     let { secondsLeft } = this.loanRenewResult;
@@ -338,17 +334,18 @@ export default class IABookActions extends LitElement {
       secondsLeft = secondsLeft > 60 ? secondsLeft : 60;
     }
 
-    const config = new ModalConfig();
-    config.headline = 'Are you still here?';
-    config.showCloseButton = false;
-    config.closeOnBackdropClick = false;
-    config.message = this.loanRenewHelper?.getMessageTexts(
-      this.loanRenewResult.texts,
-      secondsLeft
-    );
+    const config = new ModalConfig({
+      headline: 'Are you still here?',
+      showCloseButton: false,
+      closeOnBackdropClick: false,
+      message: this.loanRenewHelper?.getMessageTexts(
+        this.loanRenewResult.texts,
+        secondsLeft
+      )
+    });
 
-    const customContent = html`<br />
-      <div id="custom-buttons" style="display:flex;justify-content:center;">
+    const customModalContent = html`<br />
+      <div id="book-action-bar-custom-buttons" style="display:flex;justify-content:center;">
         <button
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
           @click=${event => this.patronWantsToRenewBook(event)}
@@ -357,8 +354,8 @@ export default class IABookActions extends LitElement {
         </button>
         <button
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.return}"
-          @click=${event => {
-            this.changeModalState(event);
+          @click=${() => {
+            // this.changeModalState(event);
             document.querySelector('ia-book-actions').disableActionGroup = true;
             this.returnNow = true;
           }}
@@ -367,12 +364,77 @@ export default class IABookActions extends LitElement {
         </button>
       </div> `;
 
-    this.modal?.showModal({ config, customModalContent: customContent });
+
+    await this.modal?.showModal({ config, customModalContent });
   }
 
+  async showWarningDisabledModal() {
+    console.log('****** showWarningDisabledModal ******');
+
+    // if secondsLeft < 60, consider it 1 minute
+    let { secondsLeft } = this.loanRenewResult;
+    if (secondsLeft === undefined) {
+      secondsLeft = this.lendingStatus.secondsLeftOnLoan;
+    } else {
+      secondsLeft = secondsLeft > 60 ? secondsLeft : 60;
+    }
+
+    const config = new ModalConfig({
+      headline: 'Are you still here?',
+      showCloseButton: false,
+      closeOnBackdropClick: false,
+      message: this.loanRenewHelper?.getMessageTexts(
+        this.loanRenewResult.texts,
+        secondsLeft
+      )
+    });
+
+
+        // this doesn't really work? shows empty button
+
+        // if (event.target === undefined) return;
+
+        // const button = event.target;
+        // button.disabled = true;
+        // button.innerHTML = `<ia-activity-indicator
+        //   mode="processing"
+        //   style=${modalButtonStyle.loaderIcon}
+        // ></ia-activity-indicator>`;
+    
+        // const parentElement = event.target.parentNode;
+        // parentElement.style.pointerEvents = 'none';
+        // parentElement.style.opacity = 0.8;
+
+
+    const customModalContent = html`<br />
+      <div id="disabled-book-action-bar-custom-buttons" style="display:flex;justify-content:center; opacity:0.8; pointer-events:none;">
+        <button
+          disabled
+          style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
+        >
+          <ia-activity-indicator
+            mode="processing"
+            style=${modalButtonStyle.loaderIcon}
+          ></ia-activity-indicator>
+        </button>
+        <button
+          disabled
+          style="${modalButtonStyle.iaButton} ${modalButtonStyle.return}"
+        >
+          Return the book
+        </button>
+      </div> `;
+
+    await this.modal?.showModal({ config, customModalContent });
+  }
+
+  
+
   async patronWantsToRenewBook(event) {
-    await this.changeModalState(event);
+    // this.changeModalState(event);
+    console.log("patron wants to renew book!!!!", this.loanRenewResult);
     this.loanRenewResult = { texts: '', renewNow: true };
+    console.log("patron wants to renew book!!!! loanRenewResult set as: ", this.loanRenewResult);
   }
 
   /**
@@ -382,20 +444,22 @@ export default class IABookActions extends LitElement {
    *
    * @param {Event} event
    */
-  changeModalState(event) {
+  changeModalState() {
+    this.showWarningDisabledModal();
     // this doesn't really work? shows empty button
-    if (event.target === undefined) return;
 
-    const button = event.target;
-    button.disabled = true;
-    button.innerHTML = `<ia-activity-indicator
-      mode="processing"
-      style=${modalButtonStyle.loaderIcon}
-    ></ia-activity-indicator>`;
+    // if (event.target === undefined) return;
 
-    const parentElement = event.target.parentNode;
-    parentElement.style.pointerEvents = 'none';
-    parentElement.style.opacity = 0.8;
+    // const button = event.target;
+    // button.disabled = true;
+    // button.innerHTML = `<ia-activity-indicator
+    //   mode="processing"
+    //   style=${modalButtonStyle.loaderIcon}
+    // ></ia-activity-indicator>`;
+
+    // const parentElement = event.target.parentNode;
+    // parentElement.style.pointerEvents = 'none';
+    // parentElement.style.opacity = 0.8;
   }
 
   /**
@@ -403,15 +467,15 @@ export default class IABookActions extends LitElement {
    */
   async showExpiredModal() {
     console.log('showExpiredModal()');
-    await this.useModalManager();
 
-    const config = new ModalConfig();
-    config.headline = '';
-    config.showCloseButton = false;
-    config.closeOnBackdropClick = false;
-    config.message = 'This book has been returned due to inactivity.';
+    const config = new ModalConfig({
+      headline: '',
+      showCloseButton: false,
+      closeOnBackdropClick: false,
+      message: 'This book has been returned due to inactivity.'
+    });
 
-    const customContent = html`<br />
+    const customModalContent = html`<br />
       <div style="text-align: center">
         <button
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
@@ -423,15 +487,7 @@ export default class IABookActions extends LitElement {
         </button>
       </div> `;
 
-    this.modal?.showModal({ config, customModalContent: customContent });
-  }
-
-  /**
-   * close/hide modal-manager
-   */
-  async closeModalManager() {
-    this.modal = document.querySelector('modal-manager');
-    this.modal?.closeModal();
+    await this.modal?.showModal({ config, customModalContent });
   }
 
   /**
@@ -669,8 +725,14 @@ export default class IABookActions extends LitElement {
       await this.resetTimerCountState();
 
       // close the modal
-      this.modal?.remove();
-      this.modal?.showModal({ config: {}, customModalContent: `` });
+      this.modal.removeAttribute('id');
+      // const editedActionButtons = this.modal.shadowRoot.querySelector('#book-action-bar-custom-buttons');
+      // if (editedActionButtons) {
+      //   editedActionButtons.parentElement.removeChild(editedActionButtons);
+      // }
+      this.modal.customModalContent = nothing;
+      this.modal?.closeModal();
+      console.log("MODAL CLOSED ___ ", this.modal.customModalContent);
 
       window?.Sentry?.captureMessage(sentryLogs.bookHasRenewed);
     }
@@ -908,7 +970,6 @@ export default class IABookActions extends LitElement {
 
   /* show error message if something went wrong */
   async showErrorModal(errorMsg, action) {
-    await this.useModalManager();
 
     const modalConfig = new ModalConfig({
       title: 'Lending error',
@@ -936,7 +997,7 @@ export default class IABookActions extends LitElement {
         <code>errorLog: ${errorMsg}</code>`;
     }
 
-    this.modal?.showModal({
+    await this.modal?.showModal({
       config: modalConfig,
     });
   }
