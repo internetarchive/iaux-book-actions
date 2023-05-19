@@ -299,6 +299,7 @@ export default class ActionsHandler extends LitElement {
    * set browse time in indexedDB
    */
   async setBrowseTimeSession() {
+    // TODO: USE loan info to determine what we have left
     try {
       const expireDate = new Date(
         new Date().getTime() + this.loanTotalTime * 1000

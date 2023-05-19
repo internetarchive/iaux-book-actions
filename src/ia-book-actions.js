@@ -100,13 +100,17 @@ export default class IABookActions extends LitElement {
 
     /**
      * contains one hour auto-loan-renew time configuration
-     *
-     * @type {object} loanRenewTimeConfig
-     * @property {number} loanTotalTime - total seconds a loan does have
-     * @property {number} loanRenewAtLast - check for loan renew at last
-     * @property {number} pageChangedInLast - consider loan renew eligible if viewed new page
+     * defaults to 1 hour config
+     * @type {{
+     *  loanTotalTime: number, - total seconds a loan does have
+     *  loanRenewAtLast: number, - check for loan renew at last
+     *  pageChangedInLast: number, - consider loan renew eligible if viewed new page
      */
-    this.loanRenewTimeConfig = {};
+    this.loanRenewTimeConfig = {
+      loanTotalTime: 3600, // 1 hour
+      loanRenewAtLast: 660, // 11 minutes
+      pageChangedInLast: 900, // 15 minutes
+    };
 
     /**
      * contains one hour auto-loan-renew response
@@ -344,10 +348,7 @@ export default class IABookActions extends LitElement {
       <div id="custom-buttons" style="display:flex;justify-content:center;">
         <button
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
-          @click=${async event => {
-            await this.changeModalState(event);
-            this.loanRenewResult = { texts: '', renewNow: true };
-          }}
+          @click=${event => this.patronWantsToRenewBook(event)}
         >
           Keep reading
         </button>
@@ -366,6 +367,11 @@ export default class IABookActions extends LitElement {
     this.modal?.showModal({ config, customModalContent: customContent });
   }
 
+  async patronWantsToRenewBook(event) {
+    await this.changeModalState(event);
+    this.loanRenewResult = { texts: '', renewNow: true };
+  }
+
   /**
    * helper function to change button click states on modal-manager
    * - add loader on button click
@@ -374,9 +380,11 @@ export default class IABookActions extends LitElement {
    * @param {Event} event
    */
   changeModalState(event) {
+    // this doesn't really work? shows empty button
     if (event.target === undefined) return;
 
     const button = event.target;
+    button.disabled = true;
     button.innerHTML = `<ia-activity-indicator
       mode="processing"
       style=${modalButtonStyle.loaderIcon}
@@ -478,21 +486,6 @@ export default class IABookActions extends LitElement {
     });
   }
 
-  async browseHasRenew() {
-    window?.IALendingIntervals?.clearAll();
-
-    const loanTime = await this.localCache.get(`${this.identifier}-loanTime`);
-    const secondsLeft = (loanTime - new Date()) / 1000; // different in seconds
-
-    const currStatus = {
-      ...this.lendingStatus,
-      user_has_browsed: true,
-      browsingExpired: false,
-      secondsLeftOnLoan: secondsLeft,
-    };
-    this.lendingStatus = currStatus;
-  }
-
   /**
    * Execute when loan is expired
    */
@@ -541,9 +534,22 @@ export default class IABookActions extends LitElement {
     const timerCountdown = this._shadowRoot.querySelector('timer-countdown');
     if (!timerCountdown) return;
 
-    const secondsLeft = Number(this.lendingStatus.secondsLeftOnLoan);
-    const strokeDashOffset =
-      (secondsLeft / this.loanRenewTimeConfig.loanTotalTime) * 315;
+    const secondsLeft = Number.parseInt(
+      Number(this.lendingStatus.secondsLeftOnLoan),
+      10
+    );
+    const firstStrokeDashOffset = Number.parseInt(
+      (secondsLeft / this.loanRenewTimeConfig.loanTotalTime) * 315 * 1.5,
+      10
+    );
+    const actualStrokeDashOffset =
+      firstStrokeDashOffset > 315 ? 315 : firstStrokeDashOffset;
+
+    console.log('resetTimerCountState === ', {
+      secondsLeft,
+      firstStrokeDashOffset,
+      actualStrokeDashOffset,
+    });
 
     // set seconds left in loan expire
     timerCountdown.style?.setProperty('--secondsLeftOnLoan', `${secondsLeft}s`);
@@ -551,7 +557,7 @@ export default class IABookActions extends LitElement {
     // set circle stroke offset left in loan expire
     timerCountdown.style?.setProperty(
       '--strokeLeftOnLoan',
-      `${Number(strokeDashOffset)}` // the perimeter of the circle = (π * 2 * radius)
+      `${actualStrokeDashOffset}` // the perimeter of the circle = (π * 2 * radius)
     );
 
     const animationCircle = timerCountdown.shadowRoot.querySelector('.circle');
@@ -580,14 +586,6 @@ export default class IABookActions extends LitElement {
     ></book-title-bar>`;
   }
 
-  get timerCountdownTemplate() {
-    return this.borrowType === 'browsed'
-      ? html`<timer-countdown
-          .secondsLeftOnLoan=${Number(this.lendingStatus.secondsLeftOnLoan)}
-        ></timer-countdown>`
-      : nothing;
-  }
-
   get bookActionBar() {
     return html`
       <collapsible-action-group
@@ -612,7 +610,10 @@ export default class IABookActions extends LitElement {
       >
       </collapsible-action-group>
       ${this.textGroupTemplate} ${this.infoIconTemplate}
-      ${this.timerCountdownTemplate}
+      <timer-countdown
+        .secondsLeftOnLoan=${Number(this.lendingStatus.secondsLeftOnLoan)}
+        class=${this.borrowType === 'browsed' ? '' : 'hide'}
+      ></timer-countdown>
     `;
   }
 
@@ -631,13 +632,24 @@ export default class IABookActions extends LitElement {
       console.log('IABookActions: AutoRenewed:- ', {
         ajaxResponse: event?.detail?.data,
         loanRenewResult: this.loanRenewResult,
-        secondsLeftOnLoan: Math.round(this.lendingStatus.secondsLeftOnLoan),
+        secondsLeftOnLoan: Math.round(this.lendingStatus.secondsLeftOnLoan), // stale? how to fix
       });
 
-      /**
-       * update the lendingStatus property
-       */
-      await this.browseHasRenew();
+      // Now, let's reset loan duration & this.lendingStatus
+      const loanTime = await this.localCache.get(`${this.identifier}-loanTime`);
+      const secondsLeft = (loanTime - new Date()) / 1000; // different in seconds
+
+      const currStatus = {
+        ...this.lendingStatus,
+        user_has_browsed: true,
+        browsingExpired: false,
+        secondsLeftOnLoan: secondsLeft,
+      };
+      this.lendingStatus = currStatus;
+
+      console.log('~~~ handleLoanAutoRenewed - new this.lendingStatus', {
+        secondsLeftOnLoan: this.lendingStatus.secondsLeftOnLoan,
+      });
 
       /**
        * reset timer countdown states
@@ -669,7 +681,21 @@ export default class IABookActions extends LitElement {
       secondsLeft = Math.round(secondsLeft); // round number
 
       // re-sync timer if gone off because of background window
-      await this.reSyncTimerIfGoneOff(secondsLeft);
+      // side effect: updates this.lendingStatus & kicks off lifecycle,
+      // if really updated, escape from here
+      const resync = await this.reSyncTimerIfGoneOff(secondsLeft);
+
+      console.log('*** startTimerCountdown = reSyncTimerIfGoneOff ***', {
+        secondsLeft,
+        resync,
+      });
+
+      if (resync) {
+        console.log('have resyncd, will end startTimerCountdown here - ');
+        return;
+      }
+
+      console.log('startTimerCountdown - NO RESYNC');
 
       /**
        * execute from last 10th minute to 0th minute
@@ -731,7 +757,9 @@ export default class IABookActions extends LitElement {
         secondsLeftOnLoan: secondsShouldLeft,
       };
       this.lendingStatus = currStatus;
+      return true;
     }
+    return false;
   }
 
   /**
@@ -743,7 +771,7 @@ export default class IABookActions extends LitElement {
    * @memberof IABookActions
    */
   async loanRenewAttempt(secondsLeft) {
-    console.log('loanRenewAttempt()');
+    console.log('loanRenewAttempt()', secondsLeft, this.loanRenewResult);
     let loanSecondsLeft = secondsLeft;
     /**
      * auto-renew is not possible in last seconds (let say 50 second) because,
@@ -931,6 +959,10 @@ export default class IABookActions extends LitElement {
     return css`
       :host {
         display: block;
+      }
+
+      .hide {
+        display: none;
       }
 
       .lending-wrapper {
