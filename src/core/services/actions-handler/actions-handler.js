@@ -142,6 +142,13 @@ export default class ActionsHandler extends LitElement {
       action,
       identifier: this.identifier,
       success: data => {
+        console.log(
+          'RENEW_LOAN --- ',
+          data,
+          action,
+          data.loan,
+          this.identifier
+        );
         if (data?.success === true && data?.loan?.renewal === true) {
           this.setBrowseTimeSession();
           this.dispatchEvent(

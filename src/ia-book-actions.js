@@ -257,6 +257,9 @@ export default class IABookActions extends LitElement {
     // initial timer state for 1-hour loan
     if (this.borrowType === 'browsed' && !this.loanRenewResult.renewNow) {
       setTimeout(() => {
+        console.log(
+          'IN TIMEOUT OF --- setupLendingToolbarActions, firing resetTimerCountState'
+        );
         this.resetTimerCountState();
       }, 100);
     }
@@ -511,6 +514,11 @@ export default class IABookActions extends LitElement {
 
   async startBrowseTimer() {
     clearTimeout(this.browseTimer);
+    console.log(
+      'startBrowseTimerstartBrowseTimer just cleared timer',
+      this.browseTimer,
+      this.lendingStatus
+    );
 
     const {
       browsingExpired,
@@ -523,6 +531,10 @@ export default class IABookActions extends LitElement {
     }
 
     this.browseTimer = setTimeout(() => {
+      console.log(
+        'start `this.browseTimer will fire his.browseHasExpired() - secondsLeftOnLoan',
+        secondsLeftOnLoan
+      );
       this.browseHasExpired();
     }, secondsLeftOnLoan * 1000);
   }
