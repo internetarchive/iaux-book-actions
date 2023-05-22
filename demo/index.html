@@ -242,10 +242,30 @@
       });
     });
 
-    document.querySelector('#show_warning_modal').addEventListener('click', () => {
+    document.querySelector('#show_warning_modal').addEventListener('click', async () => {
+      if (!iaBookActions.lendingStatus.user_has_browsed) {
+        const newLendingStatus = { ...iaBookActions.lendingStatus, user_has_browsed: true };
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        iaBookActions.lendingStatus = newLendingStatus;
+        await iaBookActions.updateComplete;
+      }
+
+      iaBookActions.showWarningModal();
+
       if (iaBookActions.lendingStatus.user_has_browsed) {
         iaBookActions.showWarningModal();
       }
+    });
+
+    document.querySelector('#show_expired_modal').addEventListener('click', async () => {
+      if (!iaBookActions.lendingStatus.user_has_browsed) {
+        const newLendingStatus = { ...iaBookActions.lendingStatus, user_has_browsed: true };
+        iaBookActions.lendingStatus = newLendingStatus;
+        await iaBookActions.updateComplete;
+      }
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      iaBookActions.browseHasExpired();
     });
 
     document.querySelectorAll('.availableToBorrow input[type=radio]').forEach((item) => {
@@ -342,6 +362,10 @@
               <label><input type="radio" name="browse" value="browsingExpired" />browsingExpired</label>
               <div>
                 <button id="show_warning_modal">When Browsing (`user_has_browsed`), show Warning Modal</button>
+              </div>
+              <div>
+                <button id="show_expired_modal">While Browsing (`user_has_browsed`), Expire book & show its modal</button>
+                how_expired_modal
               </div>
             </td>
             <td class="availableToBorrow">

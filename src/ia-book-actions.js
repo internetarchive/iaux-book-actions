@@ -6,6 +6,7 @@ import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
 import { ModalConfig } from '@internetarchive/modal-manager';
 import { ToastConfig } from '@internetarchive/toast-manager';
 import { LocalCache } from '@internetarchive/local-cache';
+import '@internetarchive/ia-activity-indicator';
 
 import './components/collapsible-action-group.js';
 import './components/book-title-bar.js';
