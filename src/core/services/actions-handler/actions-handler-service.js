@@ -21,7 +21,12 @@ export default async function ActionsHandlerService(options) {
   const tokenError = 'loan token not found. please try again later.';
   const borrowError =
     'This book is not available to borrow at this time. Please try again later.';
-  const erroneousActions = ['browse_book', 'borrow_book', 'create_token', 'renew_loan'];
+  const erroneousActions = [
+    'browse_book',
+    'borrow_book',
+    'create_token',
+    'renew_loan',
+  ];
   const shouldReturnError =
     location?.href?.indexOf('?error=true') !== -1 &&
     location?.hostname !== 'archive.org';
@@ -36,7 +41,7 @@ export default async function ActionsHandlerService(options) {
       method: 'POST',
       body: formData,
     })
-      .then(response => {
+      .then(async response => {
         // intentional error on localhost
         if (shouldReturnError && erroneousActions.includes(option?.action)) {
           return {
@@ -48,6 +53,8 @@ export default async function ActionsHandlerService(options) {
         // return success response for /demo/ server...
         if (baseHost == '/demo/1' || baseHost == '/demo/') {
           if (option?.action == 'renew_loan') {
+            // wait a few seconds so that the user can see the loading state
+            await new Promise(resolve => setTimeout(resolve, 5000));
             return {
               success: true,
               loan: { renewal: true },

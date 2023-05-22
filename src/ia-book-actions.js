@@ -323,7 +323,7 @@ export default class IABookActions extends LitElement {
     // clear modal
     this.modal.customModalContent = nothing;
     this.modal?.closeModal();
-    console.log("MODAL CLOSED ___ ", this.modal.customModalContent);
+    console.log('MODAL CLOSED ___ ', this.modal.customModalContent);
     this.loanRenewResult = { texts: '', renewNow: false };
 
     // if secondsLeft < 60, consider it 1 minute
@@ -341,11 +341,14 @@ export default class IABookActions extends LitElement {
       message: this.loanRenewHelper?.getMessageTexts(
         this.loanRenewResult.texts,
         secondsLeft
-      )
+      ),
     });
 
     const customModalContent = html`<br />
-      <div id="book-action-bar-custom-buttons" style="display:flex;justify-content:center;">
+      <div
+        id="book-action-bar-custom-buttons"
+        style="display:flex;justify-content:center;"
+      >
         <button
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
           @click=${event => this.patronWantsToRenewBook(event)}
@@ -355,7 +358,6 @@ export default class IABookActions extends LitElement {
         <button
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.return}"
           @click=${() => {
-            // this.changeModalState(event);
             document.querySelector('ia-book-actions').disableActionGroup = true;
             this.returnNow = true;
           }}
@@ -363,7 +365,6 @@ export default class IABookActions extends LitElement {
           Return the book
         </button>
       </div> `;
-
 
     await this.modal?.showModal({ config, customModalContent });
   }
@@ -386,28 +387,29 @@ export default class IABookActions extends LitElement {
       message: this.loanRenewHelper?.getMessageTexts(
         this.loanRenewResult.texts,
         secondsLeft
-      )
+      ),
     });
 
+    // this doesn't really work? shows empty button
 
-        // this doesn't really work? shows empty button
+    // if (event.target === undefined) return;
 
-        // if (event.target === undefined) return;
+    // const button = event.target;
+    // button.disabled = true;
+    // button.innerHTML = `<ia-activity-indicator
+    //   mode="processing"
+    //   style=${modalButtonStyle.loaderIcon}
+    // ></ia-activity-indicator>`;
 
-        // const button = event.target;
-        // button.disabled = true;
-        // button.innerHTML = `<ia-activity-indicator
-        //   mode="processing"
-        //   style=${modalButtonStyle.loaderIcon}
-        // ></ia-activity-indicator>`;
-    
-        // const parentElement = event.target.parentNode;
-        // parentElement.style.pointerEvents = 'none';
-        // parentElement.style.opacity = 0.8;
-
+    // const parentElement = event.target.parentNode;
+    // parentElement.style.pointerEvents = 'none';
+    // parentElement.style.opacity = 0.8;
 
     const customModalContent = html`<br />
-      <div id="disabled-book-action-bar-custom-buttons" style="display:flex;justify-content:center; opacity:0.8; pointer-events:none;">
+      <div
+        id="disabled-book-action-bar-custom-buttons"
+        style="display:flex;justify-content:center; opacity:0.8; pointer-events:none;"
+      >
         <button
           disabled
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
@@ -428,38 +430,10 @@ export default class IABookActions extends LitElement {
     await this.modal?.showModal({ config, customModalContent });
   }
 
-  
-
-  async patronWantsToRenewBook(event) {
-    // this.changeModalState(event);
-    console.log("patron wants to renew book!!!!", this.loanRenewResult);
-    this.loanRenewResult = { texts: '', renewNow: true };
-    console.log("patron wants to renew book!!!! loanRenewResult set as: ", this.loanRenewResult);
-  }
-
-  /**
-   * helper function to change button click states on modal-manager
-   * - add loader on button click
-   * - change button appearance
-   *
-   * @param {Event} event
-   */
-  changeModalState() {
+  /** Handles Renew action in warning modal */
+  async patronWantsToRenewBook() {
     this.showWarningDisabledModal();
-    // this doesn't really work? shows empty button
-
-    // if (event.target === undefined) return;
-
-    // const button = event.target;
-    // button.disabled = true;
-    // button.innerHTML = `<ia-activity-indicator
-    //   mode="processing"
-    //   style=${modalButtonStyle.loaderIcon}
-    // ></ia-activity-indicator>`;
-
-    // const parentElement = event.target.parentNode;
-    // parentElement.style.pointerEvents = 'none';
-    // parentElement.style.opacity = 0.8;
+    this.loanRenewResult = { texts: '', renewNow: true };
   }
 
   /**
@@ -472,7 +446,7 @@ export default class IABookActions extends LitElement {
       headline: '',
       showCloseButton: false,
       closeOnBackdropClick: false,
-      message: 'This book has been returned due to inactivity.'
+      message: 'This book has been returned due to inactivity.',
     });
 
     const customModalContent = html`<br />
@@ -732,7 +706,7 @@ export default class IABookActions extends LitElement {
       // }
       this.modal.customModalContent = nothing;
       this.modal?.closeModal();
-      console.log("MODAL CLOSED ___ ", this.modal.customModalContent);
+      console.log('MODAL CLOSED ___ ', this.modal.customModalContent);
 
       window?.Sentry?.captureMessage(sentryLogs.bookHasRenewed);
     }
@@ -970,7 +944,6 @@ export default class IABookActions extends LitElement {
 
   /* show error message if something went wrong */
   async showErrorModal(errorMsg, action) {
-
     const modalConfig = new ModalConfig({
       title: 'Lending error',
       message: errorMsg,
