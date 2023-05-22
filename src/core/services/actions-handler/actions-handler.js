@@ -2,6 +2,7 @@ import { LitElement } from 'lit';
 
 import { URLHelper } from '../../config/url-helper.js';
 import { sentryLogs } from '../../config/sentry-events.js';
+import log from '../log.js';
 
 import ActionsHandlerService from './actions-handler-service.js';
 import LoanAnanlytics from '../loan-analytics.js';
@@ -142,13 +143,7 @@ export default class ActionsHandler extends LitElement {
       action,
       identifier: this.identifier,
       success: data => {
-        console.log(
-          'RENEW_LOAN --- ',
-          data,
-          action,
-          data.loan,
-          this.identifier
-        );
+        log('RENEW_LOAN --- ', data, action, data.loan, this.identifier);
         if (data?.success === true && data?.loan?.renewal === true) {
           this.setBrowseTimeSession();
           this.dispatchEvent(
@@ -322,7 +317,7 @@ export default class ActionsHandler extends LitElement {
       // delete pageChangedTime when book is auto renew at nth minute
       await this.localCache.delete(`${this.identifier}-pageChangedTime`);
     } catch (error) {
-      console.log(error);
+      log(error);
     }
   }
 

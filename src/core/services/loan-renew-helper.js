@@ -1,6 +1,7 @@
 /* eslint-disable class-methods-use-this */
 
 import { nothing } from 'lit';
+import log from './log.js';
 
 /**
  * This class is used to determine if use is eligible for auto renew loan.
@@ -32,7 +33,7 @@ export class LoanRenewHelper {
       }
       return this.autoChecker(); // auto checker at last 10th minute
     } catch (error) {
-      console.log(error);
+      log(error);
     }
 
     return nothing;
