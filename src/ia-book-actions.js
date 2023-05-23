@@ -631,16 +631,16 @@ export default class IABookActions extends LitElement {
     if (this.loanRenewResult.renewNow) {
       window?.IALendingIntervals?.clearAll();
 
+      // Now, let's reset loan duration & this.lendingStatus
+      const loanTime = await this.localCache.get(`${this.identifier}-loanTime`);
+      const secondsLeft = (loanTime - new Date()) / 1000; // different in seconds
+
       // testing console....
       log('IABookActions: AutoRenewed:- ', {
         ajaxResponse: event?.detail?.data,
         loanRenewResult: this.loanRenewResult,
-        secondsLeftOnLoan: Math.round(this.lendingStatus.secondsLeftOnLoan), // stale? how to fix
+        secondsLeftOnLoan: secondsLeft,
       });
-
-      // Now, let's reset loan duration & this.lendingStatus
-      const loanTime = await this.localCache.get(`${this.identifier}-loanTime`);
-      const secondsLeft = (loanTime - new Date()) / 1000; // different in seconds
 
       const currStatus = {
         ...this.lendingStatus,
