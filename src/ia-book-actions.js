@@ -333,7 +333,7 @@ export default class IABookActions extends LitElement {
     }
 
     const config = new ModalConfig({
-      headline: 'Are you still here?',
+      headline: 'Are you still reading?',
       headerColor: '#194880',
       showCloseButton: false,
       closeOnBackdropClick: false,
@@ -350,16 +350,13 @@ export default class IABookActions extends LitElement {
       >
         <button
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
-          @click=${event => this.patronWantsToRenewBook(event)}
+          @click=${() => this.patronWantsToRenewBook()}
         >
           Keep reading
         </button>
         <button
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.return}"
-          @click=${() => {
-            document.querySelector('ia-book-actions').disableActionGroup = true;
-            this.returnNow = true;
-          }}
+          @click=${() => this.patronWantsToReturnBook()}
         >
           Return the book
         </button>
@@ -369,7 +366,8 @@ export default class IABookActions extends LitElement {
     await this.modal?.showModal({ config, customModalContent });
   }
 
-  async showWarningDisabledModal() {
+  /** @param { 'renewBook' | 'returnBook' } buttonToDisable */
+  async showWarningDisabledModal(buttonToDisable = 'renewBook') {
     log('****** showWarningDisabledModal ******');
 
     // if secondsLeft < 60, consider it 1 minute
@@ -381,7 +379,7 @@ export default class IABookActions extends LitElement {
     }
 
     const config = new ModalConfig({
-      headline: 'Are you still here?',
+      headline: 'Are you still reading?',
       headerColor: '#194880',
       showCloseButton: false,
       closeOnBackdropClick: false,
@@ -400,10 +398,12 @@ export default class IABookActions extends LitElement {
           disabled
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
         >
-          <ia-activity-indicator
-            mode="processing"
-            style=${modalButtonStyle.loaderIcon}
-          ></ia-activity-indicator>
+          ${buttonToDisable === 'renewBook'
+            ? html`<ia-activity-indicator
+                mode="processing"
+                style=${modalButtonStyle.loaderIcon}
+              ></ia-activity-indicator>`
+            : 'Keep reading'}
         </button>
         <span
           style="position: absolute; visibility: none; height: 1px; width: 1px; overflow: hidden;"
@@ -413,7 +413,12 @@ export default class IABookActions extends LitElement {
           disabled
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.return}"
         >
-          Return the book
+          ${buttonToDisable === 'returnBook'
+            ? html`<ia-activity-indicator
+                mode="processing"
+                style=${modalButtonStyle.loaderIcon}
+              ></ia-activity-indicator>`
+            : 'Return the book'}
         </button>
       </div> `;
 
@@ -424,6 +429,12 @@ export default class IABookActions extends LitElement {
   async patronWantsToRenewBook() {
     this.showWarningDisabledModal();
     this.loanRenewResult = { texts: '', renewNow: true };
+  }
+
+  async patronWantsToReturnBook() {
+    this.showWarningDisabledModal('returnBook');
+    document.querySelector('ia-book-actions').disableActionGroup = true;
+    this.returnNow = true;
   }
 
   /**

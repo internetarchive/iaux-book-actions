@@ -26,6 +26,7 @@ export default async function ActionsHandlerService(options) {
     'borrow_book',
     'create_token',
     'renew_loan',
+    'return_loan',
   ];
   const shouldReturnError =
     location?.href?.indexOf('?error=true') !== -1 &&
@@ -52,7 +53,10 @@ export default async function ActionsHandlerService(options) {
 
         // return success response for /demo/ server...
         if (baseHost == '/demo/1' || baseHost == '/demo/') {
-          if (option?.action == 'renew_loan') {
+          if (
+            option?.action == 'renew_loan' ||
+            option?.action == 'return_loan'
+          ) {
             // wait a few seconds so that the user can see the loading state
             await new Promise(resolve => setTimeout(resolve, 5000));
             return {
