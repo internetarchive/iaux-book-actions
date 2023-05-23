@@ -6,7 +6,6 @@ import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
 import { ModalConfig } from '@internetarchive/modal-manager';
 import { ToastConfig } from '@internetarchive/toast-manager';
 import { LocalCache } from '@internetarchive/local-cache';
-import '@internetarchive/ia-activity-indicator';
 
 import './components/collapsible-action-group.js';
 import './components/book-title-bar.js';
@@ -414,6 +413,10 @@ export default class IABookActions extends LitElement {
             style=${modalButtonStyle.loaderIcon}
           ></ia-activity-indicator>
         </button>
+        <span
+          style="position: absolute; visibility: none; height: 1px; width: 1px; overflow: hidden;"
+          >Renewing loan, one moment please.</span
+        >
         <button
           disabled
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.return}"

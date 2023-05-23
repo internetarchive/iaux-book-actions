@@ -245,7 +245,6 @@
     document.querySelector('#show_warning_modal').addEventListener('click', async () => {
       if (!iaBookActions.lendingStatus.user_has_browsed) {
         const newLendingStatus = { ...iaBookActions.lendingStatus, user_has_browsed: true };
-        await new Promise(resolve => setTimeout(resolve, 5000));
         iaBookActions.lendingStatus = newLendingStatus;
         await iaBookActions.updateComplete;
       }

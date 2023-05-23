@@ -10,23 +10,23 @@
     "@babel/highlight" "^7.10.4"
 
 "@babel/code-frame@^7.0.0", "@babel/code-frame@^7.12.11":
-  version "7.16.7"
-  resolved "https://registry.npmjs.org/@babel/code-frame/-/code-frame-7.16.7.tgz"
-  integrity sha512-iAXqUn8IIeBTNd72xsFlgaXHkMBMt6y4HJp1tIaK465CWLT/fG1aqB7ykr95gHHmlBdGbFeWWfyB4NJJ0nmeIg==
+  version "7.21.4"
+  resolved "https://registry.npmjs.org/@babel/code-frame/-/code-frame-7.21.4.tgz"
+  integrity sha512-LYvhNKfwWSPpocw8GI7gpK2nq3HSDuEPC/uSYaALSJu9xjsalaaYFOq0Pwt5KmVqwEbZlDu81aLXwBOmD/Fv9g==
   dependencies:
-    "@babel/highlight" "^7.16.7"
+    "@babel/highlight" "^7.18.6"
 
-"@babel/helper-validator-identifier@^7.16.7":
-  version "7.16.7"
-  resolved "https://registry.npmjs.org/@babel/helper-validator-identifier/-/helper-validator-identifier-7.16.7.tgz"
-  integrity sha512-hsEnFemeiW4D08A5gUAZxLBTXpZ39P+a+DGDsHw1yxqyQ/jzFEnxf5uTEGp+3bzAbNOxU1paTgYS4ECU/IgfDw==
+"@babel/helper-validator-identifier@^7.18.6":
+  version "7.19.1"
+  resolved "https://registry.npmjs.org/@babel/helper-validator-identifier/-/helper-validator-identifier-7.19.1.tgz"
+  integrity sha512-awrNfaMtnHUr653GgGEs++LlAvW6w+DcPrOliSMXWCKo597CwL5Acf/wWdNkf/tfEQE3mjkeD1YOVZOUV/od1w==
 
-"@babel/highlight@^7.10.4", "@babel/highlight@^7.16.7":
-  version "7.16.10"
-  resolved "https://registry.npmjs.org/@babel/highlight/-/highlight-7.16.10.tgz"
-  integrity sha512-5FnTQLSLswEj6IkgVw5KusNUUFY9ZGqe/TRFnP/BKYHYgfh7tc+C7mwiy95/yNP7Dh9x580Vv8r7u7ZfTBFxdw==
+"@babel/highlight@^7.10.4", "@babel/highlight@^7.18.6":
+  version "7.18.6"
+  resolved "https://registry.npmjs.org/@babel/highlight/-/highlight-7.18.6.tgz"
+  integrity sha512-u7stbOuYjaPezCuLj29hNW1v64M2Md2qupEKP1fHc7WdOA3DgLh37suiSrZYY7haUB7iBeQZ9P1uiRF359do3g==
   dependencies:
-    "@babel/helper-validator-identifier" "^7.16.7"
+    "@babel/helper-validator-identifier" "^7.18.6"
     chalk "^2.0.0"
     js-tokens "^4.0.0"
 
@@ -76,7 +76,7 @@
 
 "@internetarchive/ia-activity-indicator@^0.0.4":
   version "0.0.4"
-  resolved "https://registry.yarnpkg.com/@internetarchive/ia-activity-indicator/-/ia-activity-indicator-0.0.4.tgz#22fa19b072e4084799cf4c71ab73e4973c2670c3"
+  resolved "https://registry.npmjs.org/@internetarchive/ia-activity-indicator/-/ia-activity-indicator-0.0.4.tgz"
   integrity sha512-nJFs3uAnPyDLqtkEVV4vMD1dli+eOyovd5rY/un9nOahu2elTHOHrIfNH0YvBkLXR7C9GVCeI9H8BD8BXq+rhg==
   dependencies:
     lit "^2.2.2"
@@ -111,14 +111,14 @@
 
 "@internetarchive/local-cache@^0.2.1":
   version "0.2.1"
-  resolved "https://registry.yarnpkg.com/@internetarchive/local-cache/-/local-cache-0.2.1.tgz#fa416cae81227228b73f51d82f3361d460e27539"
+  resolved "https://registry.npmjs.org/@internetarchive/local-cache/-/local-cache-0.2.1.tgz"
   integrity sha512-8FFAvEEoazktWsIEod2NVYp0r+Fk3OxM8woe42mNlXHbht3Je98yQjooIFiA3/sJYB7xsZB2RHzUzh+GmBHFgw==
   dependencies:
     idb-keyval "^6.1.0"
 
 "@internetarchive/modal-manager@^0.2.12":
   version "0.2.12"
-  resolved "https://registry.yarnpkg.com/@internetarchive/modal-manager/-/modal-manager-0.2.12.tgz#e25eadcaf9e5720ae4e13fadfed67382f67b1c88"
+  resolved "https://registry.npmjs.org/@internetarchive/modal-manager/-/modal-manager-0.2.12.tgz"
   integrity sha512-9n6fx8kz0TSUCSroemEzznuNtMiTchfVzXkbvueTRLOjNXFMePUl5dmQ376KRcfJZSCBdbMKIgsT383C9I95Tw==
   dependencies:
     "@internetarchive/ia-activity-indicator" "^0.0.4"
@@ -135,7 +135,7 @@
 
 "@internetarchive/toast-manager@0.1.0":
   version "0.1.0"
-  resolved "https://registry.yarnpkg.com/@internetarchive/toast-manager/-/toast-manager-0.1.0.tgz#d7801ee87fab0de3a67e97a0b385a6656e7a583a"
+  resolved "https://registry.npmjs.org/@internetarchive/toast-manager/-/toast-manager-0.1.0.tgz"
   integrity sha512-bsKjd+TBtnTzY2XlTLccFdyL2bGPgpqtUxYxkXeRdsqGa7n9QKw0IFFAYITJu2UCxU46kk43r6x8TE7/nQRc4g==
   dependencies:
     lit "^2.2.7"
@@ -582,7 +582,7 @@
 
 "@types/yauzl@^2.9.1":
   version "2.10.0"
-  resolved "https://registry.yarnpkg.com/@types/yauzl/-/yauzl-2.10.0.tgz#b3248295276cf8c6f153ebe6a9aba0c988cb2599"
+  resolved "https://registry.npmjs.org/@types/yauzl/-/yauzl-2.10.0.tgz"
   integrity sha512-Cn6WYCm0tXv8p6k+A8PvbDG763EDpBoTzHdA+Q/MF6H3sapGjCm9NzoaJncJS9tUKSuCoDs9XHxYYsQDgxR6kw==
   dependencies:
     "@types/node" "*"
@@ -2113,7 +2113,7 @@ fs.realpath@^1.0.0:
 
 fsevents@~2.3.1, fsevents@~2.3.2:
   version "2.3.2"
-  resolved "https://registry.yarnpkg.com/fsevents/-/fsevents-2.3.2.tgz#8a526f78b8fdf4623b709e0b975c52c24c02fd1a"
+  resolved "https://registry.npmjs.org/fsevents/-/fsevents-2.3.2.tgz"
   integrity sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==
 
 function-bind@^1.1.1:
