@@ -334,6 +334,7 @@ export default class IABookActions extends LitElement {
 
     const config = new ModalConfig({
       headline: 'Are you still here?',
+      headerColor: '#194880',
       showCloseButton: false,
       closeOnBackdropClick: false,
       message: this.loanRenewHelper?.getMessageTexts(
@@ -381,6 +382,7 @@ export default class IABookActions extends LitElement {
 
     const config = new ModalConfig({
       headline: 'Are you still here?',
+      headerColor: '#194880',
       showCloseButton: false,
       closeOnBackdropClick: false,
       message: this.loanRenewHelper?.getMessageTexts(
@@ -434,6 +436,7 @@ export default class IABookActions extends LitElement {
       headline: '',
       showCloseButton: false,
       closeOnBackdropClick: false,
+      headerColor: '#194880',
       message: 'This book has been returned due to inactivity.',
     });
 
