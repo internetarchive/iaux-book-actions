@@ -123,10 +123,10 @@ export default class IABookActions extends LitElement {
     this.loanRenewResult = { texts: '', renewNow: false, secondsLeft: 0 };
 
     /**
-     * need showdowRoot opened for resetTimerCountState
-     * @see IABookActions::resetTimerCountState
-     */
-    this._shadowRoot = this.attachShadow({ mode: 'open' });
+    //  * need showdowRoot opened for resetTimerCountState
+    //  * @see IABookActions::resetTimerCountState
+    //  */
+    // this._shadowRoot = this.attachShadow({ mode: 'open' });
   }
 
   disconnectedCallback() {
@@ -252,16 +252,6 @@ export default class IABookActions extends LitElement {
     if (!this.borrowType || this.barType === 'title') {
       this.lendingBarPostInit();
       return;
-    }
-
-    // initial timer state for 1-hour loan
-    if (this.borrowType === 'browsed' && !this.loanRenewResult.renewNow) {
-      setTimeout(() => {
-        log(
-          'IN TIMEOUT OF --- setupLendingToolbarActions, firing resetTimerCountState'
-        );
-        this.resetTimerCountState();
-      }, 100);
     }
 
     /**
@@ -567,46 +557,6 @@ export default class IABookActions extends LitElement {
     }, secondsLeftOnLoan * 1000);
   }
 
-  /**
-   * Reset timer animation state after book renewed
-   */
-  async resetTimerCountState() {
-    const timerCountdown = this._shadowRoot.querySelector('timer-countdown');
-    if (!timerCountdown) return;
-
-    const secondsLeft = Number.parseInt(
-      Number(this.lendingStatus.secondsLeftOnLoan),
-      10
-    );
-    const firstStrokeDashOffset = Number.parseInt(
-      (secondsLeft / this.loanRenewTimeConfig.loanTotalTime) * 315 * 1.5,
-      10
-    );
-    const actualStrokeDashOffset =
-      firstStrokeDashOffset > 315 ? 315 : firstStrokeDashOffset;
-
-    log('resetTimerCountState === ', {
-      secondsLeft,
-      firstStrokeDashOffset,
-      actualStrokeDashOffset,
-    });
-
-    // set seconds left in loan expire
-    timerCountdown.style?.setProperty('--secondsLeftOnLoan', `${secondsLeft}s`);
-
-    // set circle stroke offset left in loan expire
-    timerCountdown.style?.setProperty(
-      '--strokeLeftOnLoan',
-      `${actualStrokeDashOffset}` // the perimeter of the circle = (π * 2 * radius)
-    );
-
-    const animationCircle = timerCountdown.shadowRoot.querySelector('.circle');
-    animationCircle.style.animationName = 'none';
-    setTimeout(() => {
-      animationCircle.style.animationName = 'circletimer';
-    }, 100);
-  }
-
   render() {
     if (this.barType === 'title') {
       return html`<section class="lending-wrapper">
@@ -652,7 +602,6 @@ export default class IABookActions extends LitElement {
       ${this.textGroupTemplate} ${this.infoIconTemplate}
       <timer-countdown
         .secondsLeftOnLoan=${Number(this.lendingStatus.secondsLeftOnLoan)}
-        class=${this.borrowType === 'browsed' ? '' : 'hide'}
       ></timer-countdown>
     `;
   }
@@ -690,9 +639,6 @@ export default class IABookActions extends LitElement {
       log('~~~ handleLoanAutoRenewed - new this.lendingStatus', {
         secondsLeftOnLoan: this.lendingStatus.secondsLeftOnLoan,
       });
-
-      /** reset timer */
-      await this.resetTimerCountState();
 
       // close the modal
       this.modal?.closeModal();
