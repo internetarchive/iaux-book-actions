@@ -189,7 +189,7 @@ describe('Borrow status actions', () => {
     ];
 
     expect(el.primaryTitle).to.equal(
-      'Renews automatically as long as pages are turned.'
+      'Renews automatically with continued use.'
     );
     expect(el.primaryActions.length).to.equal(2);
     expect(el.primaryActions[0].text).to.equal('Log In and Borrow');
