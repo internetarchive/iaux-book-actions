@@ -301,11 +301,14 @@ export default class IABookActions extends LitElement {
     this.loanRenewResult = this.loanRenewHelper.result;
   }
 
-  /** @returns HTMLElement */
+  /**
+   * Required as sibling on page
+   * @returns HTMLElement
+   */
   get modal() {
-    const modalOnDom = document.querySelector('modal-manager');
+    const modalOnDom = document.body.querySelector('modal-manager');
 
-    modalOnDom.id = 'action-bar-modal';
+    modalOnDom?.setAttribute('id', 'action-bar-modal');
     return modalOnDom;
   }
 
