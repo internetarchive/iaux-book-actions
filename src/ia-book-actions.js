@@ -547,18 +547,19 @@ export default class IABookActions extends LitElement {
   }
 
   async startBrowseTimer() {
-    clearTimeout(this.browseTimer);
+    window.IALendingIntervals.clearBrowseExpireTimeout();
+
     const {
       browsingExpired,
       user_has_browsed,
       secondsLeftOnLoan,
     } = this.lendingStatus;
 
-    log(
-      'startBrowseTimerstartBrowseTimer just cleared timer',
-      this.browseTimer,
-      { browsingExpired, user_has_browsed, secondsLeftOnLoan }
-    );
+    log('startBrowseTimerstartBrowseTimer just cleared timer', {
+      browsingExpired,
+      user_has_browsed,
+      secondsLeftOnLoan,
+    });
 
     if (!user_has_browsed || browsingExpired) {
       log('user not browsed', {
@@ -569,7 +570,7 @@ export default class IABookActions extends LitElement {
       return;
     }
 
-    this.browseTimer = setTimeout(() => {
+    window.IALendingIntervals.browseExpireTimeout = setTimeout(() => {
       log(
         'start `this.browseTimer will fire his.browseHasExpired() - secondsLeftOnLoan',
         secondsLeftOnLoan
