@@ -149,7 +149,6 @@ export default class IABookActions extends LitElement {
   updated(changed) {
     if (changed.has('lendingStatus') || changed.has('bwbPurchaseUrl')) {
       this.setupLendingToolbarActions();
-      this.update();
     }
 
     if (changed.has('sharedObserver')) {
@@ -255,6 +254,8 @@ export default class IABookActions extends LitElement {
     setTimeout(() => {
       if (!hasExpired) this.startLoanTokenPoller();
     }, 100);
+
+    this.requestUpdate();
   }
 
   /**
