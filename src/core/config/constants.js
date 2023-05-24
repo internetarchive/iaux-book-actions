@@ -6,4 +6,4 @@ export const mobileContainerWidth = 700;
 /**
  * shift the actions buttons in dropdown
  */
-export const tabletContainerWidth = 895;
+export const tabletContainerWidth = 800;

@@ -71,7 +71,7 @@ export default class IABookActions extends LitElement {
     this.identifier = '';
     this.bookTitle = '';
     this.returnUrl = '';
-    this.lendingStatus = {};
+    this.lendingStatus = {}; // very important as components feed from this
     this.width = 0;
     this.bwbPurchaseUrl = '';
     this.lendingBarPostInit = () => {};
@@ -86,8 +86,8 @@ export default class IABookActions extends LitElement {
     this.primaryColor = 'primary';
     this.secondaryActions = [];
     this.lendingOptions = {};
-    this.borrowType = null; // (browsed|borrowed)
-    this.browseTimer = undefined;
+    this.borrowType = null; // 'browsed'|'borrowed'
+    this.browseTimer = undefined; // timeout
     this.timerExecutionSeconds = 30;
 
     /** @deprecated */
