@@ -121,12 +121,6 @@ export default class IABookActions extends LitElement {
      * @property {number} secondsLeft - seconds left in active loan
      */
     this.loanRenewResult = { texts: '', renewNow: false, secondsLeft: 0 };
-
-    /**
-    //  * need showdowRoot opened for resetTimerCountState
-    //  * @see IABookActions::resetTimerCountState
-    //  */
-    // this._shadowRoot = this.attachShadow({ mode: 'open' });
   }
 
   disconnectedCallback() {
@@ -274,6 +268,7 @@ export default class IABookActions extends LitElement {
      * dispatched this event from bookreader page changed
      */
     window.addEventListener('BookReader:userAction', () => {
+      log('IABookActions:BookReader:userAction');
       if (this.borrowType === 'browsed') {
         this.autoLoanRenewChecker(true);
       }
@@ -321,7 +316,6 @@ export default class IABookActions extends LitElement {
     // clear modal
     this.modal.customModalContent = nothing;
     this.modal?.closeModal();
-    log('MODAL CLOSED ___ ', this.modal.customModalContent);
     this.loanRenewResult = { texts: '', renewNow: false };
 
     // if secondsLeft < 60, consider it 1 minute
@@ -368,8 +362,6 @@ export default class IABookActions extends LitElement {
 
   /** @param { 'renewBook' | 'returnBook' } buttonToDisable */
   async showWarningDisabledModal(buttonToDisable = 'renewBook') {
-    log('****** showWarningDisabledModal ******');
-
     // if secondsLeft < 60, consider it 1 minute
     let { secondsLeft } = this.loanRenewResult;
     if (secondsLeft === undefined) {
@@ -435,6 +427,12 @@ export default class IABookActions extends LitElement {
     this.showWarningDisabledModal('returnBook');
     document.querySelector('ia-book-actions').disableActionGroup = true;
     this.returnNow = true;
+
+    this.lendingStatus = {
+      ...this.lendingStatus,
+      browsingExpired: true,
+      secondsLeftOnLoan: 0,
+    };
   }
 
   /**
@@ -527,7 +525,11 @@ export default class IABookActions extends LitElement {
   async browseHasExpired() {
     window?.IALendingIntervals?.clearAll();
 
-    const currStatus = { ...this.lendingStatus, browsingExpired: true };
+    const currStatus = {
+      ...this.lendingStatus,
+      browsingExpired: true,
+      secondsLeftOnLoan: 0,
+    };
     this.lendingStatus = currStatus;
 
     // remove respected key:value for loan-renew
@@ -546,19 +548,24 @@ export default class IABookActions extends LitElement {
 
   async startBrowseTimer() {
     clearTimeout(this.browseTimer);
-    log(
-      'startBrowseTimerstartBrowseTimer just cleared timer',
-      this.browseTimer,
-      this.lendingStatus
-    );
-
     const {
       browsingExpired,
       user_has_browsed,
       secondsLeftOnLoan,
     } = this.lendingStatus;
+
+    log(
+      'startBrowseTimerstartBrowseTimer just cleared timer',
+      this.browseTimer,
+      { browsingExpired, user_has_browsed, secondsLeftOnLoan }
+    );
+
     if (!user_has_browsed || browsingExpired) {
-      log('user not browsed', this.lendingStatus);
+      log('user not browsed', {
+        user_has_browsed,
+        browsingExpired,
+        secondsLeftOnLoan,
+      });
       return;
     }
 
@@ -590,6 +597,10 @@ export default class IABookActions extends LitElement {
     ></book-title-bar>`;
   }
 
+  get timerCountdownEl() {
+    return this.shadowRoot.querySelector('timer-countdown');
+  }
+
   get bookActionBar() {
     return html`
       <collapsible-action-group
@@ -615,7 +626,9 @@ export default class IABookActions extends LitElement {
       </collapsible-action-group>
       ${this.textGroupTemplate} ${this.infoIconTemplate}
       <timer-countdown
-        .secondsLeftOnLoan=${Number(this.lendingStatus.secondsLeftOnLoan)}
+        .secondsLeftOnLoan=${Math.round(
+          Number(this.lendingStatus.secondsLeftOnLoan)
+        )}
       ></timer-countdown>
     `;
   }
@@ -633,10 +646,10 @@ export default class IABookActions extends LitElement {
 
       // Now, let's reset loan duration & this.lendingStatus
       const loanTime = await this.localCache.get(`${this.identifier}-loanTime`);
-      const secondsLeft = (loanTime - new Date()) / 1000; // different in seconds
+      const secondsLeft = Math.round((loanTime - new Date()) / 1000); // different in seconds
 
       // testing console....
-      log('IABookActions: AutoRenewed:- ', {
+      log('~~~ IABookActions: handleLoanAutoRenewed:- ', {
         ajaxResponse: event?.detail?.data,
         loanRenewResult: this.loanRenewResult,
         secondsLeftOnLoan: secondsLeft,
@@ -649,10 +662,6 @@ export default class IABookActions extends LitElement {
         secondsLeftOnLoan: secondsLeft,
       };
       this.lendingStatus = currStatus;
-
-      log('~~~ handleLoanAutoRenewed - new this.lendingStatus', {
-        secondsLeftOnLoan: this.lendingStatus.secondsLeftOnLoan,
-      });
 
       // close the modal
       this.modal?.closeModal();
@@ -668,7 +677,6 @@ export default class IABookActions extends LitElement {
    * @memberof IABookActions
    */
   startTimerCountdown() {
-    log('startTimerCountdown()');
     window?.IALendingIntervals?.clearTimerCountdown();
 
     let secondsLeft = Number(this.lendingStatus.secondsLeftOnLoan);
@@ -683,17 +691,18 @@ export default class IABookActions extends LitElement {
       // if really updated, escape from here
       const resync = await this.reSyncTimerIfGoneOff(secondsLeft);
 
-      log('*** startTimerCountdown = reSyncTimerIfGoneOff ***', {
-        secondsLeft,
-        resync,
-      });
-
       if (resync) {
-        log('have resyncd, will end startTimerCountdown here - ');
+        log('timer has resyncd, abort stale startTimerCountdown - ', {
+          secondsLeft,
+        });
         return;
       }
 
-      log('startTimerCountdown - NO RESYNC');
+      log('startTimerCountdown - countdown still valid. continue...', {
+        resync,
+        secondsLeft,
+        loanRenewAtLast: this.loanRenewTimeConfig.loanRenewAtLast,
+      });
 
       /**
        * execute from last 10th minute to 0th minute
@@ -721,15 +730,6 @@ export default class IABookActions extends LitElement {
    * @memberof TimerCountdown
    */
   async reSyncTimerIfGoneOff(timerSecondsLeft) {
-    // debug info
-    log(
-      new Date().toLocaleTimeString(),
-      'timeLeftInSec',
-      timerSecondsLeft,
-      ' ||| timeLeftInMin',
-      Math.ceil(timerSecondsLeft / 60)
-    );
-
     const currentTime = new Date();
 
     // current time - loan time
@@ -742,19 +742,27 @@ export default class IABookActions extends LitElement {
     // convert in minutes
     const whatIsleft = Math.round(timerSecondsLeft);
     const whatShouldLeft = Math.round(secondsShouldLeft);
+    const timerElSeconds = this.timerCountdownEl.secondsLeftOnLoan || 0;
 
-    if (whatIsleft !== whatShouldLeft) {
-      // debug info
-      log(
-        `timer is gone off, let's re-sync, whatIsleft -> ${whatIsleft}, whatShouldLeft -> ${whatShouldLeft}`
-      );
+    log(`reSyncTimerIfGoneOff?`, {
+      whatIsleft,
+      whatShouldLeft,
+      timerElSeconds,
+      timeLeftInMin: Math.ceil(timerSecondsLeft / 60),
+    });
 
-      // the seconds should left in timer again
+    if (timerElSeconds !== whatShouldLeft || whatIsleft !== whatShouldLeft) {
+      // set lending status with new time to update decrementor
       const currStatus = {
         ...this.lendingStatus,
-        secondsLeftOnLoan: secondsShouldLeft,
+        secondsLeftOnLoan: whatShouldLeft,
       };
       this.lendingStatus = currStatus;
+    }
+
+    if (whatIsleft !== whatShouldLeft) {
+      log(`timer is gone off, let's re-sync,`);
+
       return true;
     }
     return false;
