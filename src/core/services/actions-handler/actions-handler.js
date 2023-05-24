@@ -7,6 +7,10 @@ import log from '../log.js';
 import ActionsHandlerService from './actions-handler-service.js';
 import LoanAnanlytics from '../loan-analytics.js';
 import * as Cookies from '../doc-cookies.js';
+import {
+  analyticsCategories,
+  analyticsActions,
+} from '../../config/analytics-event-and-category.js';
 
 /**
  * These are callback functions calling from actions-config.js file.
@@ -39,24 +43,53 @@ export default class ActionsHandler extends LitElement {
   }
 
   bindEvents() {
-    this.addEventListener('browseBook', () => {
+    this.addEventListener('browseBook', async () => {
       this.handleBrowseIt();
-      this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'browse');
+      await this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'browse');
+      this.loanAnanlytics?.sendEvent(
+        analyticsCategories.browse,
+        analyticsActions.browse
+      );
     });
 
-    this.addEventListener('browseBookAgain', () => {
+    this.addEventListener('browseBookAgain', async () => {
       this.handleBrowseIt();
-      this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'browseagain');
+      await this.loanAnanlytics?.storeLoanStatsCount(
+        this.identifier,
+        'browseagain'
+      );
+      this.loanAnanlytics?.sendEvent(
+        analyticsCategories.browse,
+        analyticsActions.browseBookAgain
+      );
     });
 
-    this.addEventListener('autoRenew', () => {
+    this.addEventListener('autoRenew', async () => {
       this.handleLoanRenewNow();
-      this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'autorenew');
+      await this.loanAnanlytics?.storeLoanStatsCount(
+        this.identifier,
+        'autorenew'
+      );
+      this.loanAnanlytics?.sendEvent(
+        analyticsCategories.browse,
+        analyticsActions.browseAutoRenew
+      );
     });
 
-    this.addEventListener('autoReturn', () => {
+    this.addEventListener('autoReturn', async () => {
       this.handleReturnIt();
-      this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'autoreturn');
+      await this.loanAnanlytics?.storeLoanStatsCount(
+        this.identifier,
+        'autoreturn'
+      );
+      await this.loanAnanlytics?.storeLoanStatsCount(
+        this.identifier,
+        'autorenew'
+      );
+      this.loanAnanlytics?.sendEvent(
+        analyticsCategories.browse,
+        analyticsActions.browseAutoReturn
+      );
     });
 
     this.addEventListener('returnNow', ({ detail }) => {
