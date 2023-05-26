@@ -20,6 +20,7 @@ import { sentryLogs } from './core/config/sentry-events.js';
 import { LoanTokenPoller } from './core/services/loan-token-poller.js';
 import { LoanRenewHelper } from './core/services/loan-renew-helper.js';
 import log from './core/services/log.js';
+import { URLHelper } from './core/config/url-helper.js';
 
 export const events = {
   browseExpired: 'IABookReader:BrowsingHasExpired',
@@ -458,7 +459,7 @@ export default class IABookActions extends LitElement {
         <button
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
           @click=${() => {
-            window.location?.reload();
+            URLHelper.goToUrl(this.returnUrl, true);
           }}
         >
           Okay
