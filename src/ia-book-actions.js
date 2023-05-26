@@ -82,6 +82,7 @@ export default class IABookActions extends LitElement {
     this.tokenDelay = 120; // in seconds
 
     // private props
+    this.postInitComplete = false;
     this.primaryActions = [];
     this.primaryTitle = '';
     this.primaryColor = 'primary';
@@ -155,6 +156,10 @@ export default class IABookActions extends LitElement {
     if (changed.has('sharedObserver')) {
       this.disconnectResizeObserver();
       this.setupResizeObserver();
+    }
+
+    if (changed.has('loanRenewResult') && this.loanRenewResult.renewNow) {
+      window.IALendingIntervals.clearAll();
     }
   }
 
@@ -253,7 +258,8 @@ export default class IABookActions extends LitElement {
      * - if book is going to renew, need to wait until renew is completed
      */
     setTimeout(() => {
-      if (!hasExpired) this.startLoanTokenPoller();
+      if (!hasExpired && !window.IALendingIntervals.tokenPoller)
+        this.startLoanTokenPoller();
     }, 100);
 
     this.requestUpdate();
@@ -648,8 +654,6 @@ export default class IABookActions extends LitElement {
    */
   async handleLoanAutoRenewed(event) {
     if (this.loanRenewResult.renewNow) {
-      window?.IALendingIntervals?.clearAll();
-
       // Now, let's reset loan duration & this.lendingStatus
       const loanTime = await this.localCache.get(`${this.identifier}-loanTime`);
       const secondsLeft = Math.round((loanTime - new Date()) / 1000); // different in seconds
@@ -819,7 +823,10 @@ export default class IABookActions extends LitElement {
    */
   startLoanTokenPoller() {
     const successCallback = () => {
-      this.lendingBarPostInit();
+      if (!this.postInitComplete) {
+        this.lendingBarPostInit();
+      }
+      this.postInitComplete = true;
     };
     const errorCallback = eventObj => {
       this.handleLendingActionError(eventObj);
@@ -877,7 +884,6 @@ export default class IABookActions extends LitElement {
       this.showErrorModal(errorMsg, action);
 
     // if error related to loan token
-    // - clear tokenPoller interval
     // - set user_has_browsed to `false`
     if (action === 'create_token') {
       const currStatus = {
