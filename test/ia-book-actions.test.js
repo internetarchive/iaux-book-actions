@@ -81,6 +81,25 @@ describe('<ia-book-actions>', () => {
     await el.updateComplete;
     expect(el.disableActionGroup).to.be.true;
   });
+
+  it('handles `BookReader:userAction` event', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+      })
+    );
+
+    const spy = Sinon.spy(el, 'autoLoanRenewChecker');
+    el.borrowType = 'browsed';
+    await el.updateComplete;
+
+    window.dispatchEvent(new Event('BookReader:userAction'));
+    await el.updateComplete;
+
+    expect(spy.calledOnce).to.be.true;
+    expect(spy.calledWith(true)).to.be.true;
+  });
 });
 
 describe('Primary Actions data', () => {
@@ -304,14 +323,14 @@ describe('Browsing expired status', () => {
     );
 
     // timer-countdown is still active
-    expect(el.shadowRoot.querySelector('timer-countdown')).to.not.be.null;
+    expect(el.timerCountdownEl).to.exist;
 
     await aTimeout(1500); // wait for 1.5 second
     await el.updateComplete;
 
     expect(el.primaryActions[0].text).to.equal('Borrow');
 
-    expect(el.shadowRoot.querySelector('timer-countdown')).to.exist;
+    expect(el.timerCountdownEl).to.exist;
 
     //   // book has been expired
     expect(el.loanRenewResult.renewNow).to.equal(false);
@@ -374,9 +393,7 @@ describe('Auto renew one hour loan', () => {
     );
 
     // timer-countdown starts with same amount component is loaded with
-    expect(
-      el.shadowRoot.querySelector('timer-countdown').secondsLeftOnLoan
-    ).to.equal(loanTime);
+    expect(el.timerCountdownEl.secondsLeftOnLoan).to.equal(loanTime);
 
     const handleLoanAutoRenewedSpy = Sinon.spy(el, 'handleLoanAutoRenewed');
 
@@ -402,9 +419,9 @@ describe('Auto renew one hour loan', () => {
     });
 
     // timer-countdown reflects decreased loan time
-    expect(
-      el.shadowRoot.querySelector('timer-countdown').secondsLeftOnLoan
-    ).to.equal(8);
+    expect(el.timerCountdownEl.secondsLeftOnLoan).to.equal(8);
+
+    expect(el.postInitComplete).to.equal(33);
 
     // dispatch loanAutoRenewed event - test 200 callback
     const collapsibleActionGroupEl = el.shadowRoot.querySelector(
@@ -427,10 +444,8 @@ describe('Auto renew one hour loan', () => {
     );
     expect(el.loanRenewResult.renewNow).to.equal(true);
     expect(el.loanRenewResult.secondsLeft).to.equal(10);
-    expect(el.shadowRoot.querySelector('timer-countdown')).to.exist;
-    expect(
-      el.shadowRoot.querySelector('timer-countdown').secondsLeftOnLoan
-    ).to.equal(loanTime);
+    expect(el.timerCountdownEl).to.exist;
+    expect(el.timerCountdownEl.secondsLeftOnLoan).to.equal(loanTime);
   });
 });
 

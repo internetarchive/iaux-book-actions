@@ -221,6 +221,8 @@ export default class IABookActions extends LitElement {
       'browsingExpired' in this.lendingStatus &&
       this.lendingStatus?.browsingExpired;
     if (hasExpired) {
+      log('setupLendingToolbarActions > hasExpired --- ');
+
       if (!this.tokenPoller) {
         window?.Sentry?.captureMessage(sentryLogs.bookWasExpired);
       }
@@ -525,6 +527,7 @@ export default class IABookActions extends LitElement {
    * Execute when loan is expired
    */
   async browseHasExpired() {
+    log('BrowseHasExpired ---');
     window?.IALendingIntervals?.clearAll();
 
     const currStatus = {

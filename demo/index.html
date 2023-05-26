@@ -323,6 +323,12 @@
         })
       );
     })
+
+    // listen for IABookReader:BrowsingHasExpired
+    window.addEventListener('IABookReader:BrowsingHasExpired', () => {
+      console.log('IABookReader:BrowsingHasExpired EVENT FIRED');
+      alert('IABookReader:BrowsingHasExpired EVENT FIRED');
+    });
 </script>
 
   <div>
