@@ -281,13 +281,6 @@ export default class IABookActions extends LitElement {
         this.autoLoanRenewChecker(true);
       }
     });
-
-    window.focus(() => {
-      log('WINDOW FOCUS', this.borrowType);
-      if (this.borrowType === 'browsed') {
-        this.autoLoanRenewChecker(true);
-      }
-    });
   }
 
   /**
@@ -450,8 +443,6 @@ export default class IABookActions extends LitElement {
    * Show modal when book is auto returned
    */
   async showExpiredModal() {
-    log('showExpiredModal()');
-
     const config = new ModalConfig({
       headline: '',
       showCloseButton: false,
@@ -566,14 +557,8 @@ export default class IABookActions extends LitElement {
       secondsLeftOnLoan,
     } = this.lendingStatus;
 
-    log('startBrowseTimerstartBrowseTimer just cleared timer', {
-      browsingExpired,
-      user_has_browsed,
-      secondsLeftOnLoan,
-    });
-
     if (!user_has_browsed || browsingExpired) {
-      log('user not browsed', {
+      log('startBrowseTimer --- !user_has_browsed || browsingExpired', {
         user_has_browsed,
         browsingExpired,
         secondsLeftOnLoan,
@@ -583,7 +568,7 @@ export default class IABookActions extends LitElement {
 
     window.IALendingIntervals.browseExpireTimeout = setTimeout(() => {
       log(
-        'start `this.browseTimer will fire his.browseHasExpired() - secondsLeftOnLoan',
+        'startBrowseTimer > browseExpireTimeout --- will expire loan',
         secondsLeftOnLoan
       );
       this.browseHasExpired();
@@ -658,8 +643,7 @@ export default class IABookActions extends LitElement {
       const loanTime = await this.localCache.get(`${this.identifier}-loanTime`);
       const secondsLeft = Math.round((loanTime - new Date()) / 1000); // different in seconds
 
-      // testing console....
-      log('~~~ IABookActions: handleLoanAutoRenewed:- ', {
+      log('IABookActions: handleLoanAutoRenewed --- ', {
         ajaxResponse: event?.detail?.data,
         loanRenewResult: this.loanRenewResult,
         secondsLeftOnLoan: secondsLeft,
@@ -702,13 +686,13 @@ export default class IABookActions extends LitElement {
       const resync = await this.reSyncTimerIfGoneOff(secondsLeft);
 
       if (resync) {
-        log('timer has resyncd, abort stale startTimerCountdown - ', {
+        log('startTimerCountdown --- stale, timer has resyncd', {
           secondsLeft,
         });
         return;
       }
 
-      log('startTimerCountdown - countdown still valid. continue...', {
+      log('startTimerCountdown --- countdown still valid. continue...', {
         resync,
         secondsLeft,
         loanRenewAtLast: this.loanRenewTimeConfig.loanRenewAtLast,
@@ -771,7 +755,7 @@ export default class IABookActions extends LitElement {
     }
 
     if (whatIsleft !== whatShouldLeft) {
-      log(`timer is gone off, let's re-sync,`);
+      log(`reSyncTimerIfGoneOff --- let's re-sync.`);
 
       return true;
     }
@@ -787,7 +771,10 @@ export default class IABookActions extends LitElement {
    * @memberof IABookActions
    */
   async loanRenewAttempt(secondsLeft) {
-    log('loanRenewAttempt()', secondsLeft, this.loanRenewResult);
+    log('loanRenewAttempt ---', {
+      secondsLeft,
+      loanRenewResult: this.loanRenewResult,
+    });
     let loanSecondsLeft = secondsLeft;
     /**
      * auto-renew is not possible in last seconds (let say 50 second) because,
@@ -797,7 +784,7 @@ export default class IABookActions extends LitElement {
      * so if seconds left is < 50, just expire the loan
      */
     if (loanSecondsLeft < 50) {
-      log('if (loanSecondsLeft < 50) {');
+      log('loanRenewAttempt --- loanSecondsLeft < 50, will expire');
       await this.browseHasExpired();
       return;
     }
