@@ -640,14 +640,21 @@ export default class IABookActions extends LitElement {
    * - reset timer state
    * @param {object} event
    */
-  async handleLoanAutoRenewed(event) {
+  async handleLoanAutoRenewed({ detail }) {
+    const activeLoan = detail?.data?.loan;
+    const errorMessage = `Whoops, seems we hit a hiccup with renewing this book. Please refresh & retry. --- (Debug: ${detail?.data?.error})`;
+    if (!activeLoan) {
+      this.showErrorModal(errorMessage, 'handleLoanAutoRenewed');
+      return;
+    }
+
     if (this.loanRenewResult.renewNow) {
       // Now, let's reset loan duration & this.lendingStatus
       const loanTime = await this.localCache.get(`${this.identifier}-loanTime`);
       const secondsLeft = Math.round((loanTime - new Date()) / 1000); // different in seconds
 
       log('IABookActions: handleLoanAutoRenewed --- ', {
-        ajaxResponse: event?.detail?.data,
+        ajaxResponse: detail?.data,
         loanRenewResult: this.loanRenewResult,
         secondsLeftOnLoan: secondsLeft,
       });
