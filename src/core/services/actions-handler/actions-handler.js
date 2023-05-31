@@ -7,10 +7,6 @@ import log from '../log.js';
 import ActionsHandlerService from './actions-handler-service.js';
 import LoanAnanlytics from '../loan-analytics.js';
 import * as Cookies from '../doc-cookies.js';
-import {
-  analyticsCategories,
-  analyticsActions,
-} from '../../config/analytics-event-and-category.js';
 
 /**
  * These are callback functions calling from actions-config.js file.
@@ -46,10 +42,6 @@ export default class ActionsHandler extends LitElement {
     this.addEventListener('browseBook', async () => {
       this.handleBrowseIt();
       await this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'browse');
-      this.loanAnanlytics?.sendEvent(
-        analyticsCategories.browse,
-        analyticsActions.browse
-      );
     });
 
     this.addEventListener('browseBookAgain', async () => {
@@ -57,10 +49,6 @@ export default class ActionsHandler extends LitElement {
       await this.loanAnanlytics?.storeLoanStatsCount(
         this.identifier,
         'browseagain'
-      );
-      this.loanAnanlytics?.sendEvent(
-        analyticsCategories.browse,
-        analyticsActions.browseBookAgain
       );
     });
 
@@ -70,10 +58,6 @@ export default class ActionsHandler extends LitElement {
         this.identifier,
         'autorenew'
       );
-      this.loanAnanlytics?.sendEvent(
-        analyticsCategories.browse,
-        analyticsActions.browseAutoRenew
-      );
     });
 
     this.addEventListener('autoReturn', async () => {
@@ -81,14 +65,6 @@ export default class ActionsHandler extends LitElement {
       await this.loanAnanlytics?.storeLoanStatsCount(
         this.identifier,
         'autoreturn'
-      );
-      await this.loanAnanlytics?.storeLoanStatsCount(
-        this.identifier,
-        'autorenew'
-      );
-      this.loanAnanlytics?.sendEvent(
-        analyticsCategories.browse,
-        analyticsActions.browseAutoReturn
       );
     });
 

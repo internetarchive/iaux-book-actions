@@ -433,12 +433,6 @@ export default class IABookActions extends LitElement {
     this.showWarningDisabledModal('returnBook');
     document.querySelector('ia-book-actions').disableActionGroup = true;
     this.returnNow = true;
-
-    this.lendingStatus = {
-      ...this.lendingStatus,
-      browsingExpired: true,
-      secondsLeftOnLoan: 0,
-    };
   }
 
   /**
@@ -552,7 +546,7 @@ export default class IABookActions extends LitElement {
   }
 
   async startBrowseTimer() {
-    window.IALendingIntervals.clearBrowseExpireTimeout();
+    window?.IALendingIntervals?.clearBrowseExpireTimeout();
 
     const {
       browsingExpired,
