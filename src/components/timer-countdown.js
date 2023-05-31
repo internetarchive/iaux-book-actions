@@ -3,32 +3,43 @@ import { html, css, LitElement } from 'lit';
 export default class TimerCountdown extends LitElement {
   static get properties() {
     return {
-      secondsLeftOnLoan: { type: Number }, // in seconds
+      secondsLeftOnLoan: { type: Number },
+      displayTime: { type: Boolean },
     };
   }
 
   constructor() {
     super();
 
-    /**
-     * seconds left in current loan
-     * @type {number}
-     */
     this.secondsLeftOnLoan = 0;
+    this.displayTime = false;
+  }
+
+  get minutesLeftOnLoan() {
+    let timeLeft = Math.round(this.secondsLeftOnLoan);
+
+    // convert time from second to minute
+    timeLeft = Math.ceil(timeLeft / 60);
+
+    if (timeLeft < 10) {
+      timeLeft = `0:0${timeLeft}`;
+    } else if (timeLeft === 60) {
+      timeLeft = `1:00`;
+    } else {
+      timeLeft = `0:${timeLeft}`;
+    }
+    return timeLeft;
   }
 
   /**
    * get remaining time with timeunit
    *
    * @memberof TimerCountdown
-   * @return string
+   * @return string - minutes left
    */
   get remainingTime() {
     const unitOfTime = 'minute';
-    let timeLeft = Math.round(this.secondsLeftOnLoan);
-
-    // convert time from second to minute
-    timeLeft = Math.ceil(timeLeft / 60);
+    const timeLeft = this.minutesLeftOnLoan;
 
     return timeLeft !== 1
       ? `${timeLeft} ${unitOfTime}s`
@@ -36,58 +47,28 @@ export default class TimerCountdown extends LitElement {
   }
 
   render() {
+    const viewClass = this.displayTime ? 'view' : 'hide';
     return html`
-      <svg
-        width="14"
-        height="14"
-        viewBox="0 0 100 100"
-        xmlns="http://www.w3.org/2000/svg"
+      <button
+        id="timer-counter"
+        class=${viewClass}
+        @click=${() => {
+          this.displayTime = !this.displayTime;
+        }}
+        role="timer"
       >
-        <circle class="circle" cx="50" cy="50" r="50" />
-      </svg>
-      <span class="sr-only">${this.remainingTime} left</span>
+        <span>${this.minutesLeftOnLoan}</span>
+        <span class="sr-only">${this.remainingTime} left</span>
+      </button>
     `;
   }
 
   static get styles() {
-    const white = css`var(--white, #fff)`;
-    const timerSecondsLeft = css`var(--secondsLeftOnLoan, 6000s)`; //
-    const timerStrokeLeft = css`var(--strokeLeftOnLoan, 315)`;
-
     return css`
       :host {
         right: 0;
         margin-right: 10px;
         position: absolute;
-        height: 20px;
-        width: 20px;
-      }
-
-      @keyframes circletimer {
-        0% {
-          stroke-dashoffset: ${timerStrokeLeft};
-          stroke-dasharray: 315;
-        }
-        100% {
-          stroke-dashoffset: 0;
-          stroke-dasharray: 315;
-        }
-      }
-
-      svg {
-        background-color: ${white};
-        border-radius: 50px;
-        border: 2px solid ${white};
-        transform: rotateZ(-90deg);
-      }
-
-      svg .circle {
-        stroke: #000;
-        stroke-width: 100px;
-        fill: ${white};
-        stroke-dashoffset: 315;
-        stroke-dasharray: 0;
-        animation: ${timerSecondsLeft} circletimer linear;
       }
 
       .sr-only {
@@ -99,6 +80,18 @@ export default class TimerCountdown extends LitElement {
         padding: 0;
         border: none;
         overflow: hidden;
+      }
+
+      button#timer-counter {
+        cursor: pointer;
+      }
+
+      .hide {
+        opacity: 0;
+      }
+
+      .show {
+        opacity: 1;
       }
     `;
   }

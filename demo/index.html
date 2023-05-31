@@ -242,6 +242,31 @@
       });
     });
 
+    document.querySelector('#show_warning_modal').addEventListener('click', async () => {
+      if (!iaBookActions.lendingStatus.user_has_browsed) {
+        const newLendingStatus = { ...iaBookActions.lendingStatus, user_has_browsed: true };
+        iaBookActions.lendingStatus = newLendingStatus;
+        await iaBookActions.updateComplete;
+      }
+
+      iaBookActions.showWarningModal();
+
+      if (iaBookActions.lendingStatus.user_has_browsed) {
+        iaBookActions.showWarningModal();
+      }
+    });
+
+    document.querySelector('#show_expired_modal').addEventListener('click', async () => {
+      if (!iaBookActions.lendingStatus.user_has_browsed) {
+        const newLendingStatus = { ...iaBookActions.lendingStatus, user_has_browsed: true };
+        iaBookActions.lendingStatus = newLendingStatus;
+        await iaBookActions.updateComplete;
+      }
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      iaBookActions.browseHasExpired();
+    });
+
     document.querySelectorAll('.availableToBorrow input[type=radio]').forEach((item) => {
       item.addEventListener('click', (e) => {
         if (e.target.value === 'available_to_borrow') {
@@ -298,6 +323,12 @@
         })
       );
     })
+
+    // listen for IABookReader:BrowsingHasExpired
+    window.addEventListener('IABookReader:BrowsingHasExpired', () => {
+      console.log('IABookReader:BrowsingHasExpired EVENT FIRED');
+      alert('IABookReader:BrowsingHasExpired EVENT FIRED');
+    });
 </script>
 
   <div>
@@ -334,6 +365,13 @@
               <label><input type="radio" name="browse" value="available_to_browse" />available_to_browse</label>
               <label><input type="radio" name="browse" value="user_has_browsed" />user_has_browsed</label>
               <label><input type="radio" name="browse" value="browsingExpired" />browsingExpired</label>
+              <div>
+                <button id="show_warning_modal">When Browsing (`user_has_browsed`), show Warning Modal</button>
+              </div>
+              <div>
+                <button id="show_expired_modal">While Browsing (`user_has_browsed`), Expire book & show its modal</button>
+                how_expired_modal
+              </div>
             </td>
             <td class="availableToBorrow">
               <label><input type="radio" name="borrow" value="available_to_borrow" />available_to_borrow</label>
@@ -356,5 +394,6 @@
         </table>
     </fieldset>
   </div>
+  <modal-manager></modal-manager>
 </body>
 </html>

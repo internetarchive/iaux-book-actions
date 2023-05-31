@@ -1,3 +1,4 @@
+/* global: window */
 import ActionsHandlerService from './actions-handler/actions-handler-service.js';
 import LoanAnanlytics from './loan-analytics.js';
 import { sentryLogs } from '../config/sentry-events.js';

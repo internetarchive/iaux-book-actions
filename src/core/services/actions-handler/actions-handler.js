@@ -2,6 +2,7 @@ import { LitElement } from 'lit';
 
 import { URLHelper } from '../../config/url-helper.js';
 import { sentryLogs } from '../../config/sentry-events.js';
+import log from '../log.js';
 
 import ActionsHandlerService from './actions-handler-service.js';
 import LoanAnanlytics from '../loan-analytics.js';
@@ -38,24 +39,33 @@ export default class ActionsHandler extends LitElement {
   }
 
   bindEvents() {
-    this.addEventListener('browseBook', () => {
+    this.addEventListener('browseBook', async () => {
       this.handleBrowseIt();
-      this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'browse');
+      await this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'browse');
     });
 
-    this.addEventListener('browseBookAgain', () => {
+    this.addEventListener('browseBookAgain', async () => {
       this.handleBrowseIt();
-      this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'browseagain');
+      await this.loanAnanlytics?.storeLoanStatsCount(
+        this.identifier,
+        'browseagain'
+      );
     });
 
-    this.addEventListener('autoRenew', () => {
+    this.addEventListener('autoRenew', async () => {
       this.handleLoanRenewNow();
-      this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'autorenew');
+      await this.loanAnanlytics?.storeLoanStatsCount(
+        this.identifier,
+        'autorenew'
+      );
     });
 
-    this.addEventListener('autoReturn', () => {
+    this.addEventListener('autoReturn', async () => {
       this.handleReturnIt();
-      this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'autoreturn');
+      await this.loanAnanlytics?.storeLoanStatsCount(
+        this.identifier,
+        'autoreturn'
+      );
     });
 
     this.addEventListener('returnNow', ({ detail }) => {
@@ -142,18 +152,37 @@ export default class ActionsHandler extends LitElement {
       action,
       identifier: this.identifier,
       success: data => {
-        if (data?.success === true && data?.loan?.renewal === true) {
+        log('RENEW_LOAN --- ', data, action, data.loan, this.identifier);
+        const activeLoan = data.loan ? data.loan : undefined;
+        const isRenewal = activeLoan.renewal;
+
+        if (activeLoan && isRenewal) {
+          // when loan is renewed, let's reset timer & let everyone know.
           this.setBrowseTimeSession();
-          this.dispatchEvent(
-            new CustomEvent('loanAutoRenewed', {
-              detail: { action, data },
-            })
-          );
         } else {
+          log('RENEW_LOAN ERROR --- ', {
+            action,
+            isRenewal,
+            activeLoan,
+            data,
+            id: this.identifier,
+          });
           window?.Sentry?.captureMessage(
             `${sentryLogs.bookRenewFailed} - Error: ${JSON.stringify(data)}`
           );
+          this.dispatchActionError(action, {
+            data,
+            error: true,
+            message: 'Loan renewal failed: no loan active.',
+          });
         }
+
+        // dispatch outcome of loan renewal
+        this.dispatchEvent(
+          new CustomEvent('loanAutoRenewed', {
+            detail: { action, data: { ...data, loan: activeLoan } },
+          })
+        );
       },
       error: data => {
         this.dispatchActionError(action, data);
@@ -299,6 +328,7 @@ export default class ActionsHandler extends LitElement {
    * set browse time in indexedDB
    */
   async setBrowseTimeSession() {
+    // TODO: USE loan info to determine what we have left
     try {
       const expireDate = new Date(
         new Date().getTime() + this.loanTotalTime * 1000
@@ -314,7 +344,7 @@ export default class ActionsHandler extends LitElement {
       // delete pageChangedTime when book is auto renew at nth minute
       await this.localCache.delete(`${this.identifier}-pageChangedTime`);
     } catch (error) {
-      console.log(error);
+      log(error);
     }
   }
 

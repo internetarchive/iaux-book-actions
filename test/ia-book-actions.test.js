@@ -1,13 +1,19 @@
 import { html, fixture, expect, aTimeout } from '@open-wc/testing';
-
+import '@internetarchive/modal-manager';
 import '../src/ia-book-actions.js';
 import Sinon from 'sinon';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
 import { LocalCache } from '@internetarchive/local-cache';
 
+beforeEach(() => {
+  const modalManager = document.createElement('modal-manager');
+  document.body.appendChild(modalManager);
+});
+
 afterEach(() => {
   Sinon.restore();
+  document.body.removeChild(document.querySelector('modal-manager'));
 });
 
 // localCache used for auto-loan-renew
@@ -15,11 +21,17 @@ const localCache = new LocalCache({
   namespace: 'loanRenew',
 });
 
-const container = ({ userid, identifier, lendingStatus = {} } = {}) =>
+const container = ({
+  userid,
+  identifier,
+  lendingStatus = {},
+  barType = 'action',
+} = {}) =>
   html`<ia-book-actions
     .userid=${userid}
     .identifier=${identifier}
     .lendingStatus=${lendingStatus}
+    .barType=${barType}
   ></ia-book-actions>`;
 
 describe('<ia-book-actions>', () => {
@@ -38,6 +50,55 @@ describe('<ia-book-actions>', () => {
 
     expect(el.userid).to.be.equal('@user1');
     expect(el.identifier).to.equal('foobar');
+  });
+
+  it('Can daw a title bar instead of actions', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        barType: 'title',
+      })
+    );
+
+    const titleBar = el.shadowRoot.querySelector('book-title-bar');
+    expect(titleBar).to.exist;
+  });
+
+  it('Handles <collapsible-action-group>@toggleActionGroup event', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+      })
+    );
+
+    const collapsibleActionGroup = el.shadowRoot.querySelector(
+      'collapsible-action-group'
+    );
+    expect(el.disableActionGroup).to.be.false;
+    collapsibleActionGroup.dispatchEvent(new Event('toggleActionGroup'));
+    await el.updateComplete;
+    expect(el.disableActionGroup).to.be.true;
+  });
+
+  it('handles `BookReader:userAction` event', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+      })
+    );
+
+    const spy = Sinon.spy(el, 'autoLoanRenewChecker');
+    el.borrowType = 'browsed';
+    await el.updateComplete;
+
+    window.dispatchEvent(new Event('BookReader:userAction'));
+    await el.updateComplete;
+
+    expect(spy.calledOnce).to.be.true;
+    expect(spy.calledWith(true)).to.be.true;
   });
 });
 
@@ -189,7 +250,7 @@ describe('Borrow status actions', () => {
     ];
 
     expect(el.primaryTitle).to.equal(
-      'Renews automatically as long as pages are turned.'
+      'Renews automatically with continued use.'
     );
     expect(el.primaryActions.length).to.equal(2);
     expect(el.primaryActions[0].text).to.equal('Log In and Borrow');
@@ -262,15 +323,14 @@ describe('Browsing expired status', () => {
     );
 
     // timer-countdown is still active
-    expect(el.shadowRoot.querySelector('timer-countdown')).to.not.be.null;
+    expect(el.timerCountdownEl).to.exist;
 
     await aTimeout(1500); // wait for 1.5 second
     await el.updateComplete;
 
     expect(el.primaryActions[0].text).to.equal('Borrow');
 
-    // timer-countdown is gone now
-    expect(el.shadowRoot.querySelector('timer-countdown')).to.be.null;
+    expect(el.timerCountdownEl).to.exist;
 
     //   // book has been expired
     expect(el.loanRenewResult.renewNow).to.equal(false);
@@ -318,6 +378,7 @@ describe('Browsing expired status', () => {
 
 describe('Auto renew one hour loan', () => {
   it('Book is browsing and renewed it now', async () => {
+    const loanTime = 88;
     const el = await fixture(
       container({
         userid: '@userid',
@@ -326,37 +387,65 @@ describe('Auto renew one hour loan', () => {
           is_lendable: true,
           user_has_browsed: true,
           browseHasExpired: false,
-          secondsLeftOnLoan: 12,
+          secondsLeftOnLoan: loanTime,
         },
       })
     );
 
+    // timer-countdown starts with same amount component is loaded with
+    expect(el.timerCountdownEl.secondsLeftOnLoan).to.equal(loanTime);
+
+    const handleLoanAutoRenewedSpy = Sinon.spy(el, 'handleLoanAutoRenewed');
+
+    // let's update state, fastforward loan...
     el.loanRenewResult = {
       texts: 'This book has been renewed for 1 hour.',
       renewNow: true,
       secondsLeft: 10,
     };
+    el.lendingStatus = {
+      is_lendable: true,
+      user_has_browsed: true,
+      browseHasExpired: false,
+      secondsLeftOnLoan: 8, // <-- loan time has decreased
+    };
+
+    await el.updateComplete;
 
     await localCache.set({
       key: `${el.identifier}-loanTime`,
-      value: new Date(new Date().getTime() + 10 * 1000),
+      value: new Date(new Date().getTime() + loanTime * 1000),
       ttl: Number(10),
     });
 
-    const myEvent = new CustomEvent('loanAutoRenewed');
-    el.addEventListener('loanAutoRenewed', () => {
-      el.handleLoanAutoRenewed();
-    });
-    el.dispatchEvent(myEvent);
+    // timer-countdown reflects decreased loan time
+    expect(el.timerCountdownEl.secondsLeftOnLoan).to.equal(8);
+
+    expect(el.postInitComplete).to.equal(33);
+
+    // dispatch loanAutoRenewed event - test 200 callback
+    const collapsibleActionGroupEl = el.shadowRoot.querySelector(
+      'collapsible-action-group'
+    );
+    collapsibleActionGroupEl.dispatchEvent(
+      new CustomEvent('loanAutoRenewed', {
+        detail: { data: { identifier: 'Foo' } },
+      })
+    );
 
     await aTimeout(1900); // wait for 1.9 second
     await el.updateComplete;
+
+    // Autorenew 200 callback is called
+    expect(handleLoanAutoRenewedSpy.calledOnce).to.equal(true);
 
     expect(el.loanRenewResult.texts).to.equal(
       'This book has been renewed for 1 hour.'
     );
     expect(el.loanRenewResult.renewNow).to.equal(true);
     expect(el.loanRenewResult.secondsLeft).to.equal(10);
+    expect(el.timerCountdownEl).to.exist;
+    expect(el.timerCountdownEl.secondsLeftOnLoan).to.equal(loanTime);
   });
 });
 

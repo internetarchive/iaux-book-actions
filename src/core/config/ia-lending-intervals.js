@@ -1,3 +1,4 @@
+/* global: window */
 /**
  * Collection of methods for managing intervals for lending system
  *
@@ -18,16 +19,19 @@ window.IALendingIntervals = {
   tokenPoller: 0,
 
   /**
-   * store timer-countdown interval
-   * @see TimerCountdown::timerCountdown
+   * renewal check interval
    */
   timerCountdown: 0,
+
+  /** expiration timer */
+  browseExpireTimeout: 0,
 
   /**
    * clear interval for create_token api
    */
   clearTokenPoller: () => {
-    window.clearInterval(window?.IALendingIntervals?.tokenPoller);
+    window.clearInterval(window.IALendingIntervals.tokenPoller);
+    window.IALendingIntervals.tokenPoller = 0;
   },
 
   /**
@@ -35,13 +39,23 @@ window.IALendingIntervals = {
    */
   clearTimerCountdown: () => {
     window.clearInterval(window.IALendingIntervals.timerCountdown);
+    window.IALendingIntervals.timerCountdown = 0;
+  },
+
+  /**
+   * clear interval for graphic timer for one-hour loan renew
+   */
+  clearBrowseExpireTimeout: () => {
+    window.clearTimeout(window.IALendingIntervals.browseExpireTimeout);
+    window.IALendingIntervals.browseExpireTimeout = 0;
   },
 
   /**
    * clear all intervals being used acros lending system
    */
   clearAll: () => {
-    window.clearInterval(window?.IALendingIntervals?.tokenPoller);
-    window.clearInterval(window?.IALendingIntervals?.timerCountdown);
+    window?.IALendingIntervals?.clearTokenPoller();
+    window?.IALendingIntervals?.clearTimerCountdown();
+    window?.IALendingIntervals?.clearBrowseExpireTimeout();
   },
 };

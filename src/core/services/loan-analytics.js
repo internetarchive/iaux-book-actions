@@ -2,6 +2,7 @@
 
 import { analyticsCategories } from '../config/analytics-event-and-category.js';
 import * as Cookies from './doc-cookies.js';
+import log from './log.js';
 
 /**
  * This class is used to send different GA events for loan system.
@@ -45,7 +46,7 @@ export default class LoanAnanlytics {
         '/'
       );
     } catch (error) {
-      console.log(error);
+      log(error);
       this.sendEvent('Cookies-Error-Actions', error, this.identifier);
     }
   }
@@ -144,7 +145,7 @@ export default class LoanAnanlytics {
    * @memberof LoanAnanlytics
    */
   sendEvent(eventCategory, eventAction, label, extraParams) {
-    // console.log(
+    // log(
     //   'eventCategory:-',
     //   eventCategory,
     //   '\t||\teventAction:-',

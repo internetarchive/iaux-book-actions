@@ -63,15 +63,16 @@ export class CollapsibleActionGroup extends ActionsHandler {
       this.resetActions();
     }
 
-    if (changed.has('autoRenew') && this.autoRenew === true) {
+    if (changed.has('autoRenew') && this.autoRenew) {
       this.dispatchLoanEvent('autoRenew');
     }
 
-    if (changed.has('autoReturn') && this.autoReturn === true) {
+    const requestingAutoreturn = changed.has('autoReturn') && this.autoReturn;
+    if (requestingAutoreturn) {
       this.dispatchLoanEvent('autoReturn');
     }
 
-    if (changed.has('returnNow') && this.returnNow === true) {
+    if (changed.has('returnNow') && this.returnNow && !requestingAutoreturn) {
       this.dispatchLoanEvent('returnNow', { borrowType: 'browse' });
     }
   }
