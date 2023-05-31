@@ -177,18 +177,36 @@ export default class ActionsHandler extends LitElement {
       identifier: this.identifier,
       success: data => {
         log('RENEW_LOAN --- ', data, action, data.loan, this.identifier);
-        if (data?.success === true && data?.loan?.renewal === true) {
+        const activeLoan = data.loan ? data.loan : undefined;
+        const isRenewal = activeLoan.renewal;
+
+        if (activeLoan && isRenewal) {
+          // when loan is renewed, let's reset timer & let everyone know.
           this.setBrowseTimeSession();
-          this.dispatchEvent(
-            new CustomEvent('loanAutoRenewed', {
-              detail: { action, data },
-            })
-          );
         } else {
+          log('RENEW_LOAN ERROR --- ', {
+            action,
+            isRenewal,
+            activeLoan,
+            data,
+            id: this.identifier,
+          });
           window?.Sentry?.captureMessage(
             `${sentryLogs.bookRenewFailed} - Error: ${JSON.stringify(data)}`
           );
+          this.dispatchActionError(action, {
+            data,
+            error: true,
+            message: 'Loan renewal failed: no loan active.',
+          });
         }
+
+        // dispatch outcome of loan renewal
+        this.dispatchEvent(
+          new CustomEvent('loanAutoRenewed', {
+            detail: { action, data: { ...data, loan: activeLoan } },
+          })
+        );
       },
       error: data => {
         this.dispatchActionError(action, data);
