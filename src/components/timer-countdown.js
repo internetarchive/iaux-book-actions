@@ -35,7 +35,7 @@ export default class TimerCountdown extends LitElement {
    * get remaining time with timeunit
    *
    * @memberof TimerCountdown
-   * @return string - seconds left
+   * @return string - minutes left
    */
   get remainingTime() {
     const unitOfTime = 'minute';
