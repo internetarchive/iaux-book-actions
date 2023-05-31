@@ -56,6 +56,6 @@ window.IALendingIntervals = {
   clearAll: () => {
     window?.IALendingIntervals?.clearTokenPoller();
     window?.IALendingIntervals?.clearTimerCountdown();
-    window.IALendingIntervals.clearBrowseExpireTimeout();
+    window?.IALendingIntervals?.clearBrowseExpireTimeout();
   },
 };
