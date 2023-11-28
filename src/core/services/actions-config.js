@@ -202,11 +202,15 @@ export default class ActionsConfig {
     if (this.lendingStatus.user_has_borrowed || !this.lendingStatus.isAdmin)
       return null;
 
+    // keep existing params and add new one
+    const url = new URL(window.location.href);
+    url.searchParams.append('admin', 1);
+
     return {
       id: 'adminAccess',
       text: 'Admin Access',
       title: 'You have administrative privileges to read this book',
-      url: '?admin=1',
+      url: url.search,
       target: '_self',
       className: 'danger',
       analyticsEvent: {
