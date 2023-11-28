@@ -147,7 +147,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
   get renderSecondaryActions() {
     if (!this.secondaryActions.length) return nothing;
 
-    return this.secondaryActions.map(action => this.renderActionLink(action));
+    return this.secondaryActions.map(action => this.renderActionButton(action));
   }
 
   /**

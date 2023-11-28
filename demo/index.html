@@ -134,6 +134,25 @@
       });
     });
 
+    document.querySelectorAll('.searchParam input[type=checkbox]').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        var searchParams = new URLSearchParams(window.location.search);
+        var separate = '';
+        if (e.target.checked) {
+          separate = '?';
+          searchParams.set('q', 'test');
+        } else {
+          separate = '';
+          searchParams.delete('q');
+        }
+
+        if (history.pushState) {
+          var newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + separate + searchParams;
+          window.history.pushState({path:newurl},'',newurl);
+        }
+      });
+    });
+
     document.querySelectorAll('.errorEnable input[type=checkbox]').forEach((item) => {
       if (window.location.href.indexOf('?error=true') !== -1) {
         item.checked = true;
@@ -262,6 +281,9 @@
           <tr>
             <td class="titleBar">
               <label><input type="checkbox" name="title" value="title" />Title Bar</label>
+            </td>
+            <td class="searchParam">
+              <label><input type="checkbox" name="search" value="Search Param" />Search Param</label>
             </td>
           </tr>
         </table>
