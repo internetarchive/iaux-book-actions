@@ -25,9 +25,9 @@ describe('Get Lending Actions', () => {
 
     expect(actions.primaryTitle).to.equal(bookTitles.available_1hr);
     expect(actions.primaryActions.length).to.equal(3);
-    expect(actions.primaryActions[0].text).to.equal('Borrow for 1 hour');
+    expect(actions.primaryActions[0].text).to.equal('Borrow');
     expect(actions.primaryActions[1].text).to.equal('Borrow for 14 days');
-    expect(actions.secondaryActions[1].text).to.equal('Purchase at');
+    expect(actions.secondaryActions[1].text).to.equal('Purchase at ');
   });
 
   it('Borrowable without user', async () => {
@@ -111,7 +111,7 @@ describe('Get Lending Actions', () => {
         expect(actions.primaryTitle).to.equal(bookTitles.claim_waitlist);
         expect(actions.primaryActions.length).to.equal(3);
         expect(actions.primaryActions[0].text).to.equal('Borrow for 14 days');
-        expect(actions.primaryActions[1].text).to.equal('Borrow for 1 hour');
+        expect(actions.primaryActions[1].text).to.equal('Borrow');
         expect(actions.primaryActions[2].text).to.equal('Leave Waitlist');
         expect(spy.called).to.be.true;
       });
@@ -138,7 +138,7 @@ describe('Get Lending Actions', () => {
         expect(actions.primaryTitle).to.equal(bookTitles.on_waitlist);
         expect(actions.primaryActions.length).to.equal(2);
         expect(actions.primaryActions[0].text).to.equal('Leave Waitlist');
-        expect(actions.primaryActions[1].text).to.equal('Borrow for 1 hour');
+        expect(actions.primaryActions[1].text).to.equal('Borrow');
         expect(claimSpy.called).to.be.false;
         expect(waitlistSpy.called).to.be.true;
       });
@@ -162,7 +162,7 @@ describe('Get Lending Actions', () => {
         expect(actions.primaryTitle).to.equal(bookTitles.on_waitlist);
         expect(actions.primaryActions.length).to.equal(2);
         expect(actions.primaryActions[0].text).to.equal('Leave Waitlist');
-        expect(actions.primaryActions[1].text).to.equal('Borrow for 1 hour');
+        expect(actions.primaryActions[1].text).to.equal('Borrow');
         expect(waitlistSpy.called).to.be.true;
       });
     });

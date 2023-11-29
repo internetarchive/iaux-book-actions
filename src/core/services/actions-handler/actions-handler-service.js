@@ -1,4 +1,5 @@
 /* eslint-disable */
+import { sentryLogs } from '../../config/sentry-events.js';
 
 /**
  * Helper to call loan service
@@ -20,7 +21,13 @@ export default async function ActionsHandlerService(options) {
   const tokenError = 'loan token not found. please try again later.';
   const borrowError =
     'This book is not available to borrow at this time. Please try again later.';
-  const erroneousActions = ['browse_book', 'borrow_book', 'create_token'];
+  const erroneousActions = [
+    'browse_book',
+    'borrow_book',
+    'create_token',
+    'renew_loan',
+    'return_loan',
+  ];
   const shouldReturnError =
     location?.href?.indexOf('?error=true') !== -1 &&
     location?.hostname !== 'archive.org';
@@ -35,7 +42,7 @@ export default async function ActionsHandlerService(options) {
       method: 'POST',
       body: formData,
     })
-      .then(response => {
+      .then(async response => {
         // intentional error on localhost
         if (shouldReturnError && erroneousActions.includes(option?.action)) {
           return {
@@ -46,6 +53,17 @@ export default async function ActionsHandlerService(options) {
 
         // return success response for /demo/ server...
         if (baseHost == '/demo/1' || baseHost == '/demo/') {
+          if (
+            option?.action == 'renew_loan' ||
+            option?.action == 'return_loan'
+          ) {
+            // wait a few seconds so that the user can see the loading state
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            return {
+              success: true,
+              loan: { renewal: true },
+            };
+          }
           return {
             success: true,
             message: 'operation executed successfully!',
@@ -64,7 +82,9 @@ export default async function ActionsHandlerService(options) {
           option?.error(data);
         }
       });
-  } catch (err) {
-    window?.Sentry?.captureException(err);
+  } catch (error) {
+    window?.Sentry?.captureException(
+      `${sentryLogs.actionsHandlerService} - Error: ${error}`
+    );
   }
 }

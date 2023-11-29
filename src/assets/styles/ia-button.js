@@ -36,7 +36,7 @@ export default css`
     align-items: center;
     transition: all 0.1s ease 0s;
     vertical-align: middle;
-    padding: 0 1rem;
+    padding: 0 3rem;
     outline-color: ${whiteColor};
     outline-offset: -4px;
     user-select: none;

@@ -15,7 +15,7 @@
       font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     }
     #demo {
-      height: 50px;
+      height: 100px;
     }
     ia-book-actions {
       --white: #fff;
@@ -72,6 +72,10 @@
       margin: 2px;
     }
 
+    fieldset {
+      display: inline-grid;
+    }
+
     body.modal-manager-open {
       overflow: hidden;
     }
@@ -94,15 +98,17 @@
       canBrowseAndBorrow,
     } from '../src/assets/data/lending-get-status-service.js';
     import { ModalConfig } from '@internetarchive/modal-manager';
+    import { LocalCache } from '@internetarchive/local-cache';
+
+    const localCache = new LocalCache({
+      namespace: 'loanRenew',
+      defaultTTL: 1 * 60,  // 1 minute
+    });
 
     const userid = '@neeraj-archive';
     const identifier = 'naturalhistoryof00unse_4111';
     let bwbPurchaseUrl = 'https://www.betterworldbooks.com/product/detail/cambridge-ancient-hist-v04-0521044863';
 
-    let iaBookActions = document.querySelector('ia-book-actions');
-
-    // for debugging
-    window.iaBookActions = iaBookActions;
 
     const modalConfig = new ModalConfig();
     modalConfig.headerColor = '#d9534f';
@@ -112,6 +118,8 @@
     }
 
     // set defaultLendingStatus for unavailable (without borrowables) book
+    let iaBookActions = document.querySelector('ia-book-actions');
+
     iaBookActions.userid = userid;
     iaBookActions.identifier = identifier;
     iaBookActions.bookTitle = 'Contemporary Black biography. Volume 39 : profiles from the interContemporary Black biography. Volume 39';
@@ -119,10 +127,18 @@
     iaBookActions.bwbPurchaseUrl = '';
     iaBookActions.modalConfig = modalConfig;
     iaBookActions.lendingBarPostInit = lendingBarPostInit;
-    iaBookActions.tokenDelay = 2000; // 2 seconds
-    iaBookActions.returnUrl = 'https://openlibrary.org';
+    iaBookActions.tokenDelay = 2; // 2 seconds
+    iaBookActions.returnUrl = '';
+    iaBookActions.localCache = localCache;
+
+    let loanTotalTime2Min = { loanTotalTime: 65, loanRenewAtLast: 60, pageChangedInLast: 15 };
+    let loanTotalTime5Min = { loanTotalTime: 300, loanRenewAtLast: 180, pageChangedInLast: 15 };
+    let loanTotalTime1Hour = { loanTotalTime: 3600, loanRenewAtLast: 660, pageChangedInLast: 900 };
+
+    iaBookActions.loanRenewTimeConfig = loanTotalTime2Min;
 
     let lendingStatus1 = iaBookActions.lendingStatus;
+    let secondsLeftOnLoan = iaBookActions.loanRenewTimeConfig.loanTotalTime;
 
     document.querySelectorAll('.titleBar input[type=checkbox]').forEach((item) => {
       item.addEventListener('click', (e) => {
@@ -206,12 +222,27 @@
     });
 
     document.querySelectorAll('.availableToBrowse input[type=radio]').forEach((item) => {
-      item.addEventListener('click', (e) => {
+      item.addEventListener('click', async (e) => {
         if (e.target.value === 'user_has_browsed') {
           lendingStatus1.user_has_browsed = true;
           lendingStatus1.available_to_browse = false;
-          lendingStatus1.secondsLeftOnLoan = 10;
+          lendingStatus1.secondsLeftOnLoan = secondsLeftOnLoan;
           lendingStatus1.browsingExpired = false;
+
+          const expireDate = new Date(
+            new Date().getTime() + iaBookActions.loanRenewTimeConfig.loanTotalTime * 1000
+          );
+          try {
+            // set a value
+            await localCache.set({
+              key: `${identifier}-loanTime`,
+              value: expireDate,
+              ttl: Number(iaBookActions.loanRenewTimeConfig.loanTotalTime),
+            });
+
+            await localCache.delete(`${identifier}-pageChangedTime`);
+          } catch (error) {}
+          
         } else if(e.target.value === 'browsingExpired') {
           lendingStatus1.user_has_browsed = true;
           lendingStatus1.available_to_browse = false;
@@ -222,9 +253,37 @@
           lendingStatus1.user_has_browsed = false;
         }
 
-        let lending = {...defaultLendingStatus, ...lendingStatus1};
-        iaBookActions.lendingStatus = lending;
+        // wait for a while
+        setTimeout(() => {
+          let lending = {...defaultLendingStatus, ...lendingStatus1};
+          iaBookActions.lendingStatus = lending;
+        }, 10);
       });
+    });
+
+    document.querySelector('#show_warning_modal').addEventListener('click', async () => {
+      if (!iaBookActions.lendingStatus.user_has_browsed) {
+        const newLendingStatus = { ...iaBookActions.lendingStatus, user_has_browsed: true };
+        iaBookActions.lendingStatus = newLendingStatus;
+        await iaBookActions.updateComplete;
+      }
+
+      iaBookActions.showWarningModal();
+
+      if (iaBookActions.lendingStatus.user_has_browsed) {
+        iaBookActions.showWarningModal();
+      }
+    });
+
+    document.querySelector('#show_expired_modal').addEventListener('click', async () => {
+      if (!iaBookActions.lendingStatus.user_has_browsed) {
+        const newLendingStatus = { ...iaBookActions.lendingStatus, user_has_browsed: true };
+        iaBookActions.lendingStatus = newLendingStatus;
+        await iaBookActions.updateComplete;
+      }
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      iaBookActions.browseHasExpired();
     });
 
     document.querySelectorAll('.availableToBorrow input[type=radio]').forEach((item) => {
@@ -272,6 +331,23 @@
         iaBookActions.bwbPurchaseUrl = bwbPurchaseUrl;
       })
     });
+
+    document.querySelector('.pageChangedEvent').addEventListener('click', () => {
+      // dispatch event to say book page has flipped
+      document.querySelector('ia-book-actions').dispatchEvent(
+        new CustomEvent('BookReader:userAction', {
+          detail: {},
+          bubbles: true,
+          composed: true,
+        })
+      );
+    })
+
+    // listen for IABookReader:BrowsingHasExpired
+    window.addEventListener('IABookReader:BrowsingHasExpired', () => {
+      console.log('IABookReader:BrowsingHasExpired EVENT FIRED');
+      alert('IABookReader:BrowsingHasExpired EVENT FIRED');
+    });
 </script>
 
   <div>
@@ -284,6 +360,8 @@
             </td>
             <td class="searchParam">
               <label><input type="checkbox" name="search" value="Search Param" />Search Param</label>
+            <td>
+              <button class="pageChangedEvent">Page Change Event</button>
             </td>
           </tr>
         </table>
@@ -308,6 +386,13 @@
               <label><input type="radio" name="browse" value="available_to_browse" />available_to_browse</label>
               <label><input type="radio" name="browse" value="user_has_browsed" />user_has_browsed</label>
               <label><input type="radio" name="browse" value="browsingExpired" />browsingExpired</label>
+              <div>
+                <button id="show_warning_modal">When Browsing (`user_has_browsed`), show Warning Modal</button>
+              </div>
+              <div>
+                <button id="show_expired_modal">While Browsing (`user_has_browsed`), Expire book & show its modal</button>
+                how_expired_modal
+              </div>
             </td>
             <td class="availableToBorrow">
               <label><input type="radio" name="borrow" value="available_to_borrow" />available_to_borrow</label>
@@ -330,5 +415,6 @@
         </table>
     </fieldset>
   </div>
+  <modal-manager></modal-manager>
 </body>
 </html>
