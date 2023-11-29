@@ -1,6 +1,5 @@
 {
   "name": "@internetarchive/ia-book-actions",
-  "version": "0.0.30",
   "version": "1.0.0",
   "description": "Bookreader actions for borrowable book",
   "author": "Internet Archive",
