@@ -207,8 +207,6 @@ export default class ActionsConfig {
       id: 'adminAccess',
       text: 'Admin Access',
       title: 'You have administrative privileges to read this book',
-      url: '?admin=1',
-      target: '_self',
       className: 'danger',
       analyticsEvent: {
         category: this.analyticsCategories.adminAccess,

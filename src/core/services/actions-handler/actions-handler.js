@@ -115,6 +115,11 @@ export default class ActionsHandler extends LitElement {
     this.addEventListener('adminAccess', ({ detail }) => {
       const { category, action } = detail.event;
       this.loanAnanlytics?.sendEvent(category, action, this.identifier);
+
+      // keep existing params and add new one
+      const url = new URL(window.location.href);
+      url.searchParams.append('admin', 1);
+      window.location.search = url.search;
     });
 
     this.addEventListener('exitAdminAccess', ({ detail }) => {
