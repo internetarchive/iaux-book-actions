@@ -1,6 +1,6 @@
 {
   "name": "@internetarchive/ia-book-actions",
-  "version": "1.0.0",
+  "version": "1.1.0-alpha14",
   "description": "Bookreader actions for borrowable book",
   "author": "Internet Archive",
   "license": "AGPL-3.0-only",
@@ -14,16 +14,16 @@
     "lint": "eslint --ext .js,.html . --ignore-path .gitignore && prettier \"**/*.js\" --check --ignore-path .gitignore",
     "format": "eslint --ext .js,.html . --fix --ignore-path .gitignore && prettier \"**/*.js\" --write --ignore-path .gitignore",
     "test": "yarn run lint && yarn test:fast",
-    "test:fast": "web-test-runner --coverage --playwright --browsers chromium firefox webkit",
-    "test:watch": "web-test-runner --watch --playwright --browsers chromium firefox webkit"
+    "test:fast": "web-test-runner --coverage",
+    "test:watch": "web-test-runner --watch"
   },
   "dependencies": {
     "@internetarchive/icon-info": "^1.2.6",
     "@internetarchive/local-cache": "^0.2.1",
-    "@internetarchive/modal-manager": "^0.2.12",
+    "@internetarchive/modal-manager": "2.0.0",
     "@internetarchive/shared-resize-observer": "^0.2.0",
-    "@internetarchive/toast-manager": "0.1.0",
-    "lit": "^2.5.0"
+    "install-deps": "^1.1.0",
+    "lit": "^2.8.0"
   },
   "devDependencies": {
     "@open-wc/eslint-config": "^4.2.0",

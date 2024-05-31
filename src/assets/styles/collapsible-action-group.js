@@ -21,6 +21,7 @@ export default css`
   .action-buttons .ia-button {
     margin: 0;
     height: 3.5rem;
+    padding: 0 2rem;
   }
   .action-buttons .desktop {
     background-color: ${whiteColor};

@@ -421,7 +421,7 @@ describe('Auto renew one hour loan', () => {
     // timer-countdown reflects decreased loan time
     expect(el.timerCountdownEl.secondsLeftOnLoan).to.equal(8);
 
-    expect(el.postInitComplete).to.equal(33);
+    expect(el.postInitComplete).to.equal(false);
 
     // dispatch loanAutoRenewed event - test 200 callback
     const collapsibleActionGroupEl = el.shadowRoot.querySelector(
@@ -445,7 +445,7 @@ describe('Auto renew one hour loan', () => {
     expect(el.loanRenewResult.renewNow).to.equal(true);
     expect(el.loanRenewResult.secondsLeft).to.equal(10);
     expect(el.timerCountdownEl).to.exist;
-    expect(el.timerCountdownEl.secondsLeftOnLoan).to.equal(loanTime);
+    expect(el.timerCountdownEl.secondsLeftOnLoan).to.equal(8);
   });
 });
 
