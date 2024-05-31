@@ -89,7 +89,7 @@ export default class IABookActions extends LitElement {
     this.lendingOptions = {};
     this.borrowType = null; // 'browsed'|'borrowed'
     this.browseTimer = undefined; // timeout
-    this.timerExecutionSeconds = 10;
+    this.timerExecutionSeconds = 30;
 
     /** @deprecated */
     this.toast = undefined;
@@ -132,9 +132,12 @@ export default class IABookActions extends LitElement {
     this.disconnectResizeObserver();
   }
 
+  /**
+   * send log messages to sentry
+   * @param {string} msg
+   */
   sentryCaptureMsg(msg) {
     log(window?.Sentry);
-    log(window?.Sentry?.captureMessage(msg));
     if (window?.Sentry) window?.Sentry?.captureMessage(msg);
   }
 
@@ -291,7 +294,7 @@ export default class IABookActions extends LitElement {
 
     /**
      * auto-renew interval may stale when tab is in background,
-     * when user jump on the books tab,
+     * so when user open that tab again,
      * the [visibilitychange] event can trigger timer to show relavent messages
      */
     document.addEventListener('visibilitychange', async () => {
@@ -711,7 +714,7 @@ export default class IABookActions extends LitElement {
     // if really updated, escape from here
     const resyncd = await this.reSyncTimerIfGoneOff(secondsLeft);
 
-    if (resyncd?.hasSynced) {
+    if (resyncd.hasSynced) {
       secondsLeft = resyncd.whatShouldLeft;
       log('startTimerCountdown --- stale, timer has resyncd', {
         secondsLeft,
@@ -754,8 +757,7 @@ export default class IABookActions extends LitElement {
    * helper function to determine if timer is not in sync properly
    *
    * @param {number} timerSecondsLeft - actual seconds left get from setInterval
-   *
-   * @memberof TimerCountdown
+   * @returns {Object} { hasSynced: [boolean], whatShouldLeft: [number] }
    */
   async reSyncTimerIfGoneOff(timerSecondsLeft) {
     const currentTime = new Date();
@@ -790,10 +792,10 @@ export default class IABookActions extends LitElement {
 
     if (whatIsleft !== whatShouldLeft) {
       log(`reSyncTimerIfGoneOff --- let's re-sync.`);
-
       return { hasSynced: true, whatShouldLeft };
     }
-    return false;
+
+    return { hasSynced: false, whatShouldLeft };
   }
 
   /**
