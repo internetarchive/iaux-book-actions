@@ -76,6 +76,13 @@
       display: inline-grid;
     }
 
+    .action-button button {
+      padding: 6px;
+      cursor: pointer;
+      border: 2px solid #194880;
+      border-radius: 10px;
+    }
+
     body.modal-manager-open {
       overflow: hidden;
     }
@@ -128,10 +135,11 @@
     iaBookActions.modalConfig = modalConfig;
     iaBookActions.lendingBarPostInit = lendingBarPostInit;
     iaBookActions.tokenDelay = 2; // 2 seconds
+    iaBookActions.timerExecutionSeconds = 4 // 4 seconds
     iaBookActions.returnUrl = '';
     iaBookActions.localCache = localCache;
 
-    let loanTotalTime2Min = { loanTotalTime: 65, loanRenewAtLast: 60, pageChangedInLast: 15 };
+    let loanTotalTime2Min = { loanTotalTime: 120, loanRenewAtLast: 80, pageChangedInLast: 15 };
     let loanTotalTime5Min = { loanTotalTime: 300, loanRenewAtLast: 180, pageChangedInLast: 15 };
     let loanTotalTime1Hour = { loanTotalTime: 3600, loanRenewAtLast: 660, pageChangedInLast: 900 };
 
@@ -286,6 +294,19 @@
       iaBookActions.browseHasExpired();
     });
 
+    document.querySelector('#resync_timer').addEventListener('click', async (e) => {
+      if (iaBookActions.lendingStatus.user_has_browsed) {
+        document.querySelector('ia-book-actions').dispatchEvent(
+          new Event('visibilitychange', {
+            detail: {},
+            bubbles: true,
+            composed: true,
+          })
+        );
+      }
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    });
+
     document.querySelectorAll('.availableToBorrow input[type=radio]').forEach((item) => {
       item.addEventListener('click', (e) => {
         if (e.target.value === 'available_to_borrow') {
@@ -346,7 +367,6 @@
     // listen for IABookReader:BrowsingHasExpired
     window.addEventListener('IABookReader:BrowsingHasExpired', () => {
       console.log('IABookReader:BrowsingHasExpired EVENT FIRED');
-      alert('IABookReader:BrowsingHasExpired EVENT FIRED');
     });
 </script>
 
@@ -361,7 +381,7 @@
             <td class="searchParam">
               <label><input type="checkbox" name="search" value="Search Param" />Search Param</label>
             <td>
-              <button class="pageChangedEvent">Page Change Event</button>
+              <label class="ia-button"><button class="pageChangedEvent">Page Change Event</button></label>
             </td>
           </tr>
         </table>
@@ -386,13 +406,6 @@
               <label><input type="radio" name="browse" value="available_to_browse" />available_to_browse</label>
               <label><input type="radio" name="browse" value="user_has_browsed" />user_has_browsed</label>
               <label><input type="radio" name="browse" value="browsingExpired" />browsingExpired</label>
-              <div>
-                <button id="show_warning_modal">When Browsing (`user_has_browsed`), show Warning Modal</button>
-              </div>
-              <div>
-                <button id="show_expired_modal">While Browsing (`user_has_browsed`), Expire book & show its modal</button>
-                how_expired_modal
-              </div>
             </td>
             <td class="availableToBorrow">
               <label><input type="radio" name="borrow" value="available_to_borrow" />available_to_borrow</label>
@@ -410,6 +423,26 @@
               background: #194880;
               color: white;
               font-weight: bold; display: none" name="purchase" value="Reflect" />
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <fieldset style="margin-top: 10px;">
+                <legend style="color: black;">controls for browsed book</legend>
+                  <table aria-hidden="true">
+                    <tbody><tr>
+                      <td class="action-button">
+                        <button id="show_warning_modal">When Browsing (`user_has_browsed`),<br> show Warning Modal</button>
+                      </td>
+                      <td class="action-button">
+                        <button id="show_expired_modal">While Browsing (`user_has_browsed`),<br> Expire book & show its modal</button>
+                      </td>
+                      <td class="action-button">
+                        <button id="resync_timer">While Browsing (`user_has_browsed`),<br> resync timer</button>
+                      </td>
+                    </tr>
+                  </tbody></table>
+              </fieldset>
             </td>
           </tr>
         </table>

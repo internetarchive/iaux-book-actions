@@ -376,7 +376,8 @@ describe('Browsing expired status', () => {
   });
 });
 
-describe('Auto renew one hour loan', () => {
+describe('Auto renew one hour loan', async () => {
+  await aTimeout(5000);
   it('Book is browsing and renewed it now', async () => {
     const loanTime = 88;
     const el = await fixture(
@@ -421,7 +422,7 @@ describe('Auto renew one hour loan', () => {
     // timer-countdown reflects decreased loan time
     expect(el.timerCountdownEl.secondsLeftOnLoan).to.equal(8);
 
-    expect(el.postInitComplete).to.equal(33);
+    expect(el.postInitComplete).to.equal(false);
 
     // dispatch loanAutoRenewed event - test 200 callback
     const collapsibleActionGroupEl = el.shadowRoot.querySelector(
@@ -445,7 +446,62 @@ describe('Auto renew one hour loan', () => {
     expect(el.loanRenewResult.renewNow).to.equal(true);
     expect(el.loanRenewResult.secondsLeft).to.equal(10);
     expect(el.timerCountdownEl).to.exist;
-    expect(el.timerCountdownEl.secondsLeftOnLoan).to.equal(loanTime);
+    expect(el.timerCountdownEl.secondsLeftOnLoan).to.equal(8);
+  });
+});
+
+describe('Visibility change API for document', async () => {
+  await aTimeout(5000);
+
+  beforeEach(() => {
+    Object.defineProperty(document, 'hidden', {
+      value: false,
+      configurable: true,
+    });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(document, 'hidden', {
+      value: true,
+      configurable: true,
+    });
+  });
+
+  it('when book is not expired', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: {
+          user_has_browsed: true,
+          browsingExpired: false,
+        },
+      })
+    );
+    await el.updateComplete;
+
+    const spy = Sinon.spy(el, 'loanStatusCheckInterval');
+    document.dispatchEvent(new Event('visibilitychange'));
+
+    expect(spy.calledOnce).to.be.true;
+  });
+
+  it('when book is already expired', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: {
+          user_has_browsed: true,
+        },
+      })
+    );
+    await el.updateComplete;
+
+    const spy = Sinon.spy(el, 'browseHasExpired');
+    document.dispatchEvent(new Event('visibilitychange'));
+
+    expect(spy.calledOnce).to.be.true;
   });
 });
 

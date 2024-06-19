@@ -4,7 +4,6 @@ import { html, css, LitElement, nothing } from 'lit';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
 import { ModalConfig } from '@internetarchive/modal-manager';
-import { ToastConfig } from '@internetarchive/toast-manager';
 import { LocalCache } from '@internetarchive/local-cache';
 
 import './components/collapsible-action-group.js';
@@ -60,6 +59,7 @@ export default class IABookActions extends LitElement {
       disableActionGroup: { type: Boolean },
       modal: { Object },
       tokenDelay: { type: Number },
+      timerExecutionSeconds: { type: Number },
       localCache: { type: Object },
       loanRenewTimeConfig: { type: Object },
       loanRenewResult: { type: Object },
@@ -80,6 +80,7 @@ export default class IABookActions extends LitElement {
     this.sharedObserver = undefined;
     this.disableActionGroup = false;
     this.tokenDelay = 120; // in seconds
+    this.timerExecutionSeconds = 30;
 
     // private props
     this.postInitComplete = false;
@@ -90,10 +91,6 @@ export default class IABookActions extends LitElement {
     this.lendingOptions = {};
     this.borrowType = null; // 'browsed'|'borrowed'
     this.browseTimer = undefined; // timeout
-    this.timerExecutionSeconds = 30;
-
-    /** @deprecated */
-    this.toast = undefined;
 
     /**
      * when user click on [return the book] button on warning modal
@@ -118,7 +115,7 @@ export default class IABookActions extends LitElement {
      * contains one hour auto-loan-renew response
      *
      * @type {object} loanRenewResult
-     * @property {string} texts - texts messages need to show in toast message
+     * @property {string} texts - texts messages shows in modal
      * @property {boolean} renewNow - key to determine if need to renew now
      * @property {number} secondsLeft - seconds left in active loan
      */
@@ -129,8 +126,17 @@ export default class IABookActions extends LitElement {
     // clear all intervals for lending system
     window?.IALendingIntervals?.clearAll();
 
-    window?.Sentry?.captureMessage(sentryLogs.disconnectedCallback);
+    this.sentryCaptureMsg(sentryLogs.disconnectedCallback);
     this.disconnectResizeObserver();
+  }
+
+  /**
+   * send log messages to sentry
+   * @param {string} msg
+   */
+  sentryCaptureMsg(msg) {
+    log(window?.Sentry);
+    window?.Sentry?.captureMessage(msg);
   }
 
   firstUpdated() {
@@ -224,7 +230,7 @@ export default class IABookActions extends LitElement {
       log('setupLendingToolbarActions > hasExpired --- ');
 
       if (!this.tokenPoller) {
-        window?.Sentry?.captureMessage(sentryLogs.bookWasExpired);
+        this.sentryCaptureMsg(sentryLogs.bookWasExpired);
       }
       window?.IALendingIntervals?.clearAll();
 
@@ -281,6 +287,41 @@ export default class IABookActions extends LitElement {
       log('IABookActions:BookReader:userAction');
       if (this.borrowType === 'browsed') {
         this.autoLoanRenewChecker(true);
+      }
+    });
+
+    /**
+     * auto-renew interval may stale when tab is in background,
+     * so when user open that tab again,
+     * the [visibilitychange] event can trigger timer to show relavent messages
+     */
+    document.addEventListener('visibilitychange', async () => {
+      if (!document.hidden) {
+        log(
+          'visibilitychange event execute:------------------ ',
+          new Date().getMinutes(),
+          new Date().getSeconds(),
+          this.borrowType
+        );
+
+        if (
+          this.borrowType === 'browsed' &&
+          this.lendingStatus.browsingExpired === false
+        ) {
+          const loanTime = await this.localCache.get(
+            `${this.identifier}-loanTime`
+          );
+
+          // number of seconds left in current loan
+          const secondsLeft = Math.round((loanTime - new Date()) / 1000);
+
+          if (secondsLeft >= this.timerExecutionSeconds) {
+            this.loanStatusCheckInterval(Number(secondsLeft));
+          } else {
+            this.browseHasExpired();
+            this.disconnectedCallback();
+          }
+        }
       }
     });
   }
@@ -463,61 +504,6 @@ export default class IABookActions extends LitElement {
   }
 
   /**
-   * @deprecated
-   * create / select the toast-template component on DOM
-   *
-   * @memberof IABookActions
-   */
-  async useToastManager() {
-    if (!this.toast) {
-      this.toast = this.shadowRoot.querySelector('toast-template');
-
-      if (!this.toast) this.toast = document.createElement('toast-template');
-    }
-
-    await this.shadowRoot.appendChild(this.toast);
-  }
-
-  /**
-   * @deprecated
-   * close/hide toast message
-   */
-  async closeToastManager() {
-    this.toast = this.shadowRoot.querySelector('toast-template');
-    this.toast?.remove();
-  }
-
-  /**
-   * @deprecated
-   * Show toast messages on some specific loan renew features. e.g.
-   * - show message when book is auto renewed
-   * - show message when book is expired
-   * - show message having remaining time when book is about to auto returned
-   */
-  async showToastMessage() {
-    await this.useToastManager();
-
-    // if secondsLeft < 60, consider it 1 minute
-    let { secondsLeft } = this.loanRenewResult;
-    if (secondsLeft === undefined) {
-      secondsLeft = this.lendingStatus.secondsLeftOnLoan;
-    } else {
-      secondsLeft = secondsLeft > 60 ? secondsLeft : 60;
-    }
-
-    const config = new ToastConfig();
-    config.dismisOnClick = true;
-    config.texts = this.loanRenewHelper?.getMessageTexts(
-      this.loanRenewResult.texts,
-      secondsLeft
-    );
-
-    this.toast?.showToast({
-      config,
-    });
-  }
-
-  /**
    * Execute when loan is expired
    */
   async browseHasExpired() {
@@ -542,7 +528,7 @@ export default class IABookActions extends LitElement {
 
     await this.showExpiredModal();
 
-    window?.Sentry?.captureMessage(sentryLogs.browseHasExpired);
+    this.sentryCaptureMsg(sentryLogs.browseHasExpired);
   }
 
   async startBrowseTimer() {
@@ -645,7 +631,10 @@ export default class IABookActions extends LitElement {
     if (this.loanRenewResult.renewNow) {
       // Now, let's reset loan duration & this.lendingStatus
       const loanTime = await this.localCache.get(`${this.identifier}-loanTime`);
-      const secondsLeft = Math.round((loanTime - new Date()) / 1000); // different in seconds
+
+      // number of seconds left in current loan
+      const secondsLeft = Math.round((loanTime - new Date()) / 1000);
+      log(loanTime, secondsLeft);
 
       log('IABookActions: handleLoanAutoRenewed --- ', {
         ajaxResponse: detail?.data,
@@ -665,7 +654,7 @@ export default class IABookActions extends LitElement {
       this.modal?.closeModal();
       this.modal.removeAttribute('id');
       this.modal.customModalContent = nothing;
-      window?.Sentry?.captureMessage(sentryLogs.bookHasRenewed);
+      this.sentryCaptureMsg(sentryLogs.bookHasRenewed);
     }
   }
 
@@ -677,55 +666,77 @@ export default class IABookActions extends LitElement {
   startTimerCountdown() {
     window?.IALendingIntervals?.clearTimerCountdown();
 
-    let secondsLeft = Number(this.lendingStatus.secondsLeftOnLoan);
+    const secondsLeft = Number(this.lendingStatus.secondsLeftOnLoan);
     this.timeWhenTimerStart = new Date();
 
     window.IALendingIntervals.timerCountdown = setInterval(async () => {
-      secondsLeft -= this.timerExecutionSeconds;
-      secondsLeft = Math.round(secondsLeft); // round number
+      // interval execution block
+      await this.loanStatusCheckInterval(secondsLeft);
+    }, this.timerExecutionSeconds * 1000);
+  }
 
-      // re-sync timer if gone off because of background window
-      // side effect: updates this.lendingStatus & kicks off lifecycle,
-      // if really updated, escape from here
-      const resync = await this.reSyncTimerIfGoneOff(secondsLeft);
+  /**
+   * setInterval execution function do following things
+   * - if setInterval timer gone off, let's resync
+   * - loan-renew attempt to renew the loan OR show relavant message
+   * - if loan has expired, clear interval timers
+   *
+   * @param {Number} secondsLeftOnLoan
+   */
+  async loanStatusCheckInterval(secondsLeftOnLoan) {
+    let secondsLeft = secondsLeftOnLoan;
+    secondsLeft -= this.timerExecutionSeconds;
+    secondsLeft = Math.round(secondsLeft); // round number
 
-      if (resync) {
-        log('startTimerCountdown --- stale, timer has resyncd', {
-          secondsLeft,
-        });
-        return;
-      }
+    // re-sync timer if gone off because of background window
+    // side effect: updates this.lendingStatus & kicks off lifecycle,
+    // if really updated, escape from here
+    const resyncd = await this.reSyncTimerIfGoneOff(secondsLeft);
 
-      log('startTimerCountdown --- countdown still valid. continue...', {
-        resync,
+    if (resyncd.hasSynced) {
+      secondsLeft = resyncd.whatShouldLeft;
+      log('startTimerCountdown --- stale, timer has resyncd', {
+        secondsLeft,
+      });
+    }
+
+    log(
+      'startTimerCountdown --- countdown still valid. continue...',
+      {
+        resyncd,
         secondsLeft,
         loanRenewAtLast: this.loanRenewTimeConfig.loanRenewAtLast,
-      });
+      },
+      'time: ',
+      new Date().getMinutes(),
+      ':',
+      new Date().getSeconds(),
+      ', timerDelay: ',
+      this.timerExecutionSeconds
+    );
 
-      /**
-       * execute from last 10th minute to 0th minute
-       * - 10th - to check if user has viewed
-       * - till 0th - to show warning msg with remaining time to auto expired
-       * @see IABookActions::bindLoanRenewEvents
-       */
-      if (secondsLeft <= this.loanRenewTimeConfig.loanRenewAtLast) {
-        await this.loanRenewAttempt(secondsLeft);
-      }
+    /**
+     * execute from last 10th minutes to 0th minute
+     * - 10th - to check if user has viewed
+     * - till 0th - to show warning msg with remaining time to auto expired
+     * @see IABookActions::bindLoanRenewEvents
+     */
+    if (secondsLeft <= this.loanRenewTimeConfig.loanRenewAtLast) {
+      await this.loanRenewAttempt(secondsLeft);
+    }
 
-      // clear interval in secondsLeft if less
-      if (secondsLeft <= this.timerExecutionSeconds) {
-        this.disconnectedCallback();
-        window?.Sentry?.captureMessage(sentryLogs.clearOneHourTimer);
-      }
-    }, this.timerExecutionSeconds * 1000);
+    // clear interval in secondsLeft if less
+    if (secondsLeft <= this.timerExecutionSeconds) {
+      this.disconnectedCallback();
+      this.sentryCaptureMsg(sentryLogs.clearOneHourTimer);
+    }
   }
 
   /**
    * helper function to determine if timer is not in sync properly
    *
    * @param {number} timerSecondsLeft - actual seconds left get from setInterval
-   *
-   * @memberof TimerCountdown
+   * @returns {Object} { hasSynced: [boolean], whatShouldLeft: [number] }
    */
   async reSyncTimerIfGoneOff(timerSecondsLeft) {
     const currentTime = new Date();
@@ -760,10 +771,10 @@ export default class IABookActions extends LitElement {
 
     if (whatIsleft !== whatShouldLeft) {
       log(`reSyncTimerIfGoneOff --- let's re-sync.`);
-
-      return true;
+      return { hasSynced: true, whatShouldLeft };
     }
-    return false;
+
+    return { hasSynced: false, whatShouldLeft };
   }
 
   /**
@@ -981,12 +992,6 @@ export default class IABookActions extends LitElement {
         align-items: center;
         justify-content: center;
         flex-wrap: wrap;
-      }
-
-      toast-template {
-        --toastTopMargin: 80px;
-        --toastBGColor: #333;
-        --toastFontColor: #fff;
       }
     `;
   }
