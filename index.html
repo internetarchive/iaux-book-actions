@@ -139,11 +139,27 @@
     iaBookActions.returnUrl = '';
     iaBookActions.localCache = localCache;
 
-    let loanTotalTime2Min = { loanTotalTime: 70, loanRenewAtLast: 58, pageChangedInLast: 15 };
-    let loanTotalTime5Min = { loanTotalTime: 300, loanRenewAtLast: 180, pageChangedInLast: 15 };
+    let loanTotalTime2Min = { loanTotalTime: 120, loanRenewAtLast: 80, pageChangedInLast: 30 };
+    let loanTotalTime5Min = { loanTotalTime: 300, loanRenewAtLast: 240, pageChangedInLast: 60 };
+    let loanTotalTime10Min = { loanTotalTime: 600, loanRenewAtLast: 480, pageChangedInLast: 120 };
+    let loanTotalTime30Min = { loanTotalTime: 1800, loanRenewAtLast: 1500, pageChangedInLast: 600 };
     let loanTotalTime1Hour = { loanTotalTime: 3600, loanRenewAtLast: 660, pageChangedInLast: 900 };
 
-    iaBookActions.loanRenewTimeConfig = loanTotalTime2Min;
+    let params = new URLSearchParams(document.location.search);
+    switch (params.get("timer")) {
+      case '5':
+        iaBookActions.loanRenewTimeConfig = loanTotalTime5Min;
+        break;
+      case '10':
+        iaBookActions.loanRenewTimeConfig = loanTotalTime10Min;
+        break;
+      case '30':
+        iaBookActions.loanRenewTimeConfig = loanTotalTime30Min;
+        break;
+      default:
+        iaBookActions.loanRenewTimeConfig = loanTotalTime2Min;
+        break;
+    }
 
     let lendingStatus1 = iaBookActions.lendingStatus;
     let secondsLeftOnLoan = iaBookActions.loanRenewTimeConfig.loanTotalTime;
