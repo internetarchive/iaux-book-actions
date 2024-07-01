@@ -57,7 +57,8 @@ export default class TimerCountdown extends LitElement {
         }}
         role="timer"
       >
-        <span>${this.minutesLeftOnLoan} - ${Number(this.minutesLeftOnLoan) * 60}</span>
+        <span>${this.minutesLeftOnLoan} - </span>
+        <span class="second">${Number(this.secondsLeftOnLoan)}</span>
         <span class="sr-only">${this.remainingTime} left</span>
       </button>
     `;
