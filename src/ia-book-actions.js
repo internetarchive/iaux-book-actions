@@ -671,8 +671,10 @@ export default class IABookActions extends LitElement {
     const secondsLeft = Number(this.lendingStatus.secondsLeftOnLoan);
 
     this.timeWhenTimerStart = new Date();
+    log(typeof(this.timeWhenTimerStart.getFullYear()))
     // sometimes new Date() return 1970, so recall function
-    if (this.timeWhenTimerStart.getFullYear() === '1970') {
+    if (this.timeWhenTimerStart.getFullYear() === 1970) {
+      log('timer is not set properly!!!')
       await this.startTimerCountdown();
       return;
     }
