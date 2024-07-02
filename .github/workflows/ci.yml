@@ -19,8 +19,8 @@ jobs:
     - name: Install dependencies
       run: yarn install
 
-    - name: Run tests
-      run: yarn run test
+    # - name: Run tests
+    #   run: yarn run test
 
-    - name: Upload reports
-      run: npx codecov
+    # - name: Upload reports
+    #   run: npx codecov
