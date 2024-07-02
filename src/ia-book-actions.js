@@ -91,6 +91,7 @@ export default class IABookActions extends LitElement {
     this.lendingOptions = {};
     this.borrowType = null; // 'browsed'|'borrowed'
     this.browseTimer = undefined; // timeout
+    this.timeWhenTimerStart = undefined;
 
     /**
      * when user click on [return the book] button on warning modal
@@ -316,6 +317,7 @@ export default class IABookActions extends LitElement {
           const secondsLeft = Math.round((loanTime - new Date()) / 1000);
 
           if (secondsLeft >= this.timerExecutionSeconds) {
+            log('another way-----');
             this.loanStatusCheckInterval(Number(secondsLeft));
           } else {
             this.browseHasExpired();
@@ -663,11 +665,21 @@ export default class IABookActions extends LitElement {
    *
    * @memberof IABookActions
    */
-  startTimerCountdown() {
+  async startTimerCountdown() {
     window?.IALendingIntervals?.clearTimerCountdown();
 
     const secondsLeft = Number(this.lendingStatus.secondsLeftOnLoan);
+
     this.timeWhenTimerStart = new Date();
+    log(typeof(this.timeWhenTimerStart.getFullYear()))
+    // sometimes new Date() return 1970, so recall function
+    if (this.timeWhenTimerStart.getFullYear() === 1970) {
+      log('timer is not set properly!!!')
+      await this.startTimerCountdown();
+      return;
+    }
+
+    log('one way--------');
 
     window.IALendingIntervals.timerCountdown = setInterval(async () => {
       // interval execution block
@@ -742,11 +754,19 @@ export default class IABookActions extends LitElement {
     const currentTime = new Date();
 
     // current time - loan time
-    const diffInSeconds =
-      currentTime.getTime() / 1000 - this.timeWhenTimerStart.getTime() / 1000;
+    const diffInSeconds = currentTime.getTime() / 1000 -
+    (await this.timeWhenTimerStart.getTime()) / 1000;
 
     const secondsShouldLeft =
       this.lendingStatus.secondsLeftOnLoan - diffInSeconds;
+
+    log(
+      `${
+        this.lendingStatus.secondsLeftOnLoan
+      } -- ${diffInSeconds} -- ${currentTime.getTime()} -- ${
+        this.timeWhenTimerStart
+      } -- ${this.timeWhenTimerStart.getTime()}`
+    );
 
     // convert in minutes
     const whatIsleft = Math.round(timerSecondsLeft);
