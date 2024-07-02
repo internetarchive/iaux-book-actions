@@ -91,6 +91,7 @@ export default class IABookActions extends LitElement {
     this.lendingOptions = {};
     this.borrowType = null; // 'browsed'|'borrowed'
     this.browseTimer = undefined; // timeout
+    this.timeWhenTimerStart = undefined;
 
     /**
      * when user click on [return the book] button on warning modal
