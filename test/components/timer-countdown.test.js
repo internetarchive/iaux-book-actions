@@ -13,7 +13,9 @@ const container = ({
     .loanRenewAtLast=${loanRenewAtLast}
   ></timer-countdown>`;
 
-describe('<timer-countdown>', () => {
+describe('<timer-countdown>', async () => {
+  await aTimeout(5000);
+
   it('timer interval is undefined when loan is expired', async () => {
     const el = await fixture(
       container({
@@ -36,7 +38,6 @@ describe('<timer-countdown>', () => {
       })
     );
 
-    await aTimeout(1900);
     await el.updateComplete;
 
     expect(el.secondsLeftOnLoan).to.equal(2);
