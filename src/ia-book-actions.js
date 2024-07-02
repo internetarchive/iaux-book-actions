@@ -752,11 +752,9 @@ export default class IABookActions extends LitElement {
       this.lendingStatus.secondsLeftOnLoan - diffInSeconds;
 
     log(
-      `new-log ---  ${
+      `${
         this.lendingStatus.secondsLeftOnLoan
-      } -- ${diffInSeconds} -- ${currentTime.getTime()} -- ${
-        this.timeWhenTimerStart
-      } -- ${this.timeWhenTimerStart.getTime()}`
+      } -- ${diffInSeconds} -- ${currentTime.getTime()} -- ${this.timeWhenTimerStart.getTime()}`
     );
 
     // convert in minutes
