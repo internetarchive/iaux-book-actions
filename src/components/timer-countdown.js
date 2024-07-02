@@ -47,7 +47,7 @@ export default class TimerCountdown extends LitElement {
   }
 
   render() {
-    const viewClass = this.displayTime ? 'view' : 'hide';
+    const viewClass = this.displayTime ? 'view' : 'hide1';
     return html`
       <button
         id="timer-counter"
@@ -57,7 +57,8 @@ export default class TimerCountdown extends LitElement {
         }}
         role="timer"
       >
-        <span>${this.minutesLeftOnLoan}</span>
+        <span>${this.minutesLeftOnLoan} - </span>
+        <span class="second">${Number(this.secondsLeftOnLoan)}</span>
         <span class="sr-only">${this.remainingTime} left</span>
       </button>
     `;

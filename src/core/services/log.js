@@ -8,7 +8,8 @@ const log =
   location.host.match(/^(www|cat)-[a-z0-9]+\.archive\.org$/) ||
   location.host.match(/\.code\.archive\.org$/) ||
   location.host.match(/\.dev\.archive\.org$/) ||
-  location.host.match(/^ia-petabox-/)
+  location.host.match(/^ia-petabox-/) ||
+  location.host.match(/^internetarchive/)
     ? // eslint-disable-next-line no-console
       console.log.bind(console) // convenient, no?  Stateless function
     : () => {};
