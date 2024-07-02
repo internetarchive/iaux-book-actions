@@ -316,7 +316,7 @@ export default class IABookActions extends LitElement {
           const secondsLeft = Math.round((loanTime - new Date()) / 1000);
 
           if (secondsLeft >= this.timerExecutionSeconds) {
-            log('another way--------')
+            log('another way--------');
             this.loanStatusCheckInterval(Number(secondsLeft));
           } else {
             this.browseHasExpired();
@@ -669,7 +669,7 @@ export default class IABookActions extends LitElement {
 
     const secondsLeft = Number(this.lendingStatus.secondsLeftOnLoan);
     this.timeWhenTimerStart = new Date();
-    log('one way--------')
+    log('one way--------');
 
     window.IALendingIntervals.timerCountdown = setInterval(async () => {
       // interval execution block
@@ -750,7 +750,11 @@ export default class IABookActions extends LitElement {
     const secondsShouldLeft =
       this.lendingStatus.secondsLeftOnLoan - diffInSeconds;
 
-    log(`${this.lendingStatus.secondsLeftOnLoan} -- ${diffInSeconds} -- ${currentTime.getTime()} -- ${this.timeWhenTimerStart.getTime()}`)
+    log(
+      `${
+        this.lendingStatus.secondsLeftOnLoan
+      } -- ${diffInSeconds} -- ${currentTime.getTime()} -- ${this.timeWhenTimerStart.getTime()}`
+    );
 
     // convert in minutes
     const whatIsleft = Math.round(timerSecondsLeft);
