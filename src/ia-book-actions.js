@@ -665,11 +665,18 @@ export default class IABookActions extends LitElement {
    *
    * @memberof IABookActions
    */
-  startTimerCountdown() {
+  async startTimerCountdown() {
     window?.IALendingIntervals?.clearTimerCountdown();
 
     const secondsLeft = Number(this.lendingStatus.secondsLeftOnLoan);
+
     this.timeWhenTimerStart = new Date();
+    // sometimes new Date() return 1970, so recall function
+    if (this.timeWhenTimerStart.getFullYear() === '1970') {
+      await this.startTimerCountdown();
+      return;
+    }
+
     log('one way--------');
 
     window.IALendingIntervals.timerCountdown = setInterval(async () => {
