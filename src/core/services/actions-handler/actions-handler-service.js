@@ -37,7 +37,7 @@ export default async function ActionsHandlerService(options) {
   let isTest = false;
   if (testHostname.includes(location.hostname)) {
     isTest = true;
-    baseHost = 'http://localhost:8001';
+    baseHost = location.href;
   }
 
   let formData = new FormData();
