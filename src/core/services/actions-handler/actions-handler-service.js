@@ -32,7 +32,7 @@ export default async function ActionsHandlerService(options) {
     location?.href?.indexOf('?error=true') !== -1 &&
     location?.hostname !== 'archive.org';
 
-  if (location?.pathname === '/demo/') baseHost = `/demo/`;
+  if (location?.pathname === '/demo/' || location?.pathname === '/iaux-book-actions/pr/pr-73/') baseHost = `/demo/`;
 
   let formData = new FormData();
   formData.append('action', option.action);
