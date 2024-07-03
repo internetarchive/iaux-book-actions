@@ -32,7 +32,13 @@ export default async function ActionsHandlerService(options) {
     location?.href?.indexOf('?error=true') !== -1 &&
     location?.hostname !== 'archive.org';
 
-  if (location?.pathname === '/demo/' || location?.pathname === '/iaux-book-actions/pr/pr-73/') baseHost = `/demo/`;
+  // if (location?.host.includes('/'))
+  const testHostname = ['localhost', 'internetarchive.github.io'];
+  let isTest = false;
+  if (testHostname.includes(location.hostname)) {
+    isTest = true;
+    baseHost = 'http://localhost:8001';
+  }
 
   let formData = new FormData();
   formData.append('action', option.action);
@@ -51,8 +57,8 @@ export default async function ActionsHandlerService(options) {
           };
         }
 
-        // return success response for /demo/ server...
-        if (baseHost == '/demo/1' || baseHost == '/demo/') {
+        // return success response for localhost server...
+        if (isTest) {
           if (
             option?.action == 'renew_loan' ||
             option?.action == 'return_loan'
