@@ -749,13 +749,11 @@ export default class IABookActions extends LitElement {
     const secondsShouldLeft =
       this.lendingStatus.secondsLeftOnLoan - diffInSeconds;
 
-    log(
-      `${
-        this.lendingStatus.secondsLeftOnLoan
-      } -- ${diffInSeconds} -- ${currentTime.getTime()} -- ${
-        this.timeWhenTimerStart
-      } -- ${this.timeWhenTimerStart.getTime()}`
-    );
+    log(currentTime)
+    log(diffInSeconds)
+    log(secondsShouldLeft)
+    log(this.lendingStatus.secondsLeftOnLoan)
+    log(this.timeWhenTimerStart)
 
     // convert in minutes
     const whatIsleft = Math.round(timerSecondsLeft);
