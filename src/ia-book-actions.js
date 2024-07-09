@@ -743,17 +743,18 @@ export default class IABookActions extends LitElement {
     const currentTime = new Date();
 
     // current time - loan time
-    const diffInSeconds = currentTime.getTime() / 1000 -
-    (await this.timeWhenTimerStart.getTime()) / 1000;
+    const diffInSeconds = async () => {
+      return currentTime.getTime() / 1000 - (await this.timeWhenTimerStart.getTime()) / 1000;
+    }
 
     const secondsShouldLeft =
-      this.lendingStatus.secondsLeftOnLoan - diffInSeconds;
+      this.lendingStatus.secondsLeftOnLoan - (diffInSeconds/1000);
 
-    log(currentTime)
-    log(diffInSeconds)
-    log(secondsShouldLeft)
-    log(this.lendingStatus.secondsLeftOnLoan)
-    log(this.timeWhenTimerStart)
+    log('currentTime: ', currentTime)
+    log('this.timeWhenTimerStart: ', this.timeWhenTimerStart)
+    log('diffInSeconds: ', diffInSeconds)
+    log('secondsShouldLeft: ', secondsShouldLeft)
+    log('this.lendingStatus.secondsLeftOnLoan: ', this.lendingStatus.secondsLeftOnLoan)
 
     // convert in minutes
     const whatIsleft = Math.round(timerSecondsLeft);
