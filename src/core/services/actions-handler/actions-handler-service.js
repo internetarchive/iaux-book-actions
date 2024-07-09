@@ -32,7 +32,6 @@ export default async function ActionsHandlerService(options) {
     location?.href?.indexOf('?error=true') !== -1 &&
     location?.hostname !== 'archive.org';
 
-  // if (location?.host.includes('/'))
   const testHostname = ['localhost', 'internetarchive.github.io'];
   let isTest = false;
   if (testHostname.includes(location.hostname)) {
