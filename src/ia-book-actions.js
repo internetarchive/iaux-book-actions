@@ -91,6 +91,7 @@ export default class IABookActions extends LitElement {
     this.lendingOptions = {};
     this.borrowType = null; // 'browsed'|'borrowed'
     this.browseTimer = undefined; // timeout
+    this.timeWhenTimerStart = undefined;
 
     /**
      * when user click on [return the book] button on warning modal
@@ -663,7 +664,7 @@ export default class IABookActions extends LitElement {
    *
    * @memberof IABookActions
    */
-  startTimerCountdown() {
+  async startTimerCountdown() {
     window?.IALendingIntervals?.clearTimerCountdown();
 
     const secondsLeft = Number(this.lendingStatus.secondsLeftOnLoan);
@@ -747,6 +748,15 @@ export default class IABookActions extends LitElement {
 
     const secondsShouldLeft =
       this.lendingStatus.secondsLeftOnLoan - diffInSeconds;
+
+    log('currentTime: ', currentTime);
+    log('timeWhenTimerStart: ', this.timeWhenTimerStart);
+    log('diffInSeconds: ', diffInSeconds);
+    log('secondsShouldLeft: ', secondsShouldLeft);
+    log(
+      'this.lendingStatus.secondsLeftOnLoan: ',
+      this.lendingStatus.secondsLeftOnLoan
+    );
 
     // convert in minutes
     const whatIsleft = Math.round(timerSecondsLeft);
