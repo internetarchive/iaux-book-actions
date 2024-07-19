@@ -1043,7 +1043,6 @@ PERFORMANCE OF THIS SOFTWARE.
       <div
         id="disabled-book-action-bar-custom-buttons"
         style="display:flex;justify-content:center; opacity:0.8; pointer-events:none;"
-        data-testid="warning-model-actions">
       >
         <button
           disabled
@@ -1068,7 +1067,7 @@ PERFORMANCE OF THIS SOFTWARE.
               ></ia-activity-indicator>`:"Return the book"}
         </button>
       </div> `;await((r=this.modal)==null?void 0:r.showModal({config:i,customModalContent:s}))}async patronWantsToRenewBook(){this.showWarningDisabledModal(),this.loanRenewResult={texts:"",renewNow:!0}}async patronWantsToReturnBook(){this.showWarningDisabledModal("returnBook"),document.querySelector("ia-book-actions").disableActionGroup=!0,this.returnNow=!0}async showExpiredModal(){var i;const e=new G({headline:"",showCloseButton:!1,closeOnBackdropClick:!1,headerColor:"#194880",message:"This book has been returned due to inactivity."}),t=m`<br />
-      <div style="text-align: center" data-testid="expire-model-actions">
+      <div style="text-align: center">
         <button
           style="${k.iaButton} ${k.renew}"
           @click=${()=>{L.goToUrl(this.returnUrl,!0)}}
