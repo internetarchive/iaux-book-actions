@@ -94,6 +94,7 @@ export class LoanRenewHelper {
       this.result.texts = '';
       this.result.renewNow = true; // viewed in last time frame
     }
+    log('this.result', this.result);
 
     return this.result;
   }
