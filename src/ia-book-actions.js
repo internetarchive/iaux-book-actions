@@ -433,7 +433,6 @@ export default class IABookActions extends LitElement {
       <div
         id="disabled-book-action-bar-custom-buttons"
         style="display:flex;justify-content:center; opacity:0.8; pointer-events:none;"
-        data-testid="warning-model-actions">
       >
         <button
           disabled
@@ -491,7 +490,7 @@ export default class IABookActions extends LitElement {
     });
 
     const customModalContent = html`<br />
-      <div style="text-align: center" data-testid="expire-model-actions">
+      <div style="text-align: center">
         <button
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
           @click=${() => {
