@@ -43,20 +43,11 @@ export class InfoIcon extends LitElement {
         vertical-align: middle;
         --iconFillColor: white;
       }
-      .more-info-icon {
-        margin-left: 10px;
-      }
       .more-info-icon img {
         width: 24px;
         height: 24px;
         vertical-align: middle;
         background: white;
-      }
-      .more-info-icon.mobile {
-        position: absolute;
-        top: 4px;
-        right: 10px;
-        margin-top: 15px;
       }
       .hidden {
         display: none;

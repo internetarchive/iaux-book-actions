@@ -62,7 +62,7 @@ export function setItem(sKey, sValue, vEnd, sPath, sDomain, bSecure) {
 
 /**
  * BROKEN Remove specific key's value from cookie
- * @fixme hasItem isn't even implemented! This will always error.
+ *
  * @param {string} sKey cookie name
  * @param {string} [sPath] path of current item
  * @param {string} [sDomain]
@@ -80,4 +80,26 @@ export function removeItem(sKey, sPath, sDomain) {
     (sPath ? `; path=${sPath}` : '');
 
   return true;
+}
+
+/**
+ * determine if a specific cookie is exist
+ *
+ * @param {string} sKey cookie name
+ *
+ * @returns {boolean}
+ */
+export function hasItem(sKey) {
+  const reCNameAllowed = /^(?:expires|max\-age|path|domain|secure|samesite|httponly)$/i;
+
+  // eslint-disable-next-line
+  if (!sKey || reCNameAllowed.test(sKey)) {
+    return false;
+  }
+
+  return new RegExp(
+    '(?:^|;\\s*)' +
+      encodeURIComponent(sKey).replace(/[\-\.\+\*]/g, '\\$&') +
+      '\\s*\\='
+  ).test(document.cookie);
 }

@@ -99,11 +99,11 @@
   <script type="module">
     /* eslint-disable */
 
-    import '../src/ia-book-actions.js';
+    import './src/ia-book-actions.js';
     import {
       defaultLendingStatus,
       canBrowseAndBorrow,
-    } from '../src/assets/data/lending-get-status-service.js';
+    } from './src/assets/data/lending-get-status-service.js';
     import { ModalConfig } from '@internetarchive/modal-manager';
     import { LocalCache } from '@internetarchive/local-cache';
 
@@ -134,16 +134,36 @@
     iaBookActions.bwbPurchaseUrl = '';
     iaBookActions.modalConfig = modalConfig;
     iaBookActions.lendingBarPostInit = lendingBarPostInit;
-    iaBookActions.tokenDelay = 2; // 2 seconds
-    iaBookActions.timerExecutionSeconds = 4 // 4 seconds
+    iaBookActions.tokenDelay = 10; // 2 seconds
+    iaBookActions.timerExecutionSeconds = 3 // 4 seconds
     iaBookActions.returnUrl = '';
     iaBookActions.localCache = localCache;
 
-    let loanTotalTime2Min = { loanTotalTime: 120, loanRenewAtLast: 80, pageChangedInLast: 15 };
-    let loanTotalTime5Min = { loanTotalTime: 300, loanRenewAtLast: 180, pageChangedInLast: 15 };
+    let loanTotalTime2Min = { loanTotalTime: 120, loanRenewAtLast: 110, pageChangedInLast: 30 };
+    let loanTotalTime5Min = { loanTotalTime: 300, loanRenewAtLast: 240, pageChangedInLast: 60 };
+    let loanTotalTime10Min = { loanTotalTime: 600, loanRenewAtLast: 480, pageChangedInLast: 120 };
+    let loanTotalTime30Min = { loanTotalTime: 1800, loanRenewAtLast: 1500, pageChangedInLast: 600 };
     let loanTotalTime1Hour = { loanTotalTime: 3600, loanRenewAtLast: 660, pageChangedInLast: 900 };
 
     iaBookActions.loanRenewTimeConfig = loanTotalTime2Min;
+    let params = new URLSearchParams(document.location.search);
+    switch (params.get("timer")) {
+      case '5':
+        iaBookActions.loanRenewTimeConfig = loanTotalTime5Min;
+        break;
+      case '10':
+        iaBookActions.loanRenewTimeConfig = loanTotalTime10Min;
+        break;
+      case '30':
+        iaBookActions.loanRenewTimeConfig = loanTotalTime30Min;
+        break;
+      case '60':
+        iaBookActions.loanRenewTimeConfig = loanTotalTime1Hour;
+        break;
+      default:
+        iaBookActions.loanRenewTimeConfig = loanTotalTime2Min;
+        break;
+    }
 
     let lendingStatus1 = iaBookActions.lendingStatus;
     let secondsLeftOnLoan = iaBookActions.loanRenewTimeConfig.loanTotalTime;
@@ -368,7 +388,7 @@
     window.addEventListener('IABookReader:BrowsingHasExpired', () => {
       console.log('IABookReader:BrowsingHasExpired EVENT FIRED');
     });
-</script>
+  </script>
 
   <div>
     <fieldset>

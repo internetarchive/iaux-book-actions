@@ -19,7 +19,7 @@ import ActionsConfig from './actions-config.js';
  *
  * Response of this class contain an object as follows:-
  * {
- *   primaryTitle: 'Renewable every hour, pending availability.',
+ *   primaryTitle: '',
  *   primaryActions: [this.actionsConfig.returnBookConfig()],
  *   primaryColor: 'primary',
  *   secondaryActions: [this.actionsConfig.purchaseConfig()],
@@ -40,7 +40,7 @@ import ActionsConfig from './actions-config.js';
  * @enum {string}
  */
 export const bookTitles = {
-  available_1hr: 'Renewable every hour, pending availability.',
+  available_1hr: 'Renews automatically with continued use.',
   available_14d: 'This book can be borrowed for 14 days.',
   available_pd: 'Book available to patrons with print disabilities.',
   available_waitlist: 'A waitlist is available.',
@@ -49,7 +49,7 @@ export const bookTitles = {
   being_borrowed: 'Another patron is using this book. Please check back later.',
   eligible_pd: 'You are eligible for print-disabled access.',
   on_waitlist: 'You are on the waitlist for this book.',
-  session_expired: 'Your loan has expired.',
+  session_expired: 'Renews automatically with continued use.',
   unavailable: 'This book is not available at this time.',
 };
 
@@ -98,7 +98,7 @@ export class GetLendingActions {
     let isBrowsing =
       lendingStatus.user_has_browsed && !lendingStatus.browsingExpired;
     if (isBrowsing) {
-      primaryTitleText = this.getBrowseCountdownTitle();
+      primaryTitleText = bookTitles.available_1hr;
     } else {
       primaryTitleText = `Your loan of this book has ${lendingStatus.daysLeftOnLoan} days left.`;
     }
@@ -251,13 +251,6 @@ export class GetLendingActions {
   borrow1HrAction() {
     const lendingStatus = this.lendingStatus || {};
 
-    const possibleTitles = {
-      one_hour: 'Renewable every hour, pending availability.',
-      session_tryagain:
-        'Another patron is using this book. Please check back later.',
-      session_expired: 'Your loan has expired.',
-    };
-
     // assess borrowable state
     const browsingHasExpired =
       !lendingStatus.available_to_browse && lendingStatus.browsingExpired;
@@ -364,6 +357,8 @@ export class GetLendingActions {
   }
 
   /**
+   * @deprecated
+   *
    * Builds the countdown toolbar title.
    *
    * @return string innerHTML for the dialogOpts title attribute

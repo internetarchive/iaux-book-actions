@@ -1,87 +1,120 @@
 import { LitElement } from 'lit';
 
 import { URLHelper } from '../../config/url-helper.js';
+import { sentryLogs } from '../../config/sentry-events.js';
+import log from '../log.js';
+
 import ActionsHandlerService from './actions-handler-service.js';
+import LoanAnanlytics from '../loan-analytics.js';
 import * as Cookies from '../doc-cookies.js';
 
 /**
  * These are callback functions calling from actions-config.js file.
  *
- * ActionsHandlerService is a function being used to execute
- * APIs based of the request made by user. It consist some parameters are as follows:-
- * 1. identifier: book name.
+ * ActionsHandlerService is a function being used to execute APIs based of the request made by user.
+ *
  */
 
 export default class ActionsHandler extends LitElement {
   constructor() {
     super();
-    this.identifier = '';
-    this.ajaxTimeout = 6000;
-    this.bindEvents();
-    this.returnUrl = '';
-  }
 
-  sendEvent(eventCategory, eventAction) {
-    window?.archive_analytics?.send_event(
-      eventCategory,
-      eventAction,
-      `identifier=${this.identifier}`
-    );
+    /**
+     * wait untill borrow is complete, then refresh the page
+     * @type {number}
+     */
+    this.waitUntillBorrowComplete = 6; // in seconds
+
+    /**
+     * bind events for lending bar
+     * @type {object}
+     */
+    this.loanAnanlytics = new LoanAnanlytics();
+
+    /**
+     * bind events for lending bar
+     * @type {Function}
+     */
+    this.bindEvents();
   }
 
   bindEvents() {
-    this.addEventListener('browseBook', ({ detail }) => {
+    this.addEventListener('browseBook', async () => {
       this.handleBrowseIt();
-      this.setConsecutiveLoanCounts();
-      const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      await this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'browse');
     });
 
-    this.addEventListener('browseBookAgain', ({ detail }) => {
+    this.addEventListener('browseBookAgain', async () => {
       this.handleBrowseIt();
-      this.setConsecutiveLoanCounts('browseAgain');
-      const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      await this.loanAnanlytics?.storeLoanStatsCount(
+        this.identifier,
+        'browseagain'
+      );
+    });
+
+    this.addEventListener('autoRenew', async () => {
+      this.handleLoanRenewNow();
+      await this.loanAnanlytics?.storeLoanStatsCount(
+        this.identifier,
+        'autorenew'
+      );
+    });
+
+    this.addEventListener('autoReturn', async () => {
+      this.handleReturnIt();
+      await this.loanAnanlytics?.storeLoanStatsCount(
+        this.identifier,
+        'autoreturn'
+      );
     });
 
     this.addEventListener('returnNow', ({ detail }) => {
-      this.handleReturnIt();
-      const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      // use loan stats count when 1-hour borrow is active
+      if (detail?.borrowType === 'browse') {
+        this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'return');
+      }
+
+      this.handleReturnIt('returnNow');
+
+      // send these events if 14-day borrow return
+      if (detail?.borrowType === 'borrow') {
+        const { category, action } = detail.event;
+        this.loanAnanlytics?.sendEvent(category, action, this.identifier);
+      }
     });
 
     this.addEventListener('borrowBook', ({ detail }) => {
       this.handleBorrowIt();
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
     });
 
     this.addEventListener('loginAndBorrow', ({ detail }) => {
       this.handleLoginOk();
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
     });
 
     this.addEventListener('leaveWaitlist', ({ detail }) => {
       this.handleRemoveFromWaitingList();
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
     });
 
     this.addEventListener('joinWaitlist', ({ detail }) => {
       this.handleReserveIt();
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
     });
 
     this.addEventListener('purchaseBook', ({ detail }) => {
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
     });
 
     this.addEventListener('adminAccess', ({ detail }) => {
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
 
       // keep existing params and add new one
       const url = new URL(window.location.href);
@@ -91,12 +124,12 @@ export default class ActionsHandler extends LitElement {
 
     this.addEventListener('exitAdminAccess', ({ detail }) => {
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
     });
 
     this.addEventListener('bookTitleBar', ({ detail }) => {
       const { category, action } = detail.event;
-      this.sendEvent(category, action);
+      this.loanAnanlytics?.sendEvent(category, action, this.identifier);
     });
   }
 
@@ -108,6 +141,7 @@ export default class ActionsHandler extends LitElement {
       action,
       identifier: this.identifier,
       success: () => {
+        this.setBrowseTimeSession();
         this.handleReadItNow();
       },
       error: data => {
@@ -116,16 +150,68 @@ export default class ActionsHandler extends LitElement {
     });
   }
 
-  handleReturnIt() {
+  handleLoanRenewNow() {
+    const action = 'renew_loan';
+
+    ActionsHandlerService({
+      action,
+      identifier: this.identifier,
+      success: data => {
+        log('RENEW_LOAN --- ', data, action, data.loan, this.identifier);
+        const activeLoan = data.loan ? data.loan : undefined;
+        const isRenewal = activeLoan.renewal;
+
+        if (activeLoan && isRenewal) {
+          // when loan is renewed, let's reset timer & let everyone know.
+          this.setBrowseTimeSession();
+        } else {
+          log('RENEW_LOAN ERROR --- ', {
+            action,
+            isRenewal,
+            activeLoan,
+            data,
+            id: this.identifier,
+          });
+          window?.Sentry?.captureMessage(
+            `${sentryLogs.bookRenewFailed} - Error: ${JSON.stringify(data)}`
+          );
+          this.dispatchActionError(action, {
+            data,
+            error: true,
+            message: 'Loan renewal failed: no loan active.',
+          });
+        }
+
+        // dispatch outcome of loan renewal
+        this.dispatchEvent(
+          new CustomEvent('loanAutoRenewed', {
+            detail: { action, data: { ...data, loan: activeLoan } },
+          })
+        );
+      },
+      error: data => {
+        this.dispatchActionError(action, data);
+      },
+    });
+  }
+
+  /**
+   * excute function when loan is returning
+   *
+   * @param {string} type - loan return type returnNow|''
+   */
+  handleReturnIt(type = '') {
     const action = 'return_loan';
-    this.dispatchToggleActionGroup();
+
+    if (type === 'returnNow') this.dispatchToggleActionGroup();
 
     ActionsHandlerService({
       action,
       identifier: this.identifier,
       success: () => {
         this.deleteLoanCookies();
-        URLHelper.goToUrl(this.returnUrl, true);
+
+        if (type === 'returnNow') URLHelper.goToUrl(this.returnUrl, true);
       },
       error: data => {
         this.dispatchActionError(action, data);
@@ -192,7 +278,7 @@ export default class ActionsHandler extends LitElement {
    */
   dispatchActionError(action, data = {}) {
     // send LendingServiceError to GA
-    this.sendEvent('LendingServiceError', action);
+    this.loanAnanlytics?.sendEvent('LendingServiceError', action);
 
     this.dispatchEvent(
       new CustomEvent('lendingActionError', {
@@ -240,29 +326,30 @@ export default class ActionsHandler extends LitElement {
     // redirection on details page after 5 seconds because borrowing book takes time to create item creation.
     setTimeout(() => {
       URLHelper.goToUrl(redirectTo, true);
-    }, this.ajaxTimeout);
+    }, this.waitUntillBorrowComplete * 1000);
   }
 
-  // save consecutive loan count for borrow
-  async setConsecutiveLoanCounts(action = '') {
+  /**
+   * set browse time in indexedDB
+   */
+  async setBrowseTimeSession() {
+    // TODO: USE loan info to determine what we have left
     try {
-      let newCount = 1;
-      const storageKey = `loan-count-${this.identifier}`;
-      const existingCount = Cookies.getItem(storageKey);
+      const expireDate = new Date(
+        new Date().getTime() + this.loanTotalTime * 1000
+      );
 
-      // increase browse-count by 1 when you consecutive reading a book.
-      if (action === 'browseAgain' && existingCount !== undefined) {
-        newCount = existingCount ? Number(existingCount) + 1 : 1;
-      }
+      // set a value
+      await this.localCache.set({
+        key: `${this.identifier}-loanTime`,
+        value: expireDate,
+        ttl: Number(this.loanTotalTime),
+      });
 
-      const date = new Date();
-      date.setHours(date.getHours() + 2); // 2 hours
-
-      // set new value
-      Cookies.setItem(storageKey, newCount, date, '/');
+      // delete pageChangedTime when book is auto renew at nth minute
+      await this.localCache.delete(`${this.identifier}-pageChangedTime`);
     } catch (error) {
-      window?.Sentry?.captureException(error);
-      this.sendEvent('Cookies-Error-Actions', error);
+      log(error);
     }
   }
 

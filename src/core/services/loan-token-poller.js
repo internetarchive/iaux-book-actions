@@ -1,5 +1,7 @@
+/* global: window */
 import ActionsHandlerService from './actions-handler/actions-handler-service.js';
-import * as Cookies from './doc-cookies.js';
+import LoanAnanlytics from './loan-analytics.js';
+import { sentryLogs } from '../config/sentry-events.js';
 
 /**
  * This class is used to create loan token for borrowed books
@@ -12,42 +14,25 @@ export class LoanTokenPoller {
     this.borrowType = borrowType;
     this.successCallback = successCallback; // callback function to be called after loan token is created
     this.errorCallback = errorCallback; // callback function to be called after loan token is created
-    this.pollerDelay = pollerDelay; // value in ms (1000 ms = 1 sec)
+    this.pollerDelay = pollerDelay; // value in seconds
 
     this.loanTokenInterval = undefined;
-    this.enableBookAccess();
+
+    /**
+     * loan analytics instance
+     * @see loan-analytics.js
+     */
+    this.loanAnalytics = new LoanAnanlytics();
+
+    this.bookAccessed();
   }
 
-  disconnectedInterval() {
-    clearInterval(this.loanTokenInterval);
-    this.loanTokenInterval = undefined;
-
-    // temporary disabling sentry notice
-    // as message is informational, not critical nor an error.
-    // also, as of 11/28/2022, JS build maps are not working properly on petabox
-    // and as a result, this comment is not properly grouped.
-    // if (window.Sentry) {
-    //   window?.Sentry?.captureMessage('loan token interval cleared');
-    // }
+  disconnectedCallback() {
+    window?.IALendingIntervals?.clearTokenPoller();
   }
 
-  async enableBookAccess() {
-    let consecutiveLoanCounts = 1;
-
+  async bookAccessed() {
     if (this.borrowType) {
-      // send consecutiveLoanCounts for browsed books only.
-      if (this.borrowType === 'browsed') {
-        try {
-          const existingCount = Cookies.getItem(
-            `loan-count-${this.identifier}`
-          );
-          consecutiveLoanCounts = existingCount ?? 1;
-        } catch (error) {
-          window?.Sentry?.captureException(error);
-          this.sendEvent('Cookies-Error-Token', error);
-        }
-      }
-
       // Do an initial token, then set an interval
       this.handleLoanTokenPoller(true);
 
@@ -55,31 +40,22 @@ export class LoanTokenPoller {
       // - we don't want to fetch token on interval
       // - the initial token is enough to set cookies for reading book and readaloud features
       if (this.borrowType !== 'adminBorrowed') {
-        this.loanTokenInterval = setInterval(() => {
+        /**
+         * set interval in window object
+         * @see ia-lending-intervals.js
+         */
+        window.IALendingIntervals.tokenPoller = setInterval(() => {
           this.handleLoanTokenPoller();
-        }, this.pollerDelay);
+        }, this.pollerDelay * 1000);
       }
-
-      // event category and action for browsing book access
-      const category = `${this.borrowType}BookAccess`;
-      const action = `${
-        this.borrowType === 'browsed' ? 'BrowseCounts-' : 'Counts-'
-      }${consecutiveLoanCounts}`;
-
-      this.sendEvent(category, action);
     } else {
-      window?.Sentry?.captureMessage('enableBookAccess error');
-      // if book is not browsed, just clear token polling interval
-      this.disconnectedInterval(); // stop token fetch api
-    }
-  }
+      window?.Sentry?.captureMessage(
+        `${sentryLogs.bookAccessed} - not borrowed`
+      );
 
-  sendEvent(eventCategory, eventAction) {
-    window?.archive_analytics?.send_event(
-      eventCategory,
-      eventAction,
-      `identifier=${this.identifier}`
-    );
+      // if book is not browsed, just clear token polling interval
+      this.disconnectedCallback();
+    }
   }
 
   async handleLoanTokenPoller(isInitial = false) {
@@ -88,14 +64,19 @@ export class LoanTokenPoller {
       identifier: this.identifier,
       action,
       error: data => {
-        window?.Sentry?.captureMessage(
-          'handleLoanTokenPoller error',
-          JSON.stringify(data)
-        );
-        this.disconnectedInterval(); // stop token fetch api
         this.errorCallback({ detail: { action, data } });
+
+        // send error to Sentry
+        window?.Sentry?.captureMessage(
+          `${sentryLogs.handleLoanTokenPoller} - Error: ${JSON.stringify(data)}`
+        );
+
         // send LendingServiceError to GA
-        this.sendEvent('LendingServiceLoanError', action);
+        this.loanAnalytics?.sendEvent(
+          'LendingServiceLoanError',
+          action,
+          this.identifier
+        );
       },
       success: () => {
         if (isInitial) this.successCallback();

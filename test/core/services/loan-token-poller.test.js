@@ -1,11 +1,23 @@
 import { expect } from '@open-wc/testing';
 import Sinon from 'sinon';
 
-// import { LocalCache } from '@internetarchive/local-cache';
 import { LoanTokenPoller } from '../../../src/core/services/loan-token-poller.js';
+import '@internetarchive/modal-manager';
+
+beforeEach(async () => {
+  await import('../../../src/core/config/ia-lending-intervals.js');
+
+  const modalManager = document.createElement('modal-manager');
+  document.body.appendChild(modalManager);
+});
+
+afterEach(() => {
+  document.body.removeChild(document.querySelector('modal-manager'));
+});
 
 describe('Get Loan Token', () => {
   it('get loan token for browsed books', async () => {
+    // id, borrowType, successCallback, errorCallback, pollerDelay
     const tokenPoller = new LoanTokenPoller(
       'identifier1',
       'browsed',

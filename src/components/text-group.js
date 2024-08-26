@@ -26,7 +26,7 @@ export class TextGroup extends LitElement {
         display: inline-block;
       }
       .variable-texts {
-        margin-left: 10px;
+        margin-right: 10px;
         vertical-align: middle;
         font-size: 1.7rem;
       }
