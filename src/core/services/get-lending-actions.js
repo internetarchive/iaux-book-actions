@@ -51,6 +51,7 @@ export const bookTitles = {
   on_waitlist: 'You are on the waitlist for this book.',
   session_expired: 'Your loan has expired.',
   unavailable: 'This book is not available at this time.',
+  admin_borrowed: 'Default to admin access mode',
 };
 
 export class GetLendingActions {
@@ -83,7 +84,7 @@ export class GetLendingActions {
 
   adminOrPrintDisabledReadingAction() {
     return {
-      primaryTitle: '',
+      primaryTitle: bookTitles.admin_borrowed,
       primaryActions: [],
       secondaryActions: [this.actionsConfig.adminOrPrintDisabledExitConfig()],
       borrowType: 'adminBorrowed',

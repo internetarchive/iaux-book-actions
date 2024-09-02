@@ -12,6 +12,7 @@ import './components/info-icon.js';
 import { GetLendingActions } from './core/services/get-lending-actions.js';
 import { mobileContainerWidth } from './core/config/constants.js';
 import { LoanTokenPoller } from './core/services/loan-token-poller.js';
+import { setItem } from './core/services/doc-cookies.js';
 
 export const events = {
   browseExpired: 'IABookReader:BrowsingHasExpired',
@@ -36,6 +37,7 @@ export default class IABookActions extends LitElement {
       disableActionGroup: { type: Boolean },
       modal: { Object },
       tokenDelay: { type: Number },
+      hasStickyAdminAccess: { Boolean },
     };
   }
 
@@ -54,6 +56,7 @@ export default class IABookActions extends LitElement {
     this.disableActionGroup = false;
     this.modal = undefined;
     this.tokenDelay = 120000; // 2 minutes
+    this.hasStickyAdminAccess = false;
 
     // private props
     this.primaryActions = [];
@@ -76,6 +79,9 @@ export default class IABookActions extends LitElement {
       this.sharedObserver = new SharedResizeObserver();
       this.setupResizeObserver();
     }
+
+    // manage sticky-admin-acces by cookie
+    // this.hasStickyAdminAccess = getItem('sticky-admin-access') === 'true';
   }
 
   updated(changed) {
@@ -96,11 +102,8 @@ export default class IABookActions extends LitElement {
   }
 
   startBrowseTimer() {
-    const {
-      browsingExpired,
-      user_has_browsed,
-      secondsLeftOnLoan,
-    } = this.lendingStatus;
+    const { browsingExpired, user_has_browsed, secondsLeftOnLoan } =
+      this.lendingStatus;
     if (!user_has_browsed || browsingExpired) {
       return;
     }
@@ -366,6 +369,22 @@ export default class IABookActions extends LitElement {
     });
   }
 
+  // eslint-disable-next-line class-methods-use-this
+  toggleStickyAdminAccess() {
+    this.hasStickyAdminAccess = !this.hasStickyAdminAccess;
+
+    // set in cookies
+    setItem('sticky-admin-access', this.hasStickyAdminAccess);
+
+    document.dispatchEvent(
+      new CustomEvent('stickyAdminAccessToggled', {
+        detail: {
+          hasStickyAdminAccess: this.hasStickyAdminAccess,
+        },
+      })
+    );
+  }
+
   get iconClass() {
     return this.width <= mobileContainerWidth ? 'mobile' : 'desktop';
   }
@@ -382,8 +401,35 @@ export default class IABookActions extends LitElement {
     return html`<text-group
       textClass=${this.textClass}
       texts=${this.primaryTitle}
+      ?hasAdminBorrowedAccess=${this.hasAdminBorrowedAccess}
     >
+      ${this.hasAdminBorrowedAccess
+        ? html`<div slot="sticky-access-checkbox">
+            ${this.stickyAdminAccess}
+          </div>`
+        : ''}
     </text-group>`;
+  }
+
+  get stickyAdminAccess() {
+    return html`
+      <label class="stick-admin" for="sticky-admin-access">
+        <input
+          type="checkbox"
+          id="sticky-admin-access"
+          aria-label="Checkbox"
+          ?checked=${this.hasStickyAdminAccess}
+          @click=${this.toggleStickyAdminAccess}
+        />
+        <span>${this.primaryTitle}</span>
+      </label>
+    `;
+  }
+
+  get hasAdminBorrowedAccess() {
+    return this.secondaryActions.some(
+      action => action.id === 'exitAdminAccess'
+    );
   }
 
   get hasAdminAccess() {
@@ -404,6 +450,10 @@ export default class IABookActions extends LitElement {
         align-items: center;
         justify-content: center;
         flex-wrap: wrap;
+      }
+      .stick-admin {
+        user-select: none;
+        cursor: pointer;
       }
     `;
   }

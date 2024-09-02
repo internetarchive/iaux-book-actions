@@ -217,7 +217,7 @@ export default class ActionsConfig {
   adminOrPrintDisabledExitConfig() {
     const mode =
       URLHelper.getQueryParam('admin') === '1' ? 'admin' : 'print-disabled';
-    const message = `← Exit ${mode} access mode..`;
+    const message = `← Exit ${mode} access mode`;
 
     return {
       id: 'exitAdminAccess',

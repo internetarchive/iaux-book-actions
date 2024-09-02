@@ -98,6 +98,16 @@ export default class ActionsHandler extends LitElement {
       const { category, action } = detail.event;
       this.sendEvent(category, action);
     });
+
+    document.addEventListener('stickyAdminAccessToggled', ({ detail }) => {
+      ActionsHandlerService({
+        action: 'toggleAdminStickyAccess',
+        stickyAccess: detail.hasStickyAdminAccess,
+        identifier: this.identifier,
+        success: () => {},
+        error: () => {},
+      });
+    });
   }
 
   handleBrowseIt() {

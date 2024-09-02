@@ -30,6 +30,9 @@ export default async function ActionsHandlerService(options) {
   let formData = new FormData();
   formData.append('action', option.action);
   formData.append('identifier', option.identifier);
+  formData.append('sticky-admin', option.stickyAccess);
+  console.log(option.stickyAccess);
+
   try {
     await fetch(baseHost, {
       method: 'POST',
