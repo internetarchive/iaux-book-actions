@@ -377,7 +377,7 @@ export default class IABookActions extends LitElement {
     setItem('sticky-admin-access', this.hasStickyAdminAccess);
 
     document.dispatchEvent(
-      new CustomEvent('stickyAdminAccessToggled', {
+      new CustomEvent('stickyAdminAccess', {
         detail: {
           hasStickyAdminAccess: this.hasStickyAdminAccess,
         },
