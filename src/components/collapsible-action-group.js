@@ -133,9 +133,9 @@ export class CollapsibleActionGroup extends ActionsHandler {
     return html`
       <div
         class="${classMap({
-          actiongroup: true,
-          disabled: this.disabled,
-        })}"
+      actiongroup: true,
+      disabled: this.disabled,
+    })}"
       >
         ${this.getLoaderIcon}
         <section class="action-buttons primary">
@@ -194,12 +194,12 @@ export class CollapsibleActionGroup extends ActionsHandler {
         href="${action.url}"
         target=${action.target}
         @click=${() => {
-          this.clickHandler(
-            action.id,
-            action.analyticsEvent,
-            action?.borrowType
-          );
-        }}
+        this.clickHandler(
+          action.id,
+          action.analyticsEvent,
+          action?.borrowType
+        );
+      }}
       >
         ${action.id === 'purchaseBook' ? purchaseIcon : ''} ${action.text}
         <small>${action.subText}</small>
@@ -266,7 +266,6 @@ export class CollapsibleActionGroup extends ActionsHandler {
 
   get getPrimaryItems() {
     return this.primaryActions
-      .slice(1)
       .map(
         action =>
           html`<li>${this.renderActionButton(action, this.initialButton)}</li>`
@@ -280,9 +279,9 @@ export class CollapsibleActionGroup extends ActionsHandler {
   get getLoaderIcon() {
     return html`<img
       class="${classMap({
-        actionloader: true,
-        disabled: this.disabled,
-      })}"
+      actionloader: true,
+      disabled: this.disabled,
+    })}"
       alt=""
       src="${this.loaderIcon}"
     />`;
