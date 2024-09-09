@@ -77,9 +77,6 @@ export default class IABookActions extends LitElement {
       this.sharedObserver = new SharedResizeObserver();
       this.setupResizeObserver();
     }
-
-    // manage sticky-admin-acces by cookie
-    // this.hasStickyAdminAccess = getItem('sticky-admin-access') === 'true';
   }
 
   updated(changed) {
