@@ -837,7 +837,7 @@ PERFORMANCE OF THIS SOFTWARE.
       @click=${()=>{this.clickHandler(e.id,i,e==null?void 0:e.borrowType)}}
     >
       ${e.text}
-    </button>`}clickHandler(e,t,i=""){if(this.dropdownState="close",this.dropdownArrow=Ut,!t||!e)return;const{category:s,action:o}=t;this.dispatchEvent(new CustomEvent(e,{detail:{event:{category:s,action:o},borrowType:i}}))}get initialActionTemplate(){return this.initialButton=!1,this.primaryActions.length>1&&(this.initialButton=!0),this.renderActionButton(this.primaryActions[0],this.initialButton)}get getPrimaryItems(){return this.primaryActions.slice(1).map(e=>m`<li>${this.renderActionButton(e,this.initialButton)}</li>`)}get getLoaderIcon(){return m`<img
+    </button>`}clickHandler(e,t,i=""){if(this.dropdownState="close",this.dropdownArrow=Ut,!t||!e)return;const{category:s,action:o}=t;this.dispatchEvent(new CustomEvent(e,{detail:{event:{category:s,action:o},borrowType:i}}))}get initialActionTemplate(){return this.initialButton=!1,this.primaryActions.length>1&&(this.initialButton=!0),this.renderActionButton(this.primaryActions[0],this.initialButton)}get getPrimaryItems(){return this.primaryActions.map(e=>m`<li>${this.renderActionButton(e,this.initialButton)}</li>`)}get getLoaderIcon(){return m`<img
       class="${ns({actionloader:!0,disabled:this.disabled})}"
       alt=""
       src="${this.loaderIcon}"
