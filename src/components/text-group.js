@@ -5,7 +5,6 @@ export class TextGroup extends LitElement {
     return {
       texts: { type: String },
       textClass: { type: String },
-      hasAdminBorrowedAccess: { type: Boolean },
     };
   }
 
@@ -13,16 +12,11 @@ export class TextGroup extends LitElement {
     super();
     this.texts = '';
     this.textClass = '';
-    this.hasAdminBorrowedAccess = false;
   }
 
   render() {
     return html`
-      <span class="variable-texts ${this.textClass}">
-        ${this.hasAdminBorrowedAccess
-          ? html`<slot name="sticky-access-checkbox">${this.texts}</slot>`
-          : this.texts}
-      </span>
+      <span class="variable-texts ${this.textClass}">${this.texts}</span>
     `;
   }
 
@@ -35,13 +29,12 @@ export class TextGroup extends LitElement {
         margin-left: 10px;
         vertical-align: middle;
         font-size: 1.7rem;
-        align-items: center;
       }
       .hidden {
         display: none;
       }
       .visible {
-        display: flex;
+        display: inline-block;
       }
     `;
   }

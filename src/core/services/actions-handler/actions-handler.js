@@ -83,6 +83,8 @@ export default class ActionsHandler extends LitElement {
       const { category, action } = detail.event;
       this.sendEvent(category, action);
 
+      this.toggleStickyAdminAccess(true);
+
       // keep existing params and add new one
       const url = new URL(window.location.href);
       url.searchParams.append('admin', 1);
@@ -92,19 +94,13 @@ export default class ActionsHandler extends LitElement {
     this.addEventListener('exitAdminAccess', ({ detail }) => {
       const { category, action } = detail.event;
       this.sendEvent(category, action);
+
+      this.toggleStickyAdminAccess(false);
     });
 
     this.addEventListener('bookTitleBar', ({ detail }) => {
       const { category, action } = detail.event;
       this.sendEvent(category, action);
-    });
-
-    document.addEventListener('stickyAdminAccess', ({ detail }) => {
-      ActionsHandlerService({
-        action: 'toggle_sticky_admin_access', // toggle_sticky_admin_access
-        stickyAccess: detail.hasStickyAdminAccess,
-        identifier: this.identifier,
-      });
     });
   }
 
@@ -292,5 +288,16 @@ export default class ActionsHandler extends LitElement {
       '/',
       '.archive.org'
     );
+  }
+
+  /**
+   * Toggles sticky admin access on or off.
+   * @see WEBDEV-6835
+   *
+   * @param {boolean} value - Whether to enable or disable sticky admin access.
+   * @returns {void}
+   */
+  toggleStickyAdminAccess(value) {
+    Cookies.setItem('sticky-admin-access', value);
   }
 }

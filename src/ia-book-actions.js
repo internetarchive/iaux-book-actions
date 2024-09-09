@@ -37,7 +37,6 @@ export default class IABookActions extends LitElement {
       disableActionGroup: { type: Boolean },
       modal: { Object },
       tokenDelay: { type: Number },
-      hasStickyAdminAccess: { Boolean },
     };
   }
 
@@ -50,13 +49,12 @@ export default class IABookActions extends LitElement {
     this.lendingStatus = {};
     this.width = 0;
     this.bwbPurchaseUrl = '';
-    this.lendingBarPostInit = () => {};
+    this.lendingBarPostInit = () => { };
     this.barType = 'action'; // 'title'|'action'
     this.sharedObserver = undefined;
     this.disableActionGroup = false;
     this.modal = undefined;
     this.tokenDelay = 120000; // 2 minutes
-    this.hasStickyAdminAccess = false;
 
     // private props
     this.primaryActions = [];
@@ -359,7 +357,7 @@ export default class IABookActions extends LitElement {
         Please ${refreshButton} to try again or send us an email to
         <a
           href="mailto:info@archive.org?subject=Help: cannot access my borrowed book: ${this
-            .identifier}"
+          .identifier}"
           >info@archive.org</a
         >`;
     }
@@ -367,22 +365,6 @@ export default class IABookActions extends LitElement {
     this.modal.showModal({
       config: modalConfig,
     });
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  toggleStickyAdminAccess() {
-    this.hasStickyAdminAccess = !this.hasStickyAdminAccess;
-
-    // set in cookies
-    setItem('sticky-admin-access', this.hasStickyAdminAccess);
-
-    document.dispatchEvent(
-      new CustomEvent('stickyAdminAccess', {
-        detail: {
-          hasStickyAdminAccess: this.hasStickyAdminAccess,
-        },
-      })
-    );
   }
 
   get iconClass() {
@@ -401,35 +383,8 @@ export default class IABookActions extends LitElement {
     return html`<text-group
       textClass=${this.textClass}
       texts=${this.primaryTitle}
-      ?hasAdminBorrowedAccess=${this.hasAdminBorrowedAccess}
     >
-      ${this.hasAdminBorrowedAccess
-        ? html`<div slot="sticky-access-checkbox">
-            ${this.stickyAdminAccess}
-          </div>`
-        : ''}
     </text-group>`;
-  }
-
-  get stickyAdminAccess() {
-    return html`
-      <label class="stick-admin" for="sticky-admin-access">
-        <input
-          type="checkbox"
-          id="sticky-admin-access"
-          aria-label="Checkbox"
-          ?checked=${this.hasStickyAdminAccess}
-          @click=${this.toggleStickyAdminAccess}
-        />
-        <span>${this.primaryTitle}</span>
-      </label>
-    `;
-  }
-
-  get hasAdminBorrowedAccess() {
-    return this.secondaryActions.some(
-      action => action.id === 'exitAdminAccess'
-    );
   }
 
   get hasAdminAccess() {
@@ -450,10 +405,6 @@ export default class IABookActions extends LitElement {
         align-items: center;
         justify-content: center;
         flex-wrap: wrap;
-      }
-      .stick-admin {
-        user-select: none;
-        cursor: pointer;
       }
     `;
   }

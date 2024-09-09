@@ -51,7 +51,6 @@ export const bookTitles = {
   on_waitlist: 'You are on the waitlist for this book.',
   session_expired: 'Your loan has expired.',
   unavailable: 'This book is not available at this time.',
-  admin_borrowed: 'Default to admin access mode',
 };
 
 export class GetLendingActions {
@@ -84,7 +83,7 @@ export class GetLendingActions {
 
   adminOrPrintDisabledReadingAction() {
     return {
-      primaryTitle: bookTitles.admin_borrowed,
+      primaryTitle: '',
       primaryActions: [],
       secondaryActions: [this.actionsConfig.adminOrPrintDisabledExitConfig()],
       borrowType: 'adminBorrowed',
@@ -234,8 +233,8 @@ export class GetLendingActions {
     const title = lendingStatus.available_to_browse
       ? bookTitles.available_1hr
       : lendingStatus.available_to_borrow
-      ? bookTitles.available_14d
-      : bookTitles.unavailable;
+        ? bookTitles.available_14d
+        : bookTitles.unavailable;
 
     return {
       primaryTitle: title,
@@ -278,16 +277,16 @@ export class GetLendingActions {
     const allBrowsableCopiesTaken =
       lendingStatus.available_browsable_copies < 1 &&
       lendingStatus.available_browsable_copies <
-        lendingStatus.max_browsable_copies;
+      lendingStatus.max_browsable_copies;
     // end config
 
     const title = browsingHasExpired
       ? bookTitles.session_expired
       : !canBrowse && allBrowsableCopiesTaken
-      ? bookTitles.being_borrowed
-      : !canBrowse && lendingStatus.available_to_waitlist
-      ? bookTitles.available_waitlist
-      : bookTitles.available_1hr;
+        ? bookTitles.being_borrowed
+        : !canBrowse && lendingStatus.available_to_waitlist
+          ? bookTitles.available_waitlist
+          : bookTitles.available_1hr;
 
     // one hour borrow config
     const oneHrBorrow = browsingHasExpired
@@ -301,8 +300,8 @@ export class GetLendingActions {
     const dropdownOptions = canBrowseAndBorrow
       ? [oneHrBorrow, borrow, printDisability]
       : canBrowseHasWaitlist
-      ? [oneHrBorrow, waitlist, printDisability]
-      : [];
+        ? [oneHrBorrow, waitlist, printDisability]
+        : [];
     const actions = canBrowseCantBorrowCantWaitlist
       ? [oneHrBorrow, printDisability]
       : dropdownOptions;
