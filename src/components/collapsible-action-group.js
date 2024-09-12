@@ -266,6 +266,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
 
   get getPrimaryItems() {
     return this.primaryActions
+      .slice(1)
       .map(
         action =>
           html`<li>${this.renderActionButton(action, this.initialButton)}</li>`
