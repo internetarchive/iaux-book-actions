@@ -12,7 +12,6 @@ import './components/info-icon.js';
 import { GetLendingActions } from './core/services/get-lending-actions.js';
 import { mobileContainerWidth } from './core/config/constants.js';
 import { LoanTokenPoller } from './core/services/loan-token-poller.js';
-import { setItem } from './core/services/doc-cookies.js';
 
 export const events = {
   browseExpired: 'IABookReader:BrowsingHasExpired',
