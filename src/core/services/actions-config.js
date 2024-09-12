@@ -36,7 +36,7 @@ export default class ActionsConfig {
   firstBrowseConfig() {
     return {
       id: 'browseBook',
-      text: 'Borrow',
+      text: 'Borrow (auto-renewing)',
       className: 'primary',
       analyticsEvent: {
         category: this.analyticsCategories.preview,

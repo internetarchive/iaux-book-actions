@@ -149,12 +149,12 @@ describe('Primary Actions data', () => {
     const expectedPrimaryActions = [
       {
         text: 'Borrow', // changed from 'Borrow for 1 hour'
-        callback: () => {},
+        callback: () => { },
         className: 'ia-button primary',
       },
       {
         text: 'Borrow for 14 days',
-        callback: () => {},
+        callback: () => { },
         className: 'ia-button primary',
         disabled: false,
       },
@@ -228,7 +228,7 @@ describe('Borrow status actions', () => {
 
     // removed available_to_borrow from lending bar
     expect(el.lendingStatus.available_to_borrow).to.be.false;
-    expect(el.primaryActions[0].text).to.equal('Borrow');
+    expect(el.primaryActions[0].text).to.equal('Borrow (auto-renewing)');
   });
 
   it('Check action for borrowable book without user', async () => {
@@ -244,7 +244,7 @@ describe('Borrow status actions', () => {
     const expectedPrimaryActions = [
       {
         text: 'Log In and Borrow',
-        callback: () => {},
+        callback: () => { },
         className: 'ia-button danger',
       },
     ];
