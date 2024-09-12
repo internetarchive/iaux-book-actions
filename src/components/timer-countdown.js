@@ -47,7 +47,7 @@ export default class TimerCountdown extends LitElement {
   }
 
   render() {
-    const viewClass = this.displayTime ? 'view' : 'hide';
+    const viewClass = this.displayTime ? 'view' : 'hide1';
     return html`
       <button
         id="timer-counter"
