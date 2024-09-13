@@ -228,7 +228,7 @@ describe('Borrow status actions', () => {
 
     // removed available_to_borrow from lending bar
     expect(el.lendingStatus.available_to_borrow).to.be.false;
-    expect(el.primaryActions[0].text).to.equal('Borrow (auto-renewing)');
+    expect(el.primaryActions[0].text).to.equal('Borrow');
   });
 
   it('Check action for borrowable book without user', async () => {
