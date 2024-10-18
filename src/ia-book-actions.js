@@ -101,10 +101,10 @@ export default class IABookActions extends LitElement {
     /**
      * contains one hour auto-loan-renew time configuration
      * defaults to 1 hour config
-     * @type {{
-     *  loanTotalTime: number, - total seconds a loan does have
-     *  loanRenewAtLast: number, - check for loan renew at last
-     *  pageChangedInLast: number, - consider loan renew eligible if viewed new page
+     * @type {object} loanRenewTimeConfig
+     * @property {number} loanTotalTime - total seconds a loan does have
+     * @property {number} loanRenewAtLast - check for loan renew at last
+     * @property {number} pageChangedInLast - consider loan renew eligible if viewed new page
      */
     this.loanRenewTimeConfig = {
       loanTotalTime: 3600, // 1 hour
@@ -120,7 +120,7 @@ export default class IABookActions extends LitElement {
      * @property {boolean} renewNow - key to determine if need to renew now
      * @property {number} secondsLeft - seconds left in active loan
      */
-    this.loanRenewResult = { texts: '', renewNow: false, secondsLeft: 0 };
+    this.loanRenewResult = { texts: '', renewNow: false, secondsLeft: 0, renewType: '' };
   }
 
   disconnectedCallback() {
@@ -468,7 +468,7 @@ export default class IABookActions extends LitElement {
   /** Handles Renew action in warning modal */
   async patronWantsToRenewBook() {
     this.showWarningDisabledModal();
-    this.loanRenewResult = { texts: '', renewNow: true };
+    this.loanRenewResult = { texts: '', renewNow: true, renewType: 'manual' };
   }
 
   async patronWantsToReturnBook() {
@@ -595,6 +595,7 @@ export default class IABookActions extends LitElement {
         .returnUrl=${this.returnUrl}
         .localCache=${this.localCache}
         .loanTotalTime=${this.loanRenewTimeConfig.loanTotalTime}
+        .loanRenewType=${this.loanRenewResult.renewType}
         ?hasAdminAccess=${this.hasAdminAccess}
         ?disabled=${this.disableActionGroup}
         ?autoRenew=${this.loanRenewResult.renewNow}

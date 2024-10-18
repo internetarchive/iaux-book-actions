@@ -6,6 +6,7 @@ import log from '../log.js';
 
 import ActionsHandlerService from './actions-handler-service.js';
 import LoanAnanlytics from '../loan-analytics.js';
+import { analyticsCategories, analyticsActions, analyticsLabels } from '../../config/analytics-event-and-category.js';
 import * as Cookies from '../doc-cookies.js';
 
 /**
@@ -52,11 +53,18 @@ export default class ActionsHandler extends LitElement {
       );
     });
 
-    this.addEventListener('autoRenew', async () => {
+    this.addEventListener('autoRenew', async ({ detail }) => {
       this.handleLoanRenewNow();
       await this.loanAnanlytics?.storeLoanStatsCount(
         this.identifier,
         'autorenew'
+      );
+
+      const analyticsLabel = detail?.renewType === 'auto' ? analyticsLabels.browseAutoRenew : analyticsLabels.browseManualRenew;
+      this.loanAnanlytics?.sendEvent(
+        analyticsCategories.browse,
+        analyticsActions.browseRenew,
+        analyticsLabel
       );
     });
 
@@ -66,12 +74,24 @@ export default class ActionsHandler extends LitElement {
         this.identifier,
         'autoreturn'
       );
+
+      this.loanAnanlytics?.sendEvent(
+        analyticsCategories.browse,
+        analyticsActions.browseAutoReturn,
+        this.identifier
+      );
     });
 
     this.addEventListener('returnNow', ({ detail }) => {
       // use loan stats count when 1-hour borrow is active
       if (detail?.borrowType === 'browse') {
         this.loanAnanlytics?.storeLoanStatsCount(this.identifier, 'return');
+
+        this.loanAnanlytics?.sendEvent(
+          analyticsCategories.browse,
+          analyticsActions.browseManualReturn,
+          this.identifier
+        );
       }
 
       this.handleReturnIt('returnNow');
