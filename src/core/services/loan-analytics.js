@@ -159,14 +159,16 @@ export default class LoanAnanlytics {
    * @memberof LoanAnanlytics
    */
   sendEvent(eventCategory, eventAction, label, extraParams) {
-    // log(
-    //   'eventCategory:-',
-    //   eventCategory,
-    //   '||\teventAction:-',
-    //   eventAction,
-    //   '||\tlabel:-',
-    //   label
-    // );
+    log(
+      'eventCategory:-',
+      eventCategory,
+      '||\teventAction:-',
+      eventAction,
+      '||\tlabel:-',
+      label,
+      '||\textraParams:-',
+      extraParams,
+    );
 
     window?.archive_analytics?.send_event_no_sampling(
       eventCategory,

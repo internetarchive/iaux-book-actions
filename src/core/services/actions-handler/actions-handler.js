@@ -64,7 +64,8 @@ export default class ActionsHandler extends LitElement {
       this.loanAnanlytics?.sendEvent(
         analyticsCategories.browse,
         analyticsActions.browseRenew,
-        analyticsLabel
+        analyticsLabel,
+        this.identifier
       );
     });
 
@@ -77,7 +78,8 @@ export default class ActionsHandler extends LitElement {
 
       this.loanAnanlytics?.sendEvent(
         analyticsCategories.browse,
-        analyticsActions.browseAutoReturn,
+        analyticsActions.browseReturn,
+        analyticsLabels.browseAutoReturn,
         this.identifier
       );
     });
@@ -89,7 +91,8 @@ export default class ActionsHandler extends LitElement {
 
         this.loanAnanlytics?.sendEvent(
           analyticsCategories.browse,
-          analyticsActions.browseManualReturn,
+          analyticsActions.browseReturn,
+          analyticsLabels.browseManualReturn,
           this.identifier
         );
       }
