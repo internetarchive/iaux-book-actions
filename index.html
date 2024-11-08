@@ -134,12 +134,12 @@
     iaBookActions.bwbPurchaseUrl = '';
     iaBookActions.modalConfig = modalConfig;
     iaBookActions.lendingBarPostInit = lendingBarPostInit;
-    iaBookActions.tokenDelay = 2; // 2 seconds
-    iaBookActions.timerExecutionSeconds = 2 // 4 seconds
+    iaBookActions.tokenDelay = 10; // seconds
+    iaBookActions.timerExecutionSeconds = 3 // seconds
     iaBookActions.returnUrl = '';
     iaBookActions.localCache = localCache;
 
-    let loanTotalTime2Min = { loanTotalTime: 60, loanRenewAtLast: 55, pageChangedInLast: 5 };
+    let loanTotalTime2Min = { loanTotalTime: 120, loanRenewAtLast: 110, pageChangedInLast: 30 };
     let loanTotalTime5Min = { loanTotalTime: 300, loanRenewAtLast: 240, pageChangedInLast: 60 };
     let loanTotalTime10Min = { loanTotalTime: 600, loanRenewAtLast: 480, pageChangedInLast: 120 };
     let loanTotalTime30Min = { loanTotalTime: 1800, loanRenewAtLast: 1500, pageChangedInLast: 600 };
