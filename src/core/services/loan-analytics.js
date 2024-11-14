@@ -35,6 +35,8 @@ export default class LoanAnanlytics {
     try {
       await this.getLoanStatsCount(action);
 
+      this.sendMatrixStatsEvents(action);
+
       const date = new Date();
       date.setHours(date.getHours() + 2); // 2 hours
 
@@ -101,14 +103,26 @@ export default class LoanAnanlytics {
 
     // store these counts in cookies
     this.lendingEventCounts = { browse, renew, expire };
+  }
 
+  /**
+   * Send auto-renew Matrix stats events to GA
+   * eg
+   * - browse001-autorenew000:browse
+   * - browse001-autorenew001:autorenew
+   * - and so on...
+   *
+   * @param {action} action
+   * @memberof LoanAnanlytics
+   */
+  sendMatrixStatsEvents(action) {
     // obtain GA category, event
     const category = analyticsCategories.browse;
     const event = `browse${this.paddedNumber(
       this.gaStats?.browse
     )}-autorenew${this.paddedNumber(this.gaStats?.renew)}:${action}`;
 
-    // send google analytics events
+    // send events
     this.sendEvent(category, event, this.identifier);
   }
 
@@ -145,14 +159,16 @@ export default class LoanAnanlytics {
    * @memberof LoanAnanlytics
    */
   sendEvent(eventCategory, eventAction, label, extraParams) {
-    // log(
-    //   'eventCategory:-',
-    //   eventCategory,
-    //   '\t||\teventAction:-',
-    //   eventAction,
-    //   '\t||\tlabel:-',
-    //   label
-    // );
+    log(
+      'eventCategory:-',
+      eventCategory,
+      '||\teventAction:-',
+      eventAction,
+      '||\tlabel:-',
+      label,
+      '||\textraParams:-',
+      extraParams,
+    );
 
     window?.archive_analytics?.send_event_no_sampling(
       eventCategory,

@@ -13,8 +13,8 @@ export const analyticsCategories = {
 export const analyticsActions = {
   browse: 'Borrow-1Hour',
   browseAgain: 'Borrow-Again',
-  browseAutoRenew: 'AutoRenewBook',
-  browseAutoReturn: 'AutoReturnBook',
+  browseRenew: 'BookRenew',
+  browseReturn: 'BookReturn',
   borrow: 'Borrow-14Days',
   waitlistJoin: 'JoinWaitlist',
   waitlistLeave: 'LeaveWaitlist',
@@ -24,4 +24,11 @@ export const analyticsActions = {
   unavailable: 'Book-Unavailable',
   printDisability: 'Print-Disability',
   titleBar: 'Book-Title-Bar',
+};
+
+export const analyticsLabels = {
+  browseAutoRenew: 'BookAutoRenew',
+  browseAutoReturn: 'BookAutoReturn',
+  browseManualRenew: 'BookManualRenew',
+  browseManualReturn: 'BookManualReturn',
 };

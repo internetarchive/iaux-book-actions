@@ -23,6 +23,7 @@ export class LoanRenewHelper {
     this.result = {
       texts: null,
       renewNow: false,
+      renewType: '',
     };
   }
 
@@ -57,8 +58,11 @@ export class LoanRenewHelper {
 
     // if user viewed new page in last 10 minutes, renew immediately
     if (lastTimeFrame !== null && currentTime >= lastTimeFrame) {
-      this.result.texts = this.loanRenewMessage;
-      this.result.renewNow = true;
+      this.result = {
+        texts: this.loanRenewMessage,
+        renewNow: true,
+        renewType: 'auto',
+      };
     }
 
     this.setPageChangedTime();
@@ -88,11 +92,17 @@ export class LoanRenewHelper {
       pageChangedTime === undefined ||
       pageChangedTime <= pageChangeTimeFrame
     ) {
-      this.result.texts = this.loanReturnWarning;
-      this.result.renewNow = false; // not viewed
+      this.result = {
+        texts: this.loanReturnWarning,
+        renewNow: false, // not viewed
+        renewType: '',
+      };
     } else if (pageChangedTime >= pageChangeTimeFrame) {
-      this.result.texts = '';
-      this.result.renewNow = true; // viewed in last time frame
+      this.result = {
+        texts: '',
+        renewNow: true,  // viewed in last time frame
+        renewType: 'auto',
+      };
     }
 
     return this.result;

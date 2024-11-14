@@ -29,6 +29,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
       disabled: { type: Boolean },
       returnUrl: { type: String },
       autoRenew: { type: Boolean },
+      loanRenewType: { type: String },
       autoReturn: { type: Boolean },
       returnNow: { type: Boolean },
     };
@@ -51,6 +52,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
     this.disabled = false;
     this.returnUrl = '';
     this.autoRenew = false;
+    this.loanRenewType = '';
     this.autoReturn = false;
     this.returnNow = false;
   }
@@ -64,7 +66,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
     }
 
     if (changed.has('autoRenew') && this.autoRenew) {
-      this.dispatchLoanEvent('autoRenew');
+      this.dispatchLoanEvent('autoRenew', { renewType: this.loanRenewType });
     }
 
     const requestingAutoreturn = changed.has('autoReturn') && this.autoReturn;
