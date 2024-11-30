@@ -104,6 +104,7 @@ export class LoanRenewHelper {
         renewType: 'auto',
       };
     }
+    log('this.result', this.result, ' - pageChangedTime', pageChangedTime, ' - pageChangeTimeFrame', pageChangeTimeFrame);
 
     return this.result;
   }

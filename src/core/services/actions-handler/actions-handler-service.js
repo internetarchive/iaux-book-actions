@@ -80,6 +80,12 @@ export default async function ActionsHandlerService(options) {
         return response.json();
       })
       .then(data => {
+        if (isTest) {
+          return option?.success({
+            success: true,
+            loan: { renewal: true },
+          });
+        }
         // `data` is the parsed version of the JSON returned from the above endpoint.
         if (!data?.error) {
           option?.success(data);
