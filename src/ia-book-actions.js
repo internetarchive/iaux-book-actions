@@ -540,11 +540,8 @@ export default class IABookActions extends LitElement {
   async startBrowseTimer() {
     window?.IALendingIntervals?.clearBrowseExpireTimeout();
 
-    const {
-      browsingExpired,
-      user_has_browsed,
-      secondsLeftOnLoan,
-    } = this.lendingStatus;
+    const { browsingExpired, user_has_browsed, secondsLeftOnLoan } =
+      this.lendingStatus;
 
     if (!user_has_browsed || browsingExpired) {
       log('startBrowseTimer --- !user_has_browsed || browsingExpired', {
