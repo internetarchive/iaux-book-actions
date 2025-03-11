@@ -120,7 +120,12 @@ export default class IABookActions extends LitElement {
      * @property {boolean} renewNow - key to determine if need to renew now
      * @property {number} secondsLeft - seconds left in active loan
      */
-    this.loanRenewResult = { texts: '', renewNow: false, secondsLeft: 0, renewType: '' };
+    this.loanRenewResult = {
+      texts: '',
+      renewNow: false,
+      secondsLeft: 0,
+      renewType: '',
+    };
   }
 
   disconnectedCallback() {
