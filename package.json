@@ -1,9 +1,13 @@
 {
   "name": "@internetarchive/ia-book-actions",
-  "version": "1.4.1",
   "description": "Bookreader actions for borrowable book",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/internetarchive/iaux-account-settings.git"
+  },
   "author": "Internet Archive",
   "license": "AGPL-3.0-only",
+  "version": "1.4.1",
   "main": "index.js",
   "module": "index.js",
   "publishConfig": {
