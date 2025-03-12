@@ -11,16 +11,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v3
+    - uses: actions/checkout@v4.1.1
+    - uses: actions/setup-node@v4.0.2
       with:
-        node-version: 16.x
+        node-version: 20.x
 
     - name: Install dependencies
       run: yarn install
 
-    # - name: Run tests
-    #   run: yarn run test
+    - name: Run tests
+      run: yarn run test
 
-    # - name: Upload reports
-    #   run: npx codecov
+    - uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}

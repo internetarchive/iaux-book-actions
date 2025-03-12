@@ -1,11 +1,20 @@
-# Component for lendable and embed items
 
-The book action button component build on LitElement with support for custom content and light DOM elements.
+![Build Status](https://github.com/internetarchive/iaux-book-actions/actions/workflows/ci.yml/badge.svg) [![codecov](https://codecov.io/gh/internetarchive/iaux-book-actions/branch/main/graph/badge.svg?token=ZOYRJ2BV9W)](https://codecov.io/gh/internetarchive/iaux-book-actions)
+
+# Internet Archive Book Lending Actions
+
+This WebComponent, built using the [IA Typescript WebComponent Template](https://github.com/internetarchive/iaux-typescript-wc-template), provides support for Bookreader actions for borrowable books on Internet Archive. It extends the [Open WebComponents generator](https://open-wc.org/docs/development/generator/) with Internet Archive-specific features and developer tools.
 
 ## Installation
 ```bash
 yarn install --save @internetarchive/ia-book-actions
 ```
+
+## Local Demo with `web-dev-server`
+```bash
+yarn start
+```
+To run a local development server that serves the basic demo located in `index.html`
 
 ## Usage of Book Actions
 ```html

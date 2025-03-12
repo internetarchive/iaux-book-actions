@@ -1,9 +1,13 @@
 {
   "name": "@internetarchive/ia-book-actions",
-  "version": "1.4.1",
   "description": "Bookreader actions for borrowable book",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/internetarchive/iaux-account-settings.git"
+  },
   "author": "Internet Archive",
   "license": "AGPL-3.0-only",
+  "version": "1.4.1",
   "main": "index.js",
   "module": "index.js",
   "publishConfig": {
@@ -15,8 +19,8 @@
     "prepare": "rimraf dist && husky install",
     "lint": "eslint --ext \"./src/*.js\",.html . --ignore-path .gitignore && prettier \"./src/*.js\" --check --ignore-path .gitignore",
     "format": "eslint --ext \"./src/*.js\",.html . --fix --ignore-path .gitignore && prettier \"./src/*.js\" --write --ignore-path .gitignore",
-    "test": "yarn run lint && yarn test:fast",
-    "test:fast": "web-test-runner --coverage --playwright --browsers chromium firefox webkit",
+    "test": "yarn run format && yarn run lint && yarn test:fast --coverage",
+    "test:fast": "web-test-runner",
     "test:watch": "web-test-runner --watch --playwright --browsers chromium firefox webkit",
     "deploy": "yarn run deploy:run -e $(git branch --show-current)",
     "deploy:run": "yarn run prepare:ghpages && touch ghpages/.nojekyll && yarn run deploy:gh",
