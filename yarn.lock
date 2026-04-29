@@ -218,26 +218,19 @@
   resolved "https://registry.npmjs.org/@humanwhocodes/object-schema/-/object-schema-1.2.0.tgz"
   integrity sha512-wdppn25U8z/2yiaT6YGquE6X8sSv7hNMWSXYSSU1jGv/yd6XqjXgTDJ8KP4NgjTXfJ3GbRjeeb8RTV7a/VpM+w==
 
-"@internetarchive/ia-activity-indicator@^0.0.4":
-  version "0.0.4"
-  resolved "https://registry.npmjs.org/@internetarchive/ia-activity-indicator/-/ia-activity-indicator-0.0.4.tgz"
-  integrity sha512-nJFs3uAnPyDLqtkEVV4vMD1dli+eOyovd5rY/un9nOahu2elTHOHrIfNH0YvBkLXR7C9GVCeI9H8BD8BXq+rhg==
+"@internetarchive/ia-activity-indicator@^0.0.6":
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/@internetarchive/ia-activity-indicator/-/ia-activity-indicator-0.0.6.tgz#46bc71620b3a7630f18bc0b8e883a52443af1016"
+  integrity sha512-Llut9sdsmmVqgxASqSlCqoiXSNb4M7xWY3/O7QUh3NnuR7WMfAcYBqNRDsLve7t/VkbVVBOVyeVAROnjvYHGNQ==
   dependencies:
-    lit "^2.2.2"
+    lit "^2.8.0"
 
-"@internetarchive/icon-close@^1.3.4":
-  version "1.3.4"
-  resolved "https://registry.npmjs.org/@internetarchive/icon-close/-/icon-close-1.3.4.tgz"
-  integrity sha512-1pYEV64zRhK3eZEY7F7bxs+TMW2zZKB8vd7fhJgbJMEGdJAPRahSUYPdlEZFg6cNDC/WzbcfERgFSstdRkolDw==
+"@internetarchive/icon-close@^1.4.0":
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/@internetarchive/icon-close/-/icon-close-1.4.1.tgz#ae4d81cbb6356f207631bae7bfa1d0848df7bf30"
+  integrity sha512-nN1rGfScGssGFpfEew4azsrsMyUJtkDWqUDlckJi31PtyQnbZqUmZ07UO3Aw+wZIo3cU1MHxb5VxDy3Rmr8QGA==
   dependencies:
-    lit "^2.0.2"
-
-"@internetarchive/icon-ia-logo@^1.3.4":
-  version "1.3.4"
-  resolved "https://registry.npmjs.org/@internetarchive/icon-ia-logo/-/icon-ia-logo-1.3.4.tgz"
-  integrity sha512-QsP14B+/MHHP3wu/HF52GQbcVV9nOorCUsweQppZrzVZlSwFm/gfd+yjm6g6vynYn6e7qsP2JK9ot47XzRT00w==
-  dependencies:
-    lit "^2.0.2"
+    lit "^2.0.2 || ^3.0.0"
 
 "@internetarchive/icon-info@1.3.5":
   version "1.3.5"
@@ -246,12 +239,12 @@
   dependencies:
     lit "^2.0.2"
 
-"@internetarchive/icon-user@^1.3.4":
-  version "1.3.4"
-  resolved "https://registry.npmjs.org/@internetarchive/icon-user/-/icon-user-1.3.4.tgz"
-  integrity sha512-GXdGKGsYVW0mlc3RpmY1/MsuKU6pEn/YXueS+xX0e620pcsjTRrtKn2RqwBmqkeQki4QakFg0gpM1NhauaKMtw==
+"@internetarchive/icon-user@^1.4.0":
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/@internetarchive/icon-user/-/icon-user-1.4.1.tgz#d3ef9509ce1f457cd83d9e6d87c8dc6c181f2ba5"
+  integrity sha512-xRlpX954+lLKjC++A+jpIutptHCmVMwLZI/WqOoAQoKfnCNKKvJ6Wcdq4bM/qUDt44Oj2VgP/gM6hSdWyljzEA==
   dependencies:
-    lit "^2.0.2"
+    lit "^2.0.2 || ^3.0.0"
 
 "@internetarchive/local-cache@^0.2.1":
   version "0.2.1"
@@ -260,17 +253,16 @@
   dependencies:
     idb-keyval "^6.1.0"
 
-"@internetarchive/modal-manager@2.0.0":
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/@internetarchive/modal-manager/-/modal-manager-2.0.0.tgz#7782297de0d6d91aa133ca852dc2a0dcb087a6cd"
-  integrity sha512-LN/0bpP2DWHA9f7jWIbCBOZLMWeoBTY2Sab9M1/yo2V3bubKzhnE9Dn0Y+UoCItlwZr2gDCLEng6Jz2DMGmhfw==
+"@internetarchive/modal-manager@^2.0.0":
+  version "2.0.5"
+  resolved "https://registry.yarnpkg.com/@internetarchive/modal-manager/-/modal-manager-2.0.5.tgz#33dd708cb66e352dabe6bb12afe0c85f6aaa48f6"
+  integrity sha512-u4Qtslp2T03KMAshSHe45RxHs/rBUQCCjNXIXL4wKEPcdqj0K/gyNSz3F/eMqxf2TutHLewCtnXOmS7W42xwxA==
   dependencies:
-    "@internetarchive/ia-activity-indicator" "^0.0.4"
-    "@internetarchive/icon-close" "^1.3.4"
-    "@internetarchive/icon-ia-logo" "^1.3.4"
-    "@internetarchive/icon-user" "^1.3.4"
-    lit "^2.8.0"
-    throttle-debounce "^5.0.0"
+    "@internetarchive/ia-activity-indicator" "^0.0.6"
+    "@internetarchive/icon-close" "^1.4.0"
+    "@internetarchive/icon-user" "^1.4.0"
+    lit "^2.8.0 || ^3.3.2"
+    throttle-debounce "^5.0.2"
 
 "@internetarchive/shared-resize-observer@^0.2.0":
   version "0.2.0"
@@ -3391,13 +3383,6 @@ lit-html@^2.2.0:
   dependencies:
     "@types/trusted-types" "^2.0.2"
 
-lit-html@^2.6.0:
-  version "2.6.1"
-  resolved "https://registry.npmjs.org/lit-html/-/lit-html-2.6.1.tgz"
-  integrity sha512-Z3iw+E+3KKFn9t2YKNjsXNEu/LRLI98mtH/C6lnFg7kvaqPIzPn124Yd4eT/43lyqrejpc5Wb6BHq3fdv4S8Rw==
-  dependencies:
-    "@types/trusted-types" "^2.0.2"
-
 lit-html@^2.8.0:
   version "2.8.0"
   resolved "https://registry.npmjs.org/lit-html/-/lit-html-2.8.0.tgz"
@@ -3405,7 +3390,7 @@ lit-html@^2.8.0:
   dependencies:
     "@types/trusted-types" "^2.0.2"
 
-"lit@^2.0.0 || ^3.0.0", lit@^3.0.0:
+"lit@^2.0.0 || ^3.0.0", "lit@^2.0.2 || ^3.0.0", "lit@^2.8.0 || ^3.3.2", lit@^3.0.0:
   version "3.3.2"
   resolved "https://registry.yarnpkg.com/lit/-/lit-3.3.2.tgz#d9230ebbf237bfd3d2091bc0b56c576a470ac4d7"
   integrity sha512-NF9zbsP79l4ao2SNrH3NkfmFgN/hBYSQo90saIVI1o5GpjAdCPVstVzO1MrLOakHoEhYkrtRjPK6Ob521aoYWQ==
@@ -3422,15 +3407,6 @@ lit@^2.0.2:
     "@lit/reactive-element" "^1.3.0"
     lit-element "^3.2.0"
     lit-html "^2.2.0"
-
-lit@^2.2.2:
-  version "2.6.1"
-  resolved "https://registry.npmjs.org/lit/-/lit-2.6.1.tgz"
-  integrity sha512-DT87LD64f8acR7uVp7kZfhLRrHkfC/N4BVzAtnw9Yg8087mbBJ//qedwdwX0kzDbxgPccWRW6mFwGbRQIxy0pw==
-  dependencies:
-    "@lit/reactive-element" "^1.6.0"
-    lit-element "^3.2.0"
-    lit-html "^2.6.0"
 
 lit@^2.8.0:
   version "2.8.0"
@@ -4663,10 +4639,10 @@ text-table@^0.2.0:
   resolved "https://registry.npmjs.org/text-table/-/text-table-0.2.0.tgz"
   integrity sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=
 
-throttle-debounce@^5.0.0:
-  version "5.0.0"
-  resolved "https://registry.npmjs.org/throttle-debounce/-/throttle-debounce-5.0.0.tgz"
-  integrity sha512-2iQTSgkkc1Zyk0MeVrt/3BvuOXYPl/R8Z0U2xxo9rjwNciaHDG3R+Lm6dh4EeUci49DanvBnuqI6jshoQQRGEg==
+throttle-debounce@^5.0.2:
+  version "5.0.2"
+  resolved "https://registry.yarnpkg.com/throttle-debounce/-/throttle-debounce-5.0.2.tgz#ec5549d84e053f043c9fd0f2a6dd892ff84456b1"
+  integrity sha512-B71/4oyj61iNH0KeCamLuE2rmKuTO5byTOSVwECM5FA7TiAiAW+UqTKZ9ERueC4qvgSttUhdmq1mXC3kJqGX7A==
 
 through@^2.3.8:
   version "2.3.8"
