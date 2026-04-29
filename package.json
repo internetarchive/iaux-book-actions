@@ -32,7 +32,7 @@
     "@internetarchive/modal-manager": "^2.0.0",
     "@internetarchive/shared-resize-observer": "^0.2.0",
     "install-deps": "^1.1.0",
-    "lit": "^2.8.0"
+    "lit": "^2.8.0 || ^3.3.2"
   },
   "devDependencies": {
     "@open-wc/eslint-config": "^4.2.0",
