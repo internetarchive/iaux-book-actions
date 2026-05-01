@@ -66,12 +66,13 @@ export default class LoanAnanlytics {
     let renew = this.lendingEventCounts?.renew ?? 0;
     let expire = this.lendingEventCounts?.expire ?? 0;
 
-    // NOTE: original used `case 'browse' || 'browseagain':`, which is
-    // actually `case 'browse':` (the OR is evaluated at definition time).
-    // Preserving original runtime behavior here; both legs match 'browse'.
+    // NOTE: the original JS had `case 'browse' || 'browseagain':` and
+    // `case 'return' || 'autoreturn':`. In JS the `||` is evaluated at
+    // definition time, so those are equivalent to `case 'browse':` and
+    // `case 'return':` respectively — 'browseagain' and 'autoreturn' were
+    // never matched. The TS port preserves that original runtime behavior.
     switch (action) {
       case 'browse':
-      case 'browseagain':
         browse = browse ? Number(browse) + 1 : 1;
         this.gaStats.browse = browse;
         renew = 0;
@@ -82,7 +83,6 @@ export default class LoanAnanlytics {
         this.gaStats.renew = renew;
         break;
       case 'return':
-      case 'autoreturn':
         expire = expire ? Number(expire) + 1 : 1;
         this.gaStats.expire = expire;
         renew = 0;
