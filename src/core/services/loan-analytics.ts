@@ -66,11 +66,14 @@ export default class LoanAnanlytics {
     let renew = this.lendingEventCounts?.renew ?? 0;
     let expire = this.lendingEventCounts?.expire ?? 0;
 
-    // NOTE: the original JS had `case 'browse' || 'browseagain':` and
-    // `case 'return' || 'autoreturn':`. In JS the `||` is evaluated at
-    // definition time, so those are equivalent to `case 'browse':` and
-    // `case 'return':` respectively — 'browseagain' and 'autoreturn' were
-    // never matched. The TS port preserves that original runtime behavior.
+    // NOTE: original JS had `case 'browse' || 'browseagain':` and
+    // `case 'return' || 'autoreturn':`. Those expressions evaluate at
+    // parse time to just `'browse'` and `'return'` (since `'browse'`
+    // is truthy), so `'browseagain'` and `'autoreturn'` actions never
+    // matched any case — they fell through to `default` and were no-ops.
+    // Preserving that behavior verbatim. If `'browseagain'` /
+    // `'autoreturn'` should actually count, that's a real bug worth
+    // fixing in a separate ticket rather than silently in this migration.
     switch (action) {
       case 'browse':
         browse = browse ? Number(browse) + 1 : 1;
