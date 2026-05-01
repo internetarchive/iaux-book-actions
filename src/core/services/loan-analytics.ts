@@ -66,12 +66,16 @@ export default class LoanAnanlytics {
     let renew = this.lendingEventCounts?.renew ?? 0;
     let expire = this.lendingEventCounts?.expire ?? 0;
 
-    // NOTE: original used `case 'browse' || 'browseagain':`, which is
-    // actually `case 'browse':` (the OR is evaluated at definition time).
-    // Preserving original runtime behavior here; both legs match 'browse'.
+    // NOTE: original JS had `case 'browse' || 'browseagain':` and
+    // `case 'return' || 'autoreturn':`. Those expressions evaluate at
+    // parse time to just `'browse'` and `'return'` (since `'browse'`
+    // is truthy), so `'browseagain'` and `'autoreturn'` actions never
+    // matched any case — they fell through to `default` and were no-ops.
+    // Preserving that behavior verbatim. If `'browseagain'` /
+    // `'autoreturn'` should actually count, that's a real bug worth
+    // fixing in a separate ticket rather than silently in this migration.
     switch (action) {
       case 'browse':
-      case 'browseagain':
         browse = browse ? Number(browse) + 1 : 1;
         this.gaStats.browse = browse;
         renew = 0;
@@ -82,7 +86,6 @@ export default class LoanAnanlytics {
         this.gaStats.renew = renew;
         break;
       case 'return':
-      case 'autoreturn':
         expire = expire ? Number(expire) + 1 : 1;
         this.gaStats.expire = expire;
         renew = 0;
