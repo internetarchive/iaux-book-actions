@@ -22,7 +22,7 @@ type DropdownState = 'open' | 'close';
 @customElement('collapsible-action-group')
 export class CollapsibleActionGroup extends ActionsHandler {
   @property({ type: String }) userid = '';
-  @property({ type: String }) declare identifier: string;
+  @property({ type: String }) identifier = '';
   @property({ type: Array }) primaryActions: ActionButtonConfig[] = [];
   @property({ type: Array }) secondaryActions: ActionButtonConfig[] = [];
   @property({ type: String }) primaryColor = '';
@@ -32,7 +32,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
   @property({ attribute: false }) dropdownArrow: TemplateResult =
     dropdownClosed;
   @property({ type: Boolean }) disabled = false;
-  @property({ type: String }) declare returnUrl: string;
+  @property({ type: String }) returnUrl = '';
   @property({ type: Boolean }) autoRenew = false;
   @property({ type: String }) loanRenewType = '';
   @property({ type: Boolean }) autoReturn = false;
@@ -41,12 +41,6 @@ export class CollapsibleActionGroup extends ActionsHandler {
   initialButton = false;
   title = '';
   loaderIcon = 'https://archive.org/upload/images/tree/loading.gif';
-
-  constructor() {
-    super();
-    this.identifier = '';
-    this.returnUrl = '';
-  }
 
   updated(changed: PropertyValues<this>): void {
     if (

@@ -11,16 +11,11 @@ import { archiveLogo } from '../assets/data/archive-logo';
 
 @customElement('book-title-bar')
 export class BookTitleBar extends ActionsHandler {
-  @property({ type: String }) declare identifier: string;
+  @property({ type: String }) identifier = '';
   @property({ type: String }) bookTitle = '';
 
   analyticsCategories = analyticsCategories;
   analyticsActions = analyticsActions;
-
-  constructor() {
-    super();
-    this.identifier = '';
-  }
 
   /** Click handler — emits a `bookTitleBar` custom event with analytics. */
   clickHandler(): void {
