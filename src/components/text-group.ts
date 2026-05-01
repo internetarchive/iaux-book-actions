@@ -29,9 +29,3 @@ export class TextGroup extends LitElement {
     }
   `;
 }
-
-declare global {
-  interface HTMLElementTagNameMap {
-    'text-group': TextGroup;
-  }
-}

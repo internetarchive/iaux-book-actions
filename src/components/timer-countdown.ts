@@ -74,9 +74,3 @@ export class TimerCountdown extends LitElement {
     }
   `;
 }
-
-declare global {
-  interface HTMLElementTagNameMap {
-    'timer-countdown': TimerCountdown;
-  }
-}

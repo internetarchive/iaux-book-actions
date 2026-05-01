@@ -74,9 +74,3 @@ export class BookTitleBar extends ActionsHandler {
     }
   `;
 }
-
-declare global {
-  interface HTMLElementTagNameMap {
-    'book-title-bar': BookTitleBar;
-  }
-}

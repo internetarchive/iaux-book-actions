@@ -44,9 +44,3 @@ export class InfoIcon extends LitElement {
     }
   `;
 }
-
-declare global {
-  interface HTMLElementTagNameMap {
-    'info-icon': InfoIcon;
-  }
-}

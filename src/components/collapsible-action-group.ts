@@ -280,9 +280,3 @@ export class CollapsibleActionGroup extends ActionsHandler {
 
   static styles = [buttonBaseStyle, CollapsibleActionGroupStyle];
 }
-
-declare global {
-  interface HTMLElementTagNameMap {
-    'collapsible-action-group': CollapsibleActionGroup;
-  }
-}

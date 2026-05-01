@@ -904,9 +904,3 @@ export default class IABookActions extends LitElement {
     }
   `;
 }
-
-declare global {
-  interface HTMLElementTagNameMap {
-    'ia-book-actions': IABookActions;
-  }
-}
