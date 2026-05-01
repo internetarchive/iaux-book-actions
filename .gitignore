@@ -1,6 +1,10 @@
 ## editors
 /.idea
 /.vscode
+/.claude
+
+## husky
+/.husky/_
 
 ## system files
 .DS_Store
