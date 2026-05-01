@@ -419,10 +419,12 @@ export default class IABookActions extends LitElement {
 
   async patronWantsToReturnBook(): Promise<void> {
     this.showWarningDisabledModal('returnBook');
-    const el = document.querySelector(
-      'ia-book-actions',
-    ) as IABookActions | null;
-    if (el) el.disableActionGroup = true;
+    // The original JS reached out to `document.querySelector('ia-book-actions')`
+    // here — that grabs the first matching element on the page rather than
+    // the instance the click came from, and breaks when more than one bar
+    // is mounted. The handler already runs on this component, so target it
+    // directly. (Flagged by Copilot review on PR #92.)
+    this.disableActionGroup = true;
     this.returnNow = true;
   }
 

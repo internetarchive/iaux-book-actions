@@ -12,13 +12,11 @@ import {
   analyticsLabels,
 } from '../../config/analytics-event-and-category';
 import * as Cookies from '../doc-cookies';
-import type { ActionEventDetail } from '../../types/lending-status';
+import type {
+  ActionEventDetail,
+  LocalCacheLike,
+} from '../../types/lending-status';
 import '../../types/globals';
-
-interface LocalCacheLike {
-  set(opts: { key: string; value: unknown; ttl?: number }): Promise<void>;
-  delete(key: string): Promise<void>;
-}
 
 /**
  * Base class for components that dispatch and listen to lending action

@@ -1,14 +1,9 @@
 import log from './log';
 import type {
+  LocalCacheLike,
   LoanRenewResult,
   LoanRenewTimeConfig,
 } from '../types/lending-status';
-
-interface LocalCacheLike {
-  get<T = unknown>(key: string): Promise<T | undefined>;
-  set(opts: { key: string; value: unknown; ttl?: number }): Promise<void>;
-  delete(key: string): Promise<void>;
-}
 
 /**
  * Helper that decides whether a browsed loan is eligible for auto-renew.

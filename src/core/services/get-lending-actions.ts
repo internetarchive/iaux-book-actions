@@ -7,7 +7,6 @@ import ActionsConfig from './actions-config';
 import type {
   ActionButtonConfig,
   ActionsResult,
-  BorrowType,
   LendingStatus,
 } from '../types/lending-status';
 
@@ -410,10 +409,5 @@ export class GetLendingActions {
     }
 
     return lendingActions;
-  }
-
-  // Re-export for downstream typing helpers if needed
-  static borrowTypeFor(_status: LendingStatus): BorrowType {
-    return null;
   }
 }

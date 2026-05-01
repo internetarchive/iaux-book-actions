@@ -2,6 +2,7 @@ import { expect, aTimeout } from '@open-wc/testing';
 
 import { LocalCache } from '@internetarchive/local-cache';
 import { LoanRenewHelper } from '../../../src/core/services/loan-renew-helper';
+import type { LocalCacheLike } from '../../../src/core/types/lending-status';
 
 const identifier = 'booBar';
 const loanRenewTimeConfig = {
@@ -37,7 +38,7 @@ describe('Loan Renew Determine', () => {
     const loanRenewHelper = new LoanRenewHelper(
       true,
       identifier,
-      localCache as never,
+      localCache as unknown as LocalCacheLike,
       loanRenewTimeConfig,
     );
     await loanRenewHelper.handleLoanRenew();
@@ -57,7 +58,7 @@ describe('Loan Renew Determine', () => {
     const loanRenewHelper = new LoanRenewHelper(
       false,
       identifier,
-      localCache as never,
+      localCache as unknown as LocalCacheLike,
       loanRenewTimeConfig,
     );
     await loanRenewHelper.handleLoanRenew();
@@ -69,7 +70,7 @@ describe('Loan Renew Determine', () => {
     const loanRenewHelper = new LoanRenewHelper(
       false,
       identifier,
-      localCache as never,
+      localCache as unknown as LocalCacheLike,
       loanRenewTimeConfig,
     );
 

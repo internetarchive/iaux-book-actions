@@ -92,6 +92,17 @@ export interface LoanRenewTimeConfig {
 }
 
 /**
+ * The subset of `@internetarchive/local-cache`'s `LocalCache` that this
+ * package actually uses. Kept structurally minimal so consumers can pass
+ * any equivalent cache (test fakes, alternate IndexedDB wrappers, …).
+ */
+export interface LocalCacheLike {
+  get<T = unknown>(key: string): Promise<T | undefined>;
+  set(opts: { key: string; value: unknown; ttl?: number }): Promise<void>;
+  delete(key: string): Promise<void>;
+}
+
+/**
  * Detail payload dispatched by ActionsHandler-derived components
  * when an internal lending action fires.
  */
