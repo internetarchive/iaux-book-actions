@@ -74,6 +74,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
 
   /** Merge primaryActions and secondaryActions into the dropdown list. */
   resetActions(): void {
+    // concat primaryActions and secondaryActions to draw in dropdown list
     if (this.primaryActions.length) {
       this.primaryActions = this.primaryActions.concat(this.secondaryActions);
 
@@ -83,6 +84,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
         this.sortActionButtonOrder();
       }
 
+      // remove secondaryActions
       this.secondaryActions = [];
     }
   }
@@ -131,6 +133,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
       this.primaryColor = this.primaryActions[0].className;
     }
 
+    // If its single action, let just not show dropdown list
     if (this.primaryActions.length === 1) {
       return this.initialActionTemplate;
     }
@@ -156,7 +159,13 @@ export class CollapsibleActionGroup extends ActionsHandler {
     return this.secondaryActions.map(action => this.renderActionButton(action));
   }
 
-  /** Render a secondary action as a link (admin, print-disability, purchase). */
+  /**
+   * Render action as a link for secondary actions like admin, printdisability links.
+   *
+   * Note: rendered as an `<a>` whenever the action carries a `url`. The
+   * `initialButton` flag adds an `.initial` class so it can be styled as
+   * the lead item next to the dropdown chevron.
+   */
   renderActionLink(
     action: ActionButtonConfig,
     initialButton = false,
@@ -164,23 +173,27 @@ export class CollapsibleActionGroup extends ActionsHandler {
     return html`<span class="${this.getDeviceType} ${action.className}">
       <a
         class="ia-button ${action.className} ${initialButton ? 'initial' : ''}"
-        href="${(action.url as string) ?? ''}"
-        target=${(action.target as string) ?? ''}
+        href="${action.url ?? ''}"
+        target=${action.target ?? ''}
         @click=${() => {
           this.clickHandler(
             action.id ?? '',
             action.analyticsEvent,
-            (action.borrowType as string) ?? '',
+            action.borrowType ?? '',
           );
         }}
       >
         ${action.id === 'purchaseBook' ? purchaseIcon : ''} ${action.text}
-        <small>${(action.subText as string) ?? ''}</small>
+        <small>${action.subText ?? ''}</small>
       </a>
     </span>`;
   }
 
-  /** Render a primary action as a button (browse, borrow, join waitlist). */
+  /**
+   * Render action as a button for primary actions like browse, borrow,
+   * join waitlist, etc. Falls through to `renderActionLink` whenever the
+   * action carries a `url`, so the caller doesn't need to branch.
+   */
   renderActionButton(
     action: ActionButtonConfig,
     initialButton = false,
@@ -193,7 +206,7 @@ export class CollapsibleActionGroup extends ActionsHandler {
         this.clickHandler(
           action.id ?? '',
           analyticsEvent,
-          (action.borrowType as string) ?? '',
+          action.borrowType ?? '',
         );
       }}
     >
@@ -202,8 +215,10 @@ export class CollapsibleActionGroup extends ActionsHandler {
   }
 
   /**
-   * Dispatch the action's click event with analytics payload.
-   * @fires CollapsibleActionGroup#{eventName}
+   * Dispatches click events when patron clicks on action buttons.
+   *
+   * @fires CollapsibleActionGroup#{eventName} - will be browseBook,
+   *   borrowBook etc., named after the action's `id`.
    */
   clickHandler(
     eventName: string,

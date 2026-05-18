@@ -42,6 +42,7 @@ export interface ActionButtonConfig {
   id?: string;
   url?: string;
   target?: string;
+  subText?: string;
   analyticsEvent?: AnalyticsEventPayload;
   count?: number;
   /**

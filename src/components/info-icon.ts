@@ -6,7 +6,8 @@ import '@internetarchive/icon-info/icon-info.js';
 export class InfoIcon extends LitElement {
   @property({ type: String }) iconClass = '';
 
-  helpURL = 'https://help.archive.org/help/borrowing-from-the-lending-library';
+  private readonly helpURL =
+    'https://help.archive.org/help/borrowing-from-the-lending-library';
 
   render(): TemplateResult {
     return html`
