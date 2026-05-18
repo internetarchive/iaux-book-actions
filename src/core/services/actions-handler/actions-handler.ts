@@ -358,7 +358,7 @@ export default class ActionsHandler extends LitElement {
   }
 
   handleLoginOk(): void {
-    const target = `/account/login?referer=${encodeURIComponent(
+    const target = `/login?referer=${encodeURIComponent(
       URLHelper.getRedirectUrl(),
     )}`;
     URLHelper.goToUrl(target, true);
