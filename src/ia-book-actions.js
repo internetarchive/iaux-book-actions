@@ -292,7 +292,12 @@ export default class IABookActions extends LitElement {
     window.addEventListener('BookReader:userAction', () => {
       log('IABookActions:BookReader:userAction');
       if (this.borrowType === 'browsed') {
-        this.autoLoanRenewChecker(true);
+        // If the loan expired while the tab stayed visible, auto-renew on page turn
+        if (this.lendingStatus.browsingExpired) {
+          this.autoRenewExpiredLoan();
+        } else {
+          this.autoLoanRenewChecker(true);
+        }
       }
     });
 
@@ -310,10 +315,15 @@ export default class IABookActions extends LitElement {
           this.borrowType
         );
 
-        if (
-          this.borrowType === 'browsed' &&
-          this.lendingStatus.browsingExpired === false
-        ) {
+        if (this.borrowType !== 'browsed') return;
+
+        // Loan already expired while tab was hidden — try to silently renew
+        if (this.lendingStatus.browsingExpired === true) {
+          this.autoRenewExpiredLoan();
+          return;
+        }
+
+        if (this.lendingStatus.browsingExpired === false) {
           const loanTime = await this.localCache.get(
             `${this.identifier}-loanTime`
           );
@@ -324,8 +334,8 @@ export default class IABookActions extends LitElement {
           if (secondsLeft >= this.timerExecutionSeconds) {
             this.loanStatusCheckInterval(Number(secondsLeft));
           } else {
-            this.browseHasExpired();
-            this.disconnectedCallback();
+            // Loan expired while user was away — try to silently renew
+            this.autoRenewExpiredLoan();
           }
         }
       }
@@ -537,11 +547,55 @@ export default class IABookActions extends LitElement {
     this.sentryCaptureMsg(sentryLogs.browseHasExpired);
   }
 
+  /**
+   * Attempt to automatically renew a browse loan that has expired.
+   * Called on visibilitychange (user returns to tab) or on page turn when
+   * the loan has expired but the book may still be available.
+   *
+   * Reuses the same renew_loan path as the "Keep reading" warning modal button.
+   * On success: handleLoanAutoRenewed() resets the timer seamlessly.
+   * On error: handleLendingActionError() shows showLoanUnavailableModal().
+   */
+  autoRenewExpiredLoan() {
+    this.modal?.closeModal();
+    this.loanRenewResult = { ...this.loanRenewResult, renewNow: true, renewType: 'auto' };
+  }
+
+  /**
+   * Show modal when the book can no longer be automatically renewed
+   * because another patron has checked it out.
+   */
+  async showLoanUnavailableModal() {
+    const config = new ModalConfig({
+      headline: '',
+      showCloseButton: false,
+      closeOnBackdropClick: false,
+      headerColor: '#194880',
+      message:
+        'Another patron is borrowing this book. Please check back later.',
+    });
+
+    const customModalContent = html`<br />
+      <div style="text-align: center">
+        <button
+          style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
+          @click=${() => URLHelper.goToUrl(this.returnUrl, true)}
+        >
+          Okay
+        </button>
+      </div>`;
+
+    await this.modal?.showModal({ config, customModalContent });
+  }
+
   async startBrowseTimer() {
     window?.IALendingIntervals?.clearBrowseExpireTimeout();
 
-    const { browsingExpired, user_has_browsed, secondsLeftOnLoan } =
-      this.lendingStatus;
+    const {
+      browsingExpired,
+      user_has_browsed,
+      secondsLeftOnLoan,
+    } = this.lendingStatus;
 
     if (!user_has_browsed || browsingExpired) {
       log('startBrowseTimer --- !user_has_browsed || browsingExpired', {
@@ -894,9 +948,12 @@ export default class IABookActions extends LitElement {
     const action = event?.detail?.action;
     const errorMsg = event?.detail?.data?.error;
 
-    // template not show create_token errors
-    if (errorMsg && action !== 'create_token')
+    // For renew_loan failures after auto-renew, show the patron-facing message
+    if (errorMsg && action === 'renew_loan' && errorMsg.match(/not available/)) {
+      this.showLoanUnavailableModal();
+    } else if (errorMsg && action !== 'create_token') {
       this.showErrorModal(errorMsg, action);
+    }
 
     // if error related to loan token
     // - set user_has_browsed to `false`

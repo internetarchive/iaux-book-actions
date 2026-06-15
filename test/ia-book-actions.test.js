@@ -82,7 +82,7 @@ describe('<ia-book-actions>', () => {
     expect(el.disableActionGroup).to.be.true;
   });
 
-  it('handles `BookReader:userAction` event', async () => {
+  it('handles `BookReader:userAction` event when loan is active', async () => {
     const el = await fixture(
       container({
         userid: '@user1',
@@ -92,6 +92,7 @@ describe('<ia-book-actions>', () => {
 
     const spy = Sinon.spy(el, 'autoLoanRenewChecker');
     el.borrowType = 'browsed';
+    el.lendingStatus = { ...el.lendingStatus, browsingExpired: false };
     await el.updateComplete;
 
     window.dispatchEvent(new Event('BookReader:userAction'));
@@ -99,6 +100,25 @@ describe('<ia-book-actions>', () => {
 
     expect(spy.calledOnce).to.be.true;
     expect(spy.calledWith(true)).to.be.true;
+  });
+
+  it('handles `BookReader:userAction` event when loan has expired', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: { user_has_browsed: true, browsingExpired: true },
+      })
+    );
+
+    const spy = Sinon.spy(el, 'autoRenewExpiredLoan');
+    el.borrowType = 'browsed';
+    await el.updateComplete;
+
+    window.dispatchEvent(new Event('BookReader:userAction'));
+    await el.updateComplete;
+
+    expect(spy.calledOnce).to.be.true;
   });
 });
 
@@ -467,7 +487,7 @@ describe('Visibility change API for document', async () => {
     });
   });
 
-  it('when book is not expired', async () => {
+  it('when book is not expired and loan time is valid', async () => {
     const el = await fixture(
       container({
         userid: '@user1',
@@ -480,26 +500,65 @@ describe('Visibility change API for document', async () => {
     );
     await el.updateComplete;
 
+    // Set a valid loan time well into the future
+    await el.localCache.set({
+      key: 'foobar-loanTime',
+      value: new Date(new Date().getTime() + 3600 * 1000),
+      ttl: 3600,
+    });
+
     const spy = Sinon.spy(el, 'loanStatusCheckInterval');
     document.dispatchEvent(new Event('visibilitychange'));
+    await aTimeout(100);
 
     expect(spy.calledOnce).to.be.true;
   });
 
-  it('when book is already expired', async () => {
+  it('when loan expired while tab was hidden (browsingExpired false, loanTime past)', async () => {
     const el = await fixture(
       container({
         userid: '@user1',
         identifier: 'foobar',
         lendingStatus: {
           user_has_browsed: true,
+          browsingExpired: false,
         },
       })
     );
     await el.updateComplete;
 
-    const spy = Sinon.spy(el, 'browseHasExpired');
+    // Set a loan time already in the past
+    await el.localCache.set({
+      key: 'foobar-loanTime',
+      value: new Date(new Date().getTime() - 10 * 1000),
+      ttl: 3600,
+    });
+
+    const spy = Sinon.spy(el, 'autoRenewExpiredLoan');
     document.dispatchEvent(new Event('visibilitychange'));
+    await aTimeout(100);
+
+    expect(spy.calledOnce).to.be.true;
+  });
+
+  it('when loan already marked expired (browsingExpired true)', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: {
+          user_has_browsed: true,
+          browsingExpired: true,
+        },
+      })
+    );
+    await el.updateComplete;
+
+    el.borrowType = 'browsed';
+
+    const spy = Sinon.spy(el, 'autoRenewExpiredLoan');
+    document.dispatchEvent(new Event('visibilitychange'));
+    await aTimeout(100);
 
     expect(spy.calledOnce).to.be.true;
   });
