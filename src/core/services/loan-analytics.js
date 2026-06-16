@@ -150,7 +150,7 @@ export default class LoanAnanlytics {
   }
 
   /**
-   * reponsible to sent events to GA
+   * responsible to sent events to GA
    *
    * @param {*} eventCategory
    * @param {*} eventAction
@@ -159,16 +159,16 @@ export default class LoanAnanlytics {
    * @memberof LoanAnanlytics
    */
   sendEvent(eventCategory, eventAction, label, extraParams) {
-    log(
-      'eventCategory:-',
-      eventCategory,
-      '||\teventAction:-',
-      eventAction,
-      '||\tlabel:-',
-      label,
-      '||\textraParams:-',
-      extraParams,
-    );
+    // log(
+    //   'eventCategory:-',
+    //   eventCategory,
+    //   '||\teventAction:-',
+    //   eventAction,
+    //   '||\tlabel:-',
+    //   label,
+    //   '||\textraParams:-',
+    //   extraParams,
+    // );
 
     window?.archive_analytics?.send_event_no_sampling(
       eventCategory,
