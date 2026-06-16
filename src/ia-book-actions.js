@@ -333,6 +333,7 @@ export default class IABookActions extends LitElement {
           } else {
             // Loan expired while user was away — try to silently renew
             this.autoRenewExpiredLoan();
+            this.disconnectedCallback();
           }
         }
       }
@@ -353,7 +354,7 @@ export default class IABookActions extends LitElement {
       this.loanRenewTimeConfig
     );
 
-    this.loanRenewHelper.handleLoanRenew();
+    await this.loanRenewHelper.handleLoanRenew();
     this.loanRenewResult = this.loanRenewHelper.result;
   }
 
@@ -407,28 +408,29 @@ export default class IABookActions extends LitElement {
 
     log('[IABookActions] showWarningModal');
 
-    // clear modal
-    this.modal.customModalContent = nothing;
-    this.modal?.closeModal();
-    this.loanRenewResult = { texts: '', renewNow: false };
-
-    // if secondsLeft < 60, consider it 1 minute
-    let { secondsLeft } = this.loanRenewResult;
-    if (secondsLeft === undefined) {
+    // Capture texts and secondsLeft before resetting loanRenewResult
+    const {
+      texts: warningTexts,
+      secondsLeft: rawSecondsLeft,
+    } = this.loanRenewResult;
+    let secondsLeft = rawSecondsLeft;
+    if (secondsLeft === undefined || secondsLeft <= 0) {
       secondsLeft = this.lendingStatus.secondsLeftOnLoan;
     } else {
       secondsLeft = secondsLeft > 60 ? secondsLeft : 60;
     }
+
+    // clear modal and reset renew state
+    this.modal.customModalContent = nothing;
+    this.modal?.closeModal();
+    this.loanRenewResult = { texts: '', renewNow: false };
 
     const config = new ModalConfig({
       headline: 'Are you still reading?',
       headerColor: '#194880',
       showCloseButton: false,
       closeOnBackdropClick: false,
-      message: this.loanRenewHelper?.getMessageTexts(
-        this.loanRenewResult.texts,
-        secondsLeft
-      ),
+      message: this.loanRenewHelper?.getMessageTexts(warningTexts, secondsLeft),
     });
 
     const customModalContent = html`<br />
@@ -721,6 +723,7 @@ export default class IABookActions extends LitElement {
       this.sentryCaptureMsg(sentryLogs.bookHasRenewed);
     }
 
+    this.warningModalOpen = false;
     this.loanRenewInProgress = false;
   }
 

@@ -27,7 +27,7 @@ export class LoanRenewHelper {
     };
   }
 
-  handleLoanRenew() {
+  async handleLoanRenew() {
     try {
       if (this.hasPageChanged) {
         return this.pageChanged(); // user clicked on page
