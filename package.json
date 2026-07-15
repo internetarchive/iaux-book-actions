@@ -7,7 +7,7 @@
   },
   "author": "Internet Archive",
   "license": "AGPL-3.0-only",
-  "version": "1.4.3-alpha-adminsticky",
+  "version": "1.4.4",
   "main": "index.js",
   "module": "index.js",
   "publishConfig": {
