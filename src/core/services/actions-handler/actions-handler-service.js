@@ -29,7 +29,7 @@ export default async function ActionsHandlerService(options) {
     'return_loan',
   ];
   const shouldReturnError =
-    location?.href?.indexOf('?error=true') !== -1 &&
+    new URLSearchParams(location?.search).get('error') === 'true' &&
     location?.hostname !== 'archive.org';
 
   const testHostname = ['localhost', 'internetarchive.github.io'];

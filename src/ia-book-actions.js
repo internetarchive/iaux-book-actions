@@ -93,14 +93,19 @@ export default class IABookActions extends LitElement {
     this.browseTimer = undefined; // timeout
     this.timeWhenTimerStart = undefined;
 
-    /**
-     * when user click on [return the book] button on warning modal
-     */
-    this.returnNow = false;
-
     this.loanRenewInProgress = false;
 
     this.warningModalOpen = false;
+
+    /**
+     * Once the patron has seen & dismissed the informational warning modal,
+     * don't nag them again with the same modal every timer tick — only a
+     * real renewal (via interacting with the book) clears this, giving the
+     * next pre-expiry window its own single warning.
+     * @see loanRenewAttempt
+     * @see handleLoanAutoRenewed
+     */
+    this.warningModalDismissed = false;
 
     /**
      * contains one hour auto-loan-renew time configuration
@@ -363,7 +368,7 @@ export default class IABookActions extends LitElement {
    * Called on visibilitychange (user returns to tab) or on page turn when
    * the loan has expired but the book may still be available.
    *
-   * Reuses the same renew_loan path as the "Keep reading" warning modal button.
+   * Reuses the same renew_loan path as the automatic loan-renew checker.
    * On success: handleLoanAutoRenewed() resets the timer seamlessly.
    * On error: handleLendingActionError() shows showLoanUnavailableModal().
    */
@@ -400,7 +405,9 @@ export default class IABookActions extends LitElement {
   }
 
   /**
-   * Show the waring modal to ask user if they are still reading
+   * Show the informational modal warning the patron their loan will expire
+   * soon. This is acknowledgement-only — closing it does not renew the loan.
+   * Only interacting with the book itself (e.g. turning a page) renews it.
    */
   async showWarningModal() {
     if (this.warningModalOpen) return;
@@ -426,7 +433,7 @@ export default class IABookActions extends LitElement {
     this.loanRenewResult = { texts: '', renewNow: false };
 
     const config = new ModalConfig({
-      headline: 'Are you still reading?',
+      headline: 'Are you still there?',
       headerColor: '#194880',
       showCloseButton: false,
       closeOnBackdropClick: false,
@@ -436,121 +443,26 @@ export default class IABookActions extends LitElement {
     const customModalContent = html`<br />
       <div
         id="book-action-bar-custom-buttons"
-        style="display:flex;justify-content:center;"
+        style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;"
       >
         <button
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
-          @click=${() => this.patronWantsToRenewBook()}
+          @click=${() => this.dismissWarningModal()}
         >
-          Keep reading
+          Okay
         </button>
-        <button
-          style="${modalButtonStyle.iaButton} ${modalButtonStyle.return}"
-          @click=${() => this.patronWantsToReturnBook()}
-        >
-          Return the book
-        </button>
+        <info-icon></info-icon>
       </div> `;
 
     this.modal.setAttribute('aria-live', 'assertive');
     await this.modal?.showModal({ config, customModalContent });
   }
 
-  /** @param { 'renewBook' | 'returnBook' } buttonToDisable */
-  async showWarningDisabledModal(buttonToDisable = 'renewBook') {
-    // if secondsLeft < 60, consider it 1 minute
-    let { secondsLeft } = this.loanRenewResult;
-    if (secondsLeft === undefined) {
-      secondsLeft = this.lendingStatus.secondsLeftOnLoan;
-    } else {
-      secondsLeft = secondsLeft > 60 ? secondsLeft : 60;
-    }
-
-    const config = new ModalConfig({
-      headline: 'Are you still reading?',
-      headerColor: '#194880',
-      showCloseButton: false,
-      closeOnBackdropClick: false,
-      message: this.loanRenewHelper?.getMessageTexts(
-        this.loanRenewResult.texts,
-        secondsLeft
-      ),
-    });
-
-    const customModalContent = html`<br />
-      <div
-        id="disabled-book-action-bar-custom-buttons"
-        style="display:flex;justify-content:center; opacity:0.8; pointer-events:none;"
-      >
-        <button
-          disabled
-          style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
-        >
-          ${buttonToDisable === 'renewBook'
-            ? html`<ia-activity-indicator
-                mode="processing"
-                style=${modalButtonStyle.loaderIcon}
-              ></ia-activity-indicator>`
-            : 'Keep reading'}
-        </button>
-        <span
-          style="position: absolute; visibility: none; height: 1px; width: 1px; overflow: hidden;"
-          >Renewing loan, one moment please.</span
-        >
-        <button
-          disabled
-          style="${modalButtonStyle.iaButton} ${modalButtonStyle.return}"
-        >
-          ${buttonToDisable === 'returnBook'
-            ? html`<ia-activity-indicator
-                mode="processing"
-                style=${modalButtonStyle.loaderIcon}
-              ></ia-activity-indicator>`
-            : 'Return the book'}
-        </button>
-      </div> `;
-
-    await this.modal?.showModal({ config, customModalContent });
-  }
-
-  /** Handles Renew action in warning modal */
-  async patronWantsToRenewBook() {
-    this.showWarningDisabledModal();
-    this.loanRenewResult = { texts: '', renewNow: true, renewType: 'manual' };
-  }
-
-  async patronWantsToReturnBook() {
-    this.showWarningDisabledModal('returnBook');
-    document.querySelector('ia-book-actions').disableActionGroup = true;
-    this.returnNow = true;
-  }
-
-  /**
-   * Show modal when book is auto returned
-   * @deprecated
-   */
-  async showExpiredModal() {
-    const config = new ModalConfig({
-      headline: '',
-      showCloseButton: false,
-      closeOnBackdropClick: false,
-      headerColor: '#194880',
-      message: 'This book has been returned due to inactivity.',
-    });
-
-    const customModalContent = html`<br />
-      <div style="text-align: center">
-        <button
-          style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
-          @click=${() => {
-            URLHelper.goToUrl(this.returnUrl, true);
-          }}
-        >
-          Okay
-        </button>
-      </div> `;
-
-    await this.modal?.showModal({ config, customModalContent });
+  /** Acknowledges the warning modal — closes it without renewing the loan */
+  dismissWarningModal() {
+    this.modal?.closeModal();
+    this.warningModalOpen = false;
+    this.warningModalDismissed = true;
   }
 
   /**
@@ -592,7 +504,7 @@ export default class IABookActions extends LitElement {
       closeOnBackdropClick: false,
       headerColor: '#194880',
       message:
-        'Another patron is borrowing this book. Please check back later.',
+        'Due to inactivity, this book was returned, and someone else has now borrowed it. Please try again later.',
     });
 
     const customModalContent = html`<br />
@@ -667,7 +579,6 @@ export default class IABookActions extends LitElement {
         ?disabled=${this.disableActionGroup}
         ?autoRenew=${this.loanRenewResult.renewNow}
         ?autoReturn=${this.lendingStatus.browsingExpired}
-        ?returnNow=${this.returnNow}
         @loanAutoRenewed=${this.handleLoanAutoRenewed}
         @lendingActionError=${this.handleLendingActionError}
         @toggleActionGroup=${this.handleToggleActionGroup}
@@ -721,6 +632,7 @@ export default class IABookActions extends LitElement {
       this.modal.removeAttribute('id');
       this.modal.customModalContent = nothing;
       this.sentryCaptureMsg(sentryLogs.bookHasRenewed);
+      this.warningModalDismissed = false;
     }
 
     this.warningModalOpen = false;
@@ -857,7 +769,9 @@ export default class IABookActions extends LitElement {
     await this.autoLoanRenewChecker(false);
 
     // show warning modal with remaining time to auto returned it.
-    if (this.loanRenewResult.renewNow === false) {
+    // once the patron has dismissed it, don't re-show it on every subsequent
+    // tick — only an actual renewal (see handleLoanAutoRenewed) re-arms it.
+    if (this.loanRenewResult.renewNow === false && !this.warningModalDismissed) {
       /**
        * so compensate for the 50 second buffer to handle above race conditions
        * let's reduce 1 min from warning texts and early return the book when 1 min left.
