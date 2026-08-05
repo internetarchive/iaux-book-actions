@@ -38,6 +38,8 @@
 
     fieldset {
       width: fit-content;
+      max-width: 100%;
+      box-sizing: border-box;
       margin-top: 50px;
     }
     fieldset legend {
@@ -83,6 +85,93 @@
       border-radius: 10px;
     }
 
+    .timer-presets {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      max-width: 100%;
+    }
+    .timer-presets button {
+      padding: 6px 10px;
+      cursor: pointer;
+      border: 2px solid #194880;
+      border-radius: 10px;
+      background: white;
+    }
+    .timer-presets button.active-preset {
+      background: #194880;
+      color: white;
+    }
+
+    #live-status-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      width: min(400px, 100%);
+
+      /* display: flex; gap: 3rem; margin: 0 3rem; flex-wrap: wrap; */
+    }
+    #loan-status-row,
+    #lending-bar-controls {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 3rem;
+      margin: 0 3rem;
+    }
+    @media (max-width: 700px) {
+      #loan-status-row,
+      #lending-bar-controls {
+        grid-template-columns: 1fr;
+      }
+    }
+    .loan-status-badge {
+      display: inline-block;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      color: white;
+    }
+    .loan-status-badge.status-active {
+      background: #2e7d32; /* green: loan is currently checked out */
+    }
+    .loan-status-badge.status-returned {
+      background: #d9534f; /* red: auto-returned / not on loan */
+    }
+    .loan-status-badge.status-none {
+      background: #666; /* gray: nothing borrowed yet */
+    }
+    #live-status-detail {
+      color: white;
+      background: #333;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      text-align: left;
+      flex: 1;
+    }
+    #exec-log {
+      text-align: left;
+      background: #111;
+      color: #9fef9f;
+      font-family: monospace;
+      font-size: 11px;
+      max-height: 160px;
+      overflow-y: auto;
+      padding: 8px;
+      border-radius: 6px;
+      margin-top: 8px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    #exec-log div + div {
+      border-top: 1px solid #333;
+      padding-top: 2px;
+      margin-top: 2px;
+    }
+
     body.modal-manager-open {
       overflow: hidden;
     }
@@ -91,92 +180,179 @@
       display: none;
     }
   </style>
-  <script type="module" crossorigin src="assets/main.1d0dd4c8.js"></script>
+  <script type="module" crossorigin src="assets/main.27510f70.js"></script>
 </head>
 
 <body>
   <ia-book-actions></ia-book-actions>
 
+  <script>
+    /* eslint-disable */
+    // WEBDEV-8322: capture just the API-execution lines the library logs via
+    // its `log()` utility in ActionsHandlerService (create_token, browse_book,
+    // borrow_book, renew_loan, return_loan — the "→ action" / "✓/✗ action"
+    // lines) for the live status panel below. Everything else `log()` prints
+    // (internal lifecycle notes, GA event mirroring, etc.) is intentionally
+    // left out so the panel stays a clean API-call trace, not a verbose dump.
+    //
+    // This MUST run as a plain (non-module) script BEFORE the `type="module"`
+    // script's imports execute: `log.js` binds its own reference to
+    // `console.log` the moment it's imported, so overriding console.log any
+    // later (even earlier in the module script's own source) would miss it —
+    // ES module imports always run before the importing module's own
+    // top-level code, regardless of source order.
+    window.__execLog = [];
+    const __nativeConsoleLog = console.log.bind(console);
+    console.log = (...consoleArgs) => {
+      __nativeConsoleLog(...consoleArgs);
+
+      if (typeof consoleArgs[0] !== 'string' || !consoleArgs[0].startsWith('[ActionsHandlerService]')) {
+        return;
+      }
+
+      const time = new Date().toISOString().split('T')[1].replace('Z', '');
+      const text = `[${time}] ` + consoleArgs
+        .map((arg) => (typeof arg === 'object' ? JSON.stringify(arg) : String(arg)))
+        .join(' ');
+      window.__execLog.push(text);
+      if (window.__renderExecLogEntry) window.__renderExecLogEntry(text);
+    };
+  </script>
+
   
 
   <div>
-    <fieldset>
-      <legend>Dev testing for book title bar</legend>
-        <table class="initial">
-          <tr>
-            <td class="titleBar">
-              <label><input type="checkbox" name="title" value="title" />Title Bar</label>
-            </td>
-            <td class="searchParam">
-              <label><input type="checkbox" name="search" value="Search Param" />Search Param</label>
-            </td>
-            <td>
-              <label class="ia-button"><button class="pageChangedEvent">Page Change Event</button></label>
-            </td>
-          </tr>
-        </table>
-    </fieldset>
+    <div id="loan-status-row">
+      <fieldset>
+        <legend>WEBDEV-8322: loan duration for testing (reloads page)</legend>
+        <div class="timer-presets">
+          <button data-timer="15s">15 sec</button>
+          <button data-timer="30s">30 sec</button>
+          <button data-timer="2">2 min (default)</button>
+          <button data-timer="5">5 min</button>
+          <button data-timer="10">10 min</button>
+          <button data-timer="30">30 min</button>
+          <button data-timer="60">60 min (production default)</button>
+        </div>
+        <p style="color: #666; font-size: 11px; margin: 4px 0 0;">
+          Pick 15s/30s to watch the whole warn &rarr; auto-return &rarr; silent-reborrow
+          lifecycle play out on its own in under a minute, without clicking the scenario
+          buttons below.
+        </p>
+      </fieldset>
 
-    <fieldset>
-      <legend>Dev testing for book action bar</legend>
-        <table class="initial">
-          <tr colspan='5'>
-            <td class="errorEnable"><label><input type="checkbox" name="errorEnable" value="errorEnable" />Do you want to see error response?</label></td>
-          </tr>
-          <tr>
-            <td class="userState">
-              <label><input type="checkbox" name="user" value="isAdmin" />isAdmin</label>
-              <label><input type="checkbox" name="user" value="isLoggedIn" />isLoggedIn</label>
-            </td>
-            <td class="printDisabled">
-              <label><input type="checkbox" name="is_printdisabled" value="is_printdisabled" />is_printdisabled</label>
-              <label><input type="checkbox" name="user_is_printdisabled" value="user_is_printdisabled" />user_is_printdisabled</label>
-            </td>
-            <td class="availableToBrowse">
-              <label><input type="radio" name="browse" value="available_to_browse" />available_to_browse</label>
-              <label><input type="radio" name="browse" value="user_has_browsed" />user_has_browsed</label>
-              <label><input type="radio" name="browse" value="browsingExpired" />browsingExpired</label>
-            </td>
-            <td class="availableToBorrow">
-              <label><input type="radio" name="borrow" value="available_to_borrow" />available_to_borrow</label>
-              <label><input type="radio" name="borrow" value="user_on_waitlist" />user_on_waitlist</label>
-              <label><input type="radio" name="borrow" value="user_can_claim_waitlist" />user_can_claim_waitlist</label>
-              <label><input type="radio" name="borrow" value="available_to_waitlist" />available_to_waitlist</label>
-              <label><input type="radio" name="borrow" value="user_has_borrowed" />user_has_borrowed</label>
-            </td>
-            <td class="purchase">
-              <label><input type="checkbox" name="purchase" value="purchase" />purchase</label>
-            </td>
+      <fieldset>
+        <legend>WEBDEV-8322: live loan status (the action bar alone won't always make this obvious)</legend>
+        <div id="live-status-wrapper">
+          <span id="loan-status-badge" class="loan-status-badge status-none">NO LOAN</span>
+          <div id="live-status-detail">Not currently browsing this book</div>
+        </div>
+        <div id="exec-log"></div>
+        <p style="color: #666; font-size: 11px; margin: 4px 0 0; text-align: left;">
+          The badge flips to RETURNED the instant auto-return fires (scenario 2) — even though
+          no modal appears and the page doesn't refresh, per the ticket. The log below mirrors
+          every create_token / browse_book / renew_loan / return_loan call and its success/error
+          result as it happens.
+        </p>
+        <button id="clear-exec-log" style="margin-top: 6px; padding: 4px 8px; cursor: pointer;">Clear log</button>
+      </fieldset>
+    </div>
 
-            <td class="reflect">
-              <input type="button" style="padding: 10px;
-              background: #194880;
-              color: white;
-              font-weight: bold; display: none" name="purchase" value="Reflect" />
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <fieldset style="margin-top: 10px;">
-                <legend style="color: black;">controls for browsed book</legend>
-                  <table aria-hidden="true">
-                    <tbody><tr>
-                      <td class="action-button">
-                        <button id="show_warning_modal">When Browsing (`user_has_browsed`),<br> show Warning Modal</button>
-                      </td>
-                      <td class="action-button">
-                        <button id="show_expired_modal">While Browsing (`user_has_browsed`),<br> Expire book & show its modal</button>
-                      </td>
-                      <td class="action-button">
-                        <button id="resync_timer">While Browsing (`user_has_browsed`),<br> resync timer</button>
-                      </td>
-                    </tr>
-                  </tbody></table>
-              </fieldset>
-            </td>
-          </tr>
-        </table>
-    </fieldset>
+
+    <div id="lending-bar-controls">
+
+      <fieldset>
+        <legend>Dev testing for book title bar</legend>
+          <table class="initial">
+            <tr>
+              <td class="titleBar">
+                <label><input type="checkbox" name="title" value="title" />Title Bar</label>
+              </td>
+              <td class="searchParam">
+                <label><input type="checkbox" name="search" value="Search Param" />Search Param</label>
+              </td>
+              <td>
+                <label class="ia-button"><button class="pageChangedEvent">Page Change Event</button></label>
+              </td>
+            </tr>
+          </table>
+      </fieldset>
+
+      <fieldset>
+        <legend>Dev testing for book action bar</legend>
+          <table class="initial">
+            <tr colspan='5'>
+              <td class="errorEnable">
+                <label><input type="checkbox" name="errorEnable" value="errorEnable" />Do you want to see error response?</label>
+                <span style="color: #666; font-size: 11px; display: block; padding: 0 10px 10px;">
+                  Tip: turn this on before scenarios 3/4 below to simulate someone else having
+                  already borrowed the book (shows the "Due to inactivity..." modal).
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td class="userState">
+                <label><input type="checkbox" name="user" value="isAdmin" />isAdmin</label>
+                <label><input type="checkbox" name="user" value="isLoggedIn" />isLoggedIn</label>
+              </td>
+              <td class="printDisabled">
+                <label><input type="checkbox" name="is_printdisabled" value="is_printdisabled" />is_printdisabled</label>
+                <label><input type="checkbox" name="user_is_printdisabled" value="user_is_printdisabled" />user_is_printdisabled</label>
+              </td>
+              <td class="availableToBrowse">
+                <label><input type="radio" name="browse" value="available_to_browse" />available_to_browse</label>
+                <label><input type="radio" name="browse" value="user_has_browsed" />user_has_browsed</label>
+                <label><input type="radio" name="browse" value="browsingExpired" />browsingExpired</label>
+              </td>
+              <td class="availableToBorrow">
+                <label><input type="radio" name="borrow" value="available_to_borrow" />available_to_borrow</label>
+                <label><input type="radio" name="borrow" value="user_on_waitlist" />user_on_waitlist</label>
+                <label><input type="radio" name="borrow" value="user_can_claim_waitlist" />user_can_claim_waitlist</label>
+                <label><input type="radio" name="borrow" value="available_to_waitlist" />available_to_waitlist</label>
+                <label><input type="radio" name="borrow" value="user_has_borrowed" />user_has_borrowed</label>
+              </td>
+              <td class="purchase">
+                <label><input type="checkbox" name="purchase" value="purchase" />purchase</label>
+              </td>
+
+              <td class="reflect">
+                <input type="button" style="padding: 10px;
+                background: #194880;
+                color: white;
+                font-weight: bold; display: none" name="purchase" value="Reflect" />
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <fieldset style="margin-top: 10px;">
+                  <legend style="color: black;">WEBDEV-8322: loan auto-renew QA scenarios (requires `user_has_browsed`)</legend>
+                    <table aria-hidden="true">
+                      <tbody><tr>
+                        <td class="action-button">
+                          <button id="show_warning_modal">1. Show "Are you still there?" modal<br>(Okay does NOT renew the loan)</button>
+                        </td>
+                        <td class="action-button">
+                          <button id="show_expired_modal">2. Auto-return due to inactivity<br>(no modal, page stays put)</button>
+                        </td>
+                        <td class="action-button">
+                          <button class="pageChangedEvent">3. Interact with book (turn page)<br>silently retries the loan if expired</button>
+                        </td>
+                        <td class="action-button">
+                          <button id="resync_timer">4. Return to tab after time away<br>(visibilitychange — silent retry if expired)</button>
+                        </td>
+                      </tr>
+                    </tbody></table>
+                    <p style="color: #666; font-size: 11px; margin: 8px 0 0;">
+                      Try 2 → 3 (or 2 → 4) in sequence to walk through the full "auto-returned, then patron
+                      keeps reading" flow the ticket describes.
+                    </p>
+                </fieldset>
+              </td>
+            </tr>
+          </table>
+      </fieldset>
+    </div>
+
   </div>
   <modal-manager></modal-manager>
 </body>
