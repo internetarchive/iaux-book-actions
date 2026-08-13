@@ -71,11 +71,12 @@ export default class LoanAnanlytics {
     // parse time to just `'browse'` and `'return'` (since `'browse'`
     // is truthy), so `'browseagain'` and `'autoreturn'` actions never
     // matched any case — they fell through to `default` and were no-ops.
-    // Preserving that behavior verbatim. If `'browseagain'` /
-    // `'autoreturn'` should actually count, that's a real bug worth
-    // fixing in a separate ticket rather than silently in this migration.
+    // `'browseagain'`/`'autoreturn'` are real dispatched actions (see
+    // `ActionsHandler.bindEvents` for `browseBookAgain`/`autoReturn`) and
+    // are meant to bump the same counters as `'browse'`/`'return'`.
     switch (action) {
       case 'browse':
+      case 'browseagain':
         browse = browse ? Number(browse) + 1 : 1;
         this.gaStats.browse = browse;
         renew = 0;
@@ -86,6 +87,7 @@ export default class LoanAnanlytics {
         this.gaStats.renew = renew;
         break;
       case 'return':
+      case 'autoreturn':
         expire = expire ? Number(expire) + 1 : 1;
         this.gaStats.expire = expire;
         renew = 0;
