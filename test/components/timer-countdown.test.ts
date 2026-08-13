@@ -47,4 +47,26 @@ describe('<timer-countdown>', async () => {
 
     expect(el.secondsLeftOnLoan).to.equal(2);
   });
+
+  it('renders singular "minute" at the 1-minute boundary', async () => {
+    const el = (await fixture(
+      container({ secondsLeftOnLoan: 60 }),
+    )) as TimerCountdown;
+
+    await el.updateComplete;
+
+    expect(el.minutesLeftOnLoan).to.equal('0:01');
+    expect(el.remainingTime).to.equal('0:01 minute');
+  });
+
+  it('renders plural "minutes" away from the 1-minute boundary', async () => {
+    const el = (await fixture(
+      container({ secondsLeftOnLoan: 120 }),
+    )) as TimerCountdown;
+
+    await el.updateComplete;
+
+    expect(el.minutesLeftOnLoan).to.equal('0:02');
+    expect(el.remainingTime).to.equal('0:02 minutes');
+  });
 });

@@ -6,8 +6,12 @@ export class TimerCountdown extends LitElement {
   @property({ type: Number }) secondsLeftOnLoan = 0;
   @property({ type: Boolean }) displayTime = false;
 
+  private get totalMinutes(): number {
+    return Math.ceil(Math.round(this.secondsLeftOnLoan) / 60);
+  }
+
   get minutesLeftOnLoan(): string {
-    const totalMinutes = Math.ceil(Math.round(this.secondsLeftOnLoan) / 60);
+    const { totalMinutes } = this;
     if (totalMinutes < 10) return `0:0${totalMinutes}`;
     if (totalMinutes === 60) return `1:00`;
     return `0:${totalMinutes}`;
@@ -17,12 +21,9 @@ export class TimerCountdown extends LitElement {
   get remainingTime(): string {
     const unitOfTime = 'minute';
     const timeLeft = this.minutesLeftOnLoan;
-    // Preserves original (buggy) behavior: comparison was `timeLeft !== 1`
-    // against a string, so the plural branch always wins. Fixing this would
-    // change rendered output for the exactly-1-minute case.
-    return timeLeft !== ('1' as unknown as string)
-      ? `${timeLeft} ${unitOfTime}s`
-      : `${timeLeft} ${unitOfTime}`;
+    return this.totalMinutes === 1
+      ? `${timeLeft} ${unitOfTime}`
+      : `${timeLeft} ${unitOfTime}s`;
   }
 
   render(): TemplateResult {
