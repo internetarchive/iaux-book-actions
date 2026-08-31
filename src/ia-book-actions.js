@@ -20,6 +20,7 @@ import { LoanTokenPoller } from './core/services/loan-token-poller.js';
 import { LoanRenewHelper } from './core/services/loan-renew-helper.js';
 import log from './core/services/log.js';
 import { URLHelper } from './core/config/url-helper.js';
+import { infoIcon } from './assets/data/info.js';
 
 export const events = {
   browseExpired: 'IABookReader:BrowsingHasExpired',
@@ -437,13 +438,25 @@ export default class IABookActions extends LitElement {
       headerColor: '#194880',
       showCloseButton: false,
       closeOnBackdropClick: false,
-      message: this.loanRenewHelper?.getMessageTexts(warningTexts, secondsLeft),
+      message: html`${this.loanRenewHelper?.getMessageTexts(
+        warningTexts,
+        secondsLeft
+      )}
+        <a
+          href="https://help.archive.org/help/borrowing-from-the-lending-library"
+          target="_blank"
+          title="Get more info on borrowing from The Lending Library"
+          data-event-click-tracking="BookReader|BrowsableMoreInfo"
+          style="display:inline-flex;vertical-align:middle;line-height:0;"
+        >
+          ${infoIcon}
+        </a>`,
     });
 
-    const customModalContent = html`<br />
+    const customModalContent = html`
       <div
         id="book-action-bar-custom-buttons"
-        style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;"
+        style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;margin-top:10px;"
       >
         <button
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
@@ -451,7 +464,6 @@ export default class IABookActions extends LitElement {
         >
           Okay
         </button>
-        <info-icon></info-icon>
       </div> `;
 
     this.modal.setAttribute('aria-live', 'assertive');

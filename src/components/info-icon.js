@@ -42,7 +42,6 @@ export class InfoIcon extends LitElement {
         height: 20px;
         vertical-align: middle;
         --iconFillColor: white;
-        --iconStrokeColor: red;
       }
       .more-info-icon img {
         width: 24px;
