@@ -44,7 +44,7 @@
     }
     fieldset legend {
       text-align: left;
-      font-size: 12px;
+      font-size: 14px;
     }
     td {
       color: white;
@@ -54,7 +54,7 @@
       text-align: initial;
       margin: 5px 0;
       width: max-content;
-      display: block;
+      display: inline;
     }
     label {
       padding: 10px;
@@ -108,7 +108,7 @@
       align-items: center;
       gap: 10px;
       flex-wrap: wrap;
-      width: min(400px, 100%);
+      /* width: min(400px, 100%); */
 
       /* display: flex; gap: 3rem; margin: 0 3rem; flex-wrap: wrap; */
     }
@@ -172,6 +172,9 @@
       margin-top: 2px;
     }
 
+    #auto-renew-controls {
+      display: none1;
+    }
     body.modal-manager-open {
       overflow: hidden;
     }
@@ -180,7 +183,7 @@
       display: none;
     }
   </style>
-  <script type="module" crossorigin src="assets/main.27510f70.js"></script>
+  <script type="module" crossorigin src="assets/main.66d90e16.js"></script>
 </head>
 
 <body>
@@ -257,10 +260,34 @@
         <button id="clear-exec-log" style="margin-top: 6px; padding: 4px 8px; cursor: pointer;">Clear log</button>
       </fieldset>
     </div>
+    <div id="auto-renew-controls">
+      <fieldset style="margin-top: 10px;">
+        <legend style="color: black;">WEBDEV-8322: loan auto-renew QA scenarios (requires `user_has_browsed`)</legend>
+          <table aria-hidden="true">
+            <tbody><tr>
+              <td class="action-button">
+                <button id="show_warning_modal">1. Show "Are you still there?" modal<br>(Okay does NOT renew the loan)</button>
+              </td>
+              <td class="action-button">
+                <button id="show_expired_modal">2. Auto-return due to inactivity<br>(no modal, page stays put)</button>
+              </td>
+              <td class="action-button">
+                <button class="pageChangedEvent">3. Interact with book (turn page)<br>silently renew if interact in given time</button>
+              </td>
+              <td class="action-button">
+                <button id="resync_timer">4. Return to tab after time away<br>(visibilitychange — silent retry if expired)</button>
+              </td>
+            </tr>
+          </tbody></table>
+          <p style="color: #666; font-size: 11px; margin: 8px 0 0;">
+            Try 2 → 3 (or 2 → 4) in sequence to walk through the full "auto-returned, then patron
+            keeps reading" flow the ticket describes.
+          </p>
+      </fieldset>
+    </div>
 
 
     <div id="lending-bar-controls">
-
       <fieldset>
         <legend>Dev testing for book title bar</legend>
           <table class="initial">
@@ -324,29 +351,6 @@
             </tr>
             <tr>
               <td>
-                <fieldset style="margin-top: 10px;">
-                  <legend style="color: black;">WEBDEV-8322: loan auto-renew QA scenarios (requires `user_has_browsed`)</legend>
-                    <table aria-hidden="true">
-                      <tbody><tr>
-                        <td class="action-button">
-                          <button id="show_warning_modal">1. Show "Are you still there?" modal<br>(Okay does NOT renew the loan)</button>
-                        </td>
-                        <td class="action-button">
-                          <button id="show_expired_modal">2. Auto-return due to inactivity<br>(no modal, page stays put)</button>
-                        </td>
-                        <td class="action-button">
-                          <button class="pageChangedEvent">3. Interact with book (turn page)<br>silently retries the loan if expired</button>
-                        </td>
-                        <td class="action-button">
-                          <button id="resync_timer">4. Return to tab after time away<br>(visibilitychange — silent retry if expired)</button>
-                        </td>
-                      </tr>
-                    </tbody></table>
-                    <p style="color: #666; font-size: 11px; margin: 8px 0 0;">
-                      Try 2 → 3 (or 2 → 4) in sequence to walk through the full "auto-returned, then patron
-                      keeps reading" flow the ticket describes.
-                    </p>
-                </fieldset>
               </td>
             </tr>
           </table>
