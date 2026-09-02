@@ -178,12 +178,16 @@
     body.modal-manager-open {
       overflow: hidden;
     }
+
+    #action-bar-modal {
+      --modalWidth: 35rem;
+    }
   
     modal-manager[mode='closed'] {
       display: none;
     }
   </style>
-  <script type="module" crossorigin src="assets/main.66d90e16.js"></script>
+  <script type="module" crossorigin src="assets/main.1d98ae51.js"></script>
 </head>
 
 <body>
@@ -191,12 +195,16 @@
 
   <script>
     /* eslint-disable */
-    // WEBDEV-8322: capture just the API-execution lines the library logs via
-    // its `log()` utility in ActionsHandlerService (create_token, browse_book,
-    // borrow_book, renew_loan, return_loan — the "→ action" / "✓/✗ action"
-    // lines) for the live status panel below. Everything else `log()` prints
-    // (internal lifecycle notes, GA event mirroring, etc.) is intentionally
-    // left out so the panel stays a clean API-call trace, not a verbose dump.
+    // WEBDEV-8322: capture the library's `log()` lines — API calls
+    // (create_token/browse_book/borrow_book/renew_loan/return_loan and their
+    // success/error from ActionsHandlerService), lifecycle events
+    // ([IABookActions]: page-turn/BookReader:userAction received,
+    // visibilitychange backgrounded/foregrounded, browseHasExpired,
+    // showWarningModal, handleLoanAutoRenewed, etc), and anything the demo
+    // itself triggers ([Demo]: user_has_browsed set, error-mode toggled,
+    // etc) — into the live status panel below, so QA can see everything
+    // that happened without opening devtools. GA event-mirroring noise
+    // (`eventCategory:- ...`) is the one thing still filtered out.
     //
     // This MUST run as a plain (non-module) script BEFORE the `type="module"`
     // script's imports execute: `log.js` binds its own reference to
@@ -209,7 +217,8 @@
     console.log = (...consoleArgs) => {
       __nativeConsoleLog(...consoleArgs);
 
-      if (typeof consoleArgs[0] !== 'string' || !consoleArgs[0].startsWith('[ActionsHandlerService]')) {
+      const loggedPrefixes = ['[ActionsHandlerService]', '[IABookActions]', '[Demo]'];
+      if (typeof consoleArgs[0] !== 'string' || !loggedPrefixes.some((prefix) => consoleArgs[0].startsWith(prefix))) {
         return;
       }
 
