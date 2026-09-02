@@ -349,7 +349,9 @@ describe('Browsing expired status', () => {
     await aTimeout(1500); // wait for 1.5 second
     await el.updateComplete;
 
-    expect(el.primaryActions[0].text).to.equal('Borrow');
+    // Auto-return must not visibly change the action bar — it should stay
+    // exactly as it looked while reading (see WEBDEV-8322).
+    expect(el.primaryActions[0].text).to.equal('Return now');
 
     expect(el.timerCountdownEl).to.exist;
 
@@ -392,7 +394,9 @@ describe('Browsing expired status', () => {
     await aTimeout(1500); // wait for 1.5 sec
 
     expect(eventReceived).to.equal(true);
-    expect(el.primaryActions[0].text).to.equal('Borrow');
+    // Auto-return must not visibly change the action bar — it should stay
+    // exactly as it looked while reading (see WEBDEV-8322).
+    expect(el.primaryActions[0].text).to.equal('Return now');
     expect(el.tokenPoller.loanTokenInterval).to.equal(undefined);
   });
 });

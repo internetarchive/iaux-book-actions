@@ -217,6 +217,35 @@ export default class IABookActions extends LitElement {
   /** End SharedObserver resize handler */
 
   async setupLendingToolbarActions() {
+    const hasExpired =
+      'browsingExpired' in this.lendingStatus &&
+      this.lendingStatus?.browsingExpired;
+    if (hasExpired) {
+      // Intentionally do NOT recompute primaryActions/primaryColor/borrowType
+      // here — per the ticket, auto-return must not visibly change anything.
+      // The action bar stays exactly as it looked while reading; only a
+      // successful silent renewal or the "unavailable" error modal are
+      // allowed to change what's shown next.
+      log('[IABookActions] browsing expired — leaving action bar untouched');
+
+      if (!this.tokenPoller) {
+        this.sentryCaptureMsg(sentryLogs.bookWasExpired);
+      }
+      window?.IALendingIntervals?.clearAll();
+
+      /** Global event - always fire */
+      this.dispatchEvent(
+        new Event(events.browseExpired, {
+          bubbles: true,
+          cancelable: false,
+          composed: true,
+        })
+      );
+
+      // early return if book is already expired
+      return;
+    }
+
     this.lendingOptions = new GetLendingActions(
       this.userid,
       this.identifier,
@@ -237,30 +266,6 @@ export default class IABookActions extends LitElement {
     });
 
     this.borrowType = actions.borrowType ? actions.borrowType : null;
-
-    const hasExpired =
-      'browsingExpired' in this.lendingStatus &&
-      this.lendingStatus?.browsingExpired;
-    if (hasExpired) {
-      log('[IABookActions] browsing expired — showing expired state');
-
-      if (!this.tokenPoller) {
-        this.sentryCaptureMsg(sentryLogs.bookWasExpired);
-      }
-      window?.IALendingIntervals?.clearAll();
-
-      /** Global event - always fire */
-      this.dispatchEvent(
-        new Event(events.browseExpired, {
-          bubbles: true,
-          cancelable: false,
-          composed: true,
-        })
-      );
-
-      // early return if book is already expired
-      return;
-    }
 
     if (this.borrowType === 'browsed') {
       // start timer for loan-renew
@@ -299,12 +304,17 @@ export default class IABookActions extends LitElement {
      * dispatched this event from bookreader page changed
      */
     window.addEventListener('BookReader:userAction', () => {
+      log('[IABookActions] BookReader:userAction received', {
+        borrowType: this.borrowType,
+        browsingExpired: this.lendingStatus.browsingExpired,
+      });
+
       // If the loan expired while the tab stayed visible, auto-renew on page turn
       if (this.lendingStatus.browsingExpired) {
         this.autoRenewExpiredLoan();
       }
 
-      if (this.borrowType === 'browsed') {
+      if (this.borrowType === 'browsed' && !this.lendingStatus.browsingExpired) {
         this.autoLoanRenewChecker(true);
       }
     });
@@ -315,32 +325,35 @@ export default class IABookActions extends LitElement {
      * the [visibilitychange] event can trigger timer to show relavent messages
      */
     document.addEventListener('visibilitychange', async () => {
-      if (!document.hidden) {
-        log('[IABookActions] visibilitychange:', this.borrowType);
+      if (document.hidden) {
+        log('[IABookActions] visibilitychange: tab backgrounded');
+        return;
+      }
 
-        // Loan already expired while tab was hidden — try to silently renew
-        if (this.lendingStatus.browsingExpired === true) {
+      log('[IABookActions] visibilitychange: tab foregrounded', this.borrowType);
+
+      // Loan already expired while tab was hidden — try to silently renew
+      if (this.lendingStatus.browsingExpired === true) {
+        this.autoRenewExpiredLoan();
+        return;
+      }
+
+      if (this.borrowType !== 'browsed') return;
+
+      if (this.lendingStatus.browsingExpired === false) {
+        const loanTime = await this.localCache.get(
+          `${this.identifier}-loanTime`
+        );
+
+        // number of seconds left in current loan
+        const secondsLeft = Math.round((loanTime - new Date()) / 1000);
+
+        if (secondsLeft >= this.timerExecutionSeconds) {
+          this.loanStatusCheckInterval(Number(secondsLeft));
+        } else {
+          // Loan expired while user was away — try to silently renew
           this.autoRenewExpiredLoan();
-          return;
-        }
-
-        if (this.borrowType !== 'browsed') return;
-
-        if (this.lendingStatus.browsingExpired === false) {
-          const loanTime = await this.localCache.get(
-            `${this.identifier}-loanTime`
-          );
-
-          // number of seconds left in current loan
-          const secondsLeft = Math.round((loanTime - new Date()) / 1000);
-
-          if (secondsLeft >= this.timerExecutionSeconds) {
-            this.loanStatusCheckInterval(Number(secondsLeft));
-          } else {
-            // Loan expired while user was away — try to silently renew
-            this.autoRenewExpiredLoan();
-            this.disconnectedCallback();
-          }
+          this.disconnectedCallback();
         }
       }
     });
@@ -438,19 +451,23 @@ export default class IABookActions extends LitElement {
       headerColor: '#194880',
       showCloseButton: false,
       closeOnBackdropClick: false,
-      message: html`${this.loanRenewHelper?.getMessageTexts(
-        warningTexts,
-        secondsLeft
-      )}
+      message: html`<span
+        style="display:inline-flex;align-items:center;flex-wrap:nowrap;gap:4px;"
+      >
+        <span>${this.loanRenewHelper?.getMessageTexts(
+          warningTexts,
+          secondsLeft
+        )}</span>
         <a
           href="https://help.archive.org/help/borrowing-from-the-lending-library"
           target="_blank"
           title="Get more info on borrowing from The Lending Library"
           data-event-click-tracking="BookReader|BrowsableMoreInfo"
-          style="display:inline-flex;vertical-align:middle;line-height:0;"
+          style="display:inline-flex;flex-shrink:0;line-height:0;"
         >
           ${infoIcon}
-        </a>`,
+        </a>
+      </span>`,
     });
 
     const customModalContent = html`

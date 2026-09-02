@@ -178,6 +178,10 @@
     body.modal-manager-open {
       overflow: hidden;
     }
+
+    #action-bar-modal {
+      --modalWidth: 35rem;
+    }
   
     modal-manager[mode='closed'] {
       display: none;
@@ -190,12 +194,16 @@
 
   <script>
     /* eslint-disable */
-    // WEBDEV-8322: capture just the API-execution lines the library logs via
-    // its `log()` utility in ActionsHandlerService (create_token, browse_book,
-    // borrow_book, renew_loan, return_loan — the "→ action" / "✓/✗ action"
-    // lines) for the live status panel below. Everything else `log()` prints
-    // (internal lifecycle notes, GA event mirroring, etc.) is intentionally
-    // left out so the panel stays a clean API-call trace, not a verbose dump.
+    // WEBDEV-8322: capture the library's `log()` lines — API calls
+    // (create_token/browse_book/borrow_book/renew_loan/return_loan and their
+    // success/error from ActionsHandlerService), lifecycle events
+    // ([IABookActions]: page-turn/BookReader:userAction received,
+    // visibilitychange backgrounded/foregrounded, browseHasExpired,
+    // showWarningModal, handleLoanAutoRenewed, etc), and anything the demo
+    // itself triggers ([Demo]: user_has_browsed set, error-mode toggled,
+    // etc) — into the live status panel below, so QA can see everything
+    // that happened without opening devtools. GA event-mirroring noise
+    // (`eventCategory:- ...`) is the one thing still filtered out.
     //
     // This MUST run as a plain (non-module) script BEFORE the `type="module"`
     // script's imports execute: `log.js` binds its own reference to
@@ -208,7 +216,8 @@
     console.log = (...consoleArgs) => {
       __nativeConsoleLog(...consoleArgs);
 
-      if (typeof consoleArgs[0] !== 'string' || !consoleArgs[0].startsWith('[ActionsHandlerService]')) {
+      const loggedPrefixes = ['[ActionsHandlerService]', '[IABookActions]', '[Demo]'];
+      if (typeof consoleArgs[0] !== 'string' || !loggedPrefixes.some((prefix) => consoleArgs[0].startsWith(prefix))) {
         return;
       }
 
@@ -328,6 +337,8 @@
         item.checked = true;
       }
       item.addEventListener('click', (e) => {
+        console.log(`[Demo] error-response mode ${e.target.checked ? 'enabled' : 'disabled'}`);
+
         var searchParams = new URLSearchParams(window.location.search);
         var separate = '';
         if (e.target.checked) {
@@ -377,6 +388,8 @@
 
     document.querySelectorAll('.availableToBrowse input[type=radio]').forEach((item) => {
       item.addEventListener('click', async (e) => {
+        console.log(`[Demo] "${e.target.value}" selected under availableToBrowse`);
+
         if (e.target.value === 'user_has_browsed') {
           lendingStatus1.user_has_browsed = true;
           lendingStatus1.available_to_browse = false;
@@ -419,6 +432,7 @@
     // "Okay" (or closing it) must NOT renew the loan — only interacting
     // with the book (scenario 3 below) does that.
     document.querySelector('#show_warning_modal').addEventListener('click', async () => {
+      console.log('[Demo] scenario 1 button clicked: show warning modal');
       if (!iaBookActions.lendingStatus.user_has_browsed) {
         const newLendingStatus = { ...iaBookActions.lendingStatus, user_has_browsed: true };
         iaBookActions.lendingStatus = newLendingStatus;
@@ -432,6 +446,7 @@
     // No modal should appear and the page should NOT refresh — the reader
     // just silently sits on whatever page it was on.
     document.querySelector('#show_expired_modal').addEventListener('click', async () => {
+      console.log('[Demo] scenario 2 button clicked: force auto-return');
       if (!iaBookActions.lendingStatus.user_has_browsed) {
         const newLendingStatus = { ...iaBookActions.lendingStatus, user_has_browsed: true };
         iaBookActions.lendingStatus = newLendingStatus;
@@ -446,6 +461,7 @@
     // If the loan already expired while hidden, this silently attempts to
     // re-borrow (same success/failure paths as scenario 3).
     document.querySelector('#resync_timer').addEventListener('click', async (e) => {
+      console.log('[Demo] scenario 4 button clicked: simulate visibilitychange (tab return)');
       if (iaBookActions.lendingStatus.user_has_browsed) {
         document.querySelector('ia-book-actions').dispatchEvent(
           new Event('visibilitychange', {
@@ -511,6 +527,7 @@
     // should surface the "Due to inactivity..." modal instead.
     document.querySelectorAll('.pageChangedEvent').forEach((button) => {
       button.addEventListener('click', () => {
+        console.log('[Demo] page-change / BookReader:userAction dispatched');
         document.querySelector('ia-book-actions').dispatchEvent(
           new CustomEvent('BookReader:userAction', {
             detail: {},
