@@ -183,14 +183,15 @@ export default class ActionsHandler extends LitElement {
     ActionsHandlerService({
       action,
       identifier: this.identifier,
-      success: data => {
+      success: async data => {
         log('RENEW_LOAN --- ', data, action, data.loan, this.identifier);
         const activeLoan = data.loan ? data.loan : undefined;
         const isRenewal = activeLoan.renewal;
 
         if (activeLoan && isRenewal) {
-          // when loan is renewed, let's reset timer & let everyone know.
-          this.setBrowseTimeSession();
+          // Await — loanAutoRenewed listeners read this same cache key
+          // immediately; dispatching before the write lands was a race.
+          await this.setBrowseTimeSession();
         } else {
           log('RENEW_LOAN ERROR --- ', {
             action,

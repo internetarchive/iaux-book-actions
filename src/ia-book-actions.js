@@ -332,29 +332,35 @@ export default class IABookActions extends LitElement {
 
       log('[IABookActions] visibilitychange: tab foregrounded', this.borrowType);
 
-      // Loan already expired while tab was hidden — try to silently renew
-      if (this.lendingStatus.browsingExpired === true) {
-        this.autoRenewExpiredLoan();
-        return;
-      }
-
-      if (this.borrowType !== 'browsed') return;
-
-      if (this.lendingStatus.browsingExpired === false) {
-        const loanTime = await this.localCache.get(
-          `${this.identifier}-loanTime`
-        );
-
-        // number of seconds left in current loan
-        const secondsLeft = Math.round((loanTime - new Date()) / 1000);
-
-        if (secondsLeft >= this.timerExecutionSeconds) {
-          this.loanStatusCheckInterval(Number(secondsLeft));
-        } else {
-          // Loan expired while user was away — try to silently renew
+      try {
+        // Loan already expired while tab was hidden — try to silently renew
+        if (this.lendingStatus.browsingExpired === true) {
           this.autoRenewExpiredLoan();
-          this.disconnectedCallback();
+          return;
         }
+
+        if (this.borrowType !== 'browsed') return;
+
+        if (this.lendingStatus.browsingExpired === false) {
+          const loanTime = await this.localCache.get(
+            `${this.identifier}-loanTime`
+          );
+
+          // number of seconds left in current loan
+          const secondsLeft = Math.round((loanTime - new Date()) / 1000);
+
+          if (secondsLeft >= this.timerExecutionSeconds) {
+            this.loanStatusCheckInterval(Number(secondsLeft));
+          } else {
+            // Loan expired while user was away — try to silently renew
+            this.autoRenewExpiredLoan();
+            this.disconnectedCallback();
+          }
+        }
+      } catch (error) {
+        // Surface localCache failures instead of an unhandled rejection.
+        log('[IABookActions] visibilitychange handler failed', error);
+        this.sentryCaptureMsg(`visibilitychange handler failed: ${error}`);
       }
     });
   }
@@ -642,9 +648,16 @@ export default class IABookActions extends LitElement {
       const loanTime = await this.localCache.get(`${this.identifier}-loanTime`);
 
       // number of seconds left in current loan
-      const secondsLeft = Math.round((loanTime - new Date()) / 1000);
+      const rawSecondsLeft = Math.round((loanTime - new Date()) / 1000);
+      // Guard against a stale/missing loanTime read producing NaN, which
+      // would get the loan stuck "active" with a countdown that never moves.
+      const secondsLeft =
+        Number.isFinite(rawSecondsLeft) && rawSecondsLeft > 0
+          ? rawSecondsLeft
+          : this.loanRenewTimeConfig.loanTotalTime;
       log('[IABookActions] handleLoanAutoRenewed', {
         secondsLeft,
+        rawSecondsLeft,
         ajaxResponse: detail?.data,
       });
 
