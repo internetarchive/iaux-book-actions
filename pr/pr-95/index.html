@@ -97,6 +97,7 @@
       border: 2px solid #194880;
       border-radius: 10px;
       background: white;
+      height: 50px;
     }
     .timer-presets button.active-preset {
       background: #194880;
@@ -136,6 +137,9 @@
     }
     .loan-status-badge.status-active {
       background: #2e7d32; /* green: loan is currently checked out */
+    }
+    .loan-status-badge.status-renewing {
+      background: #b8860b; /* amber: a renew_loan attempt is in flight */
     }
     .loan-status-badge.status-returned {
       background: #d9534f; /* red: auto-returned / not on loan */
@@ -187,7 +191,7 @@
       display: none;
     }
   </style>
-  <script type="module" crossorigin src="assets/main.383bbc51.js"></script>
+  <script type="module" crossorigin src="assets/main.7458e5e3.js"></script>
 </head>
 
 <body>
@@ -217,7 +221,7 @@
     console.log = (...consoleArgs) => {
       __nativeConsoleLog(...consoleArgs);
 
-      const loggedPrefixes = ['[ActionsHandlerService]', '[IABookActions]', '[Demo]'];
+      const loggedPrefixes = ['[IABookActions]', '[IABookActions]', '[Demo]'];
       if (typeof consoleArgs[0] !== 'string' || !loggedPrefixes.some((prefix) => consoleArgs[0].startsWith(prefix))) {
         return;
       }
@@ -306,9 +310,6 @@
               </td>
               <td class="searchParam">
                 <label><input type="checkbox" name="search" value="Search Param" />Search Param</label>
-              </td>
-              <td>
-                <label class="ia-button"><button class="pageChangedEvent">Page Change Event</button></label>
               </td>
             </tr>
           </table>
