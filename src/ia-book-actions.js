@@ -554,7 +554,7 @@ export default class IABookActions extends LitElement {
       headline: '',
       showCloseButton: false,
       closeOnBackdropClick: false,
-      headerColor: '#194880',
+      headerColor: '#d9534f',
       message:
         'Due to inactivity, this book was returned, and someone else has now borrowed it. Please try again later.',
     });
@@ -562,7 +562,7 @@ export default class IABookActions extends LitElement {
     const customModalContent = html`<br />
       <div style="text-align: center">
         <button
-          style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
+          style="${modalButtonStyle.iaButton} ${modalButtonStyle.return}"
           @click=${() => URLHelper.goToUrl(this.returnUrl, true)}
         >
           Okay
