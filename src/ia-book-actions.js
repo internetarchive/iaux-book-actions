@@ -180,6 +180,13 @@ export default class IABookActions extends LitElement {
     }
 
     if (changed.has('loanRenewResult') && this.loanRenewResult.renewNow) {
+      // Any renewal — not just the auto-return recovery path — pauses the
+      // countdown for the renew_loan round-trip. Flag it here, centrally,
+      // so every path (interaction during active reading, periodic
+      // checker, auto-return recovery) gets the same "renewing" signal
+      // instead of just looking frozen until handleLoanAutoRenewed() clears
+      // this and restarts the timer.
+      this.loanRenewInProgress = true;
       window.IALendingIntervals.clearAll();
     }
   }
@@ -304,17 +311,27 @@ export default class IABookActions extends LitElement {
      * dispatched this event from bookreader page changed
      */
     window.addEventListener('BookReader:userAction', () => {
+      // Capture before autoRenewExpiredLoan() runs — it synchronously flips
+      // lendingStatus.browsingExpired to false as an optimistic UI update,
+      // so checking the live property afterward would always see it as
+      // false and wrongly let autoLoanRenewChecker() run too. That second
+      // call would then overwrite loanRenewResult.renewNow (set true by
+      // autoRenewExpiredLoan) back to false, since the loanTime cache entry
+      // was already deleted by browseHasExpired() — silently killing the
+      // in-flight renewal and leaving the countdown stuck.
+      const wasExpired = this.lendingStatus.browsingExpired;
+
       log('[IABookActions] BookReader:userAction received', {
         borrowType: this.borrowType,
-        browsingExpired: this.lendingStatus.browsingExpired,
+        browsingExpired: wasExpired,
       });
 
       // If the loan expired while the tab stayed visible, auto-renew on page turn
-      if (this.lendingStatus.browsingExpired) {
+      if (wasExpired) {
         this.autoRenewExpiredLoan();
       }
 
-      if (this.borrowType === 'browsed' && !this.lendingStatus.browsingExpired) {
+      if (this.borrowType === 'browsed' && !wasExpired) {
         this.autoLoanRenewChecker(true);
       }
     });
@@ -718,14 +735,15 @@ export default class IABookActions extends LitElement {
 
     if (resyncd.hasSynced) {
       secondsLeft = resyncd.whatShouldLeft;
-      log('[IABookActions] startTimerCountdown: timer re-synced', {
+      log('[IABookActions] timer: timer re-synced', {
         secondsLeft,
       });
     }
 
-    log('[IABookActions] startTimerCountdown', {
+    log('[IABookActions] timer', {
       secondsLeft,
       loanRenewAtLast: this.loanRenewTimeConfig.loanRenewAtLast,
+      pageChangedInLast: this.loanRenewTimeConfig.pageChangedInLast,
     });
 
     /**
@@ -887,13 +905,16 @@ export default class IABookActions extends LitElement {
     const action = event?.detail?.action;
     const errorMsg = event?.detail?.data?.error;
 
+    if (action === 'renew_loan') {
+      this.loanRenewInProgress = false;
+    }
+
     // For renew_loan failures after auto-renew, show the patron-facing message
     if (
       errorMsg &&
       action === 'renew_loan' &&
       errorMsg.match(/not available/)
     ) {
-      this.loanRenewInProgress = false;
       this.showLoanUnavailableModal();
     } else if (errorMsg && action !== 'create_token') {
       this.showErrorModal(errorMsg, action);

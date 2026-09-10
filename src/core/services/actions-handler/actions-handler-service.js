@@ -84,10 +84,10 @@ export default async function ActionsHandlerService(options) {
       .then(data => {
         // `data` is the parsed version of the JSON returned from the above endpoint.
         if (!data?.error) {
-          log(`[ActionsHandlerService] ✓ ${option.action} succeeded`, data);
+          log(`[IABookActions] ✓ ${option.action} succeeded`, data);
           option?.success(data);
         } else {
-          log(`[ActionsHandlerService] ✗ ${option.action} failed`, data);
+          log(`[IABookActions] ✗ ${option.action} failed`, data);
           option?.error(data);
         }
       });

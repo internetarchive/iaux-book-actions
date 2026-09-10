@@ -97,6 +97,7 @@
       border: 2px solid #194880;
       border-radius: 10px;
       background: white;
+      height: 50px;
     }
     .timer-presets button.active-preset {
       background: #194880;
@@ -136,6 +137,9 @@
     }
     .loan-status-badge.status-active {
       background: #2e7d32; /* green: loan is currently checked out */
+    }
+    .loan-status-badge.status-renewing {
+      background: #b8860b; /* amber: a renew_loan attempt is in flight */
     }
     .loan-status-badge.status-returned {
       background: #d9534f; /* red: auto-returned / not on loan */
@@ -216,7 +220,7 @@
     console.log = (...consoleArgs) => {
       __nativeConsoleLog(...consoleArgs);
 
-      const loggedPrefixes = ['[ActionsHandlerService]', '[IABookActions]', '[Demo]'];
+      const loggedPrefixes = ['[IABookActions]', '[IABookActions]', '[Demo]'];
       if (typeof consoleArgs[0] !== 'string' || !loggedPrefixes.some((prefix) => consoleArgs[0].startsWith(prefix))) {
         return;
       }
@@ -280,7 +284,7 @@
     const timerPresets = {
       '15s': { loanTotalTime: 15, loanRenewAtLast: 13, pageChangedInLast: 5 },
       '30s': { loanTotalTime: 30, loanRenewAtLast: 27, pageChangedInLast: 10 },
-      '2': { loanTotalTime: 120, loanRenewAtLast: 110, pageChangedInLast: 30 },
+      '2': { loanTotalTime: 120, loanRenewAtLast: 95, pageChangedInLast: 15 },
       '5': { loanTotalTime: 300, loanRenewAtLast: 240, pageChangedInLast: 60 },
       '10': { loanTotalTime: 600, loanRenewAtLast: 480, pageChangedInLast: 120 },
       '30': { loanTotalTime: 1800, loanRenewAtLast: 1500, pageChangedInLast: 600 },
@@ -439,6 +443,14 @@
         await iaBookActions.updateComplete;
       }
 
+      // showWarningModal() reads its message text from
+      // loanRenewHelper.getMessageTexts(loanRenewResult.texts, ...) — that
+      // helper only exists, and loanRenewResult.texts only gets populated,
+      // once autoLoanRenewChecker() has run at least once (this is what the
+      // real periodic timer calls before ever showing the modal). Run it
+      // here too so the button shows the same populated message a real
+      // warning would.
+      await iaBookActions.autoLoanRenewChecker(false);
       iaBookActions.showWarningModal();
     });
 
@@ -578,6 +590,13 @@
     function computeLoanStatus() {
       const lendingStatus = iaBookActions.lendingStatus || {};
 
+      // Checked first: autoRenewExpiredLoan() optimistically flips
+      // browsingExpired back to false the moment a retry starts (before the
+      // renew_loan call has actually landed), so without this check the
+      // badge would misleadingly jump straight to ACTIVE during the retry.
+      if (iaBookActions.loanRenewInProgress) {
+        return { badge: 'RENEWING', className: 'status-renewing' };
+      }
       if (lendingStatus.browsingExpired) {
         return { badge: 'RETURNED', className: 'status-returned' };
       }
@@ -687,9 +706,6 @@
               </td>
               <td class="searchParam">
                 <label><input type="checkbox" name="search" value="Search Param" />Search Param</label>
-              </td>
-              <td>
-                <label class="ia-button"><button class="pageChangedEvent">Page Change Event</button></label>
               </td>
             </tr>
           </table>
