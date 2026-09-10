@@ -1043,10 +1043,10 @@ PERFORMANCE OF THIS SOFTWARE.
         >
           Okay
         </button>
-      </div> `;this.modal.setAttribute("aria-live","assertive"),await((a=this.modal)==null?void 0:a.showModal({config:n,customModalContent:s}))}dismissWarningModal(){var e;(e=this.modal)==null||e.closeModal(),this.warningModalOpen=!1,this.warningModalDismissed=!0}async browseHasExpired(){var t,i;m("[IABookActions] browseHasExpired"),(t=window==null?void 0:window.IALendingIntervals)==null||t.clearAll();const e={...this.lendingStatus,browsingExpired:!0,secondsLeftOnLoan:0};this.lendingStatus=e,await this.localCache.delete(`${this.identifier}-loanTime`),await this.localCache.delete(`${this.identifier}-pageChangedTime`),this.loanRenewResult.renewNow=!1,this.loanRenewResult.texts="This book has been returned due to inactivity.",(i=this.modal)==null||i.closeModal(),this.sentryCaptureMsg(L.browseHasExpired)}async showLoanUnavailableModal(){var i;const e=new z({headline:"",showCloseButton:!1,closeOnBackdropClick:!1,headerColor:"#194880",message:"Due to inactivity, this book was returned, and someone else has now borrowed it. Please try again later."}),t=p`<br />
+      </div> `;this.modal.setAttribute("aria-live","assertive"),await((a=this.modal)==null?void 0:a.showModal({config:n,customModalContent:s}))}dismissWarningModal(){var e;(e=this.modal)==null||e.closeModal(),this.warningModalOpen=!1,this.warningModalDismissed=!0}async browseHasExpired(){var t,i;m("[IABookActions] browseHasExpired"),(t=window==null?void 0:window.IALendingIntervals)==null||t.clearAll();const e={...this.lendingStatus,browsingExpired:!0,secondsLeftOnLoan:0};this.lendingStatus=e,await this.localCache.delete(`${this.identifier}-loanTime`),await this.localCache.delete(`${this.identifier}-pageChangedTime`),this.loanRenewResult.renewNow=!1,this.loanRenewResult.texts="This book has been returned due to inactivity.",(i=this.modal)==null||i.closeModal(),this.sentryCaptureMsg(L.browseHasExpired)}async showLoanUnavailableModal(){var i;const e=new z({headline:"",showCloseButton:!1,closeOnBackdropClick:!1,headerColor:"#d9534f",message:"Due to inactivity, this book was returned, and someone else has now borrowed it. Please try again later."}),t=p`<br />
       <div style="text-align: center">
         <button
-          style="${Z.iaButton} ${Z.renew}"
+          style="${Z.iaButton} ${Z.return}"
           @click=${()=>A.goToUrl(this.returnUrl,!0)}
         >
           Okay
