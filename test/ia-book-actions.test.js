@@ -719,6 +719,127 @@ describe('autoRenewExpiredLoan', () => {
   });
 });
 
+describe('BookReader:userAction race regression (WEBDEV-8322)', () => {
+  it('does not let autoLoanRenewChecker clobber an in-flight expired-loan renewal', async () => {
+    // Get borrowType derived as 'browsed' first, same as the
+    // "Expiring book cancels interval" test above — hasExpired renders
+    // leave borrowType untouched, so it must already be 'browsed' before
+    // the loan is marked expired.
+    const baseStatus = {
+      is_lendable: true,
+      user_has_browsed: true,
+      browsingExpired: false,
+    };
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: baseStatus,
+      })
+    );
+    await el.updateComplete;
+    expect(el.borrowType).to.equal('browsed');
+
+    el.lendingStatus = { ...baseStatus, browsingExpired: true };
+    await el.updateComplete;
+
+    const autoLoanRenewCheckerSpy = Sinon.spy(el, 'autoLoanRenewChecker');
+
+    window.dispatchEvent(new CustomEvent('BookReader:userAction'));
+
+    // autoRenewExpiredLoan()'s setTimeout(0) sets renewNow=true. If the old
+    // bug were present, the still-live lendingStatus.browsingExpired check
+    // would (wrongly) also let autoLoanRenewChecker(true) run — which reads
+    // the already-deleted loanTime cache key and overwrites renewNow back
+    // to false. Give both paths plenty of time to resolve.
+    await aTimeout(300);
+
+    expect(autoLoanRenewCheckerSpy.called).to.be.false;
+    expect(el.loanRenewResult.renewNow).to.be.true;
+  });
+});
+
+describe('handleLendingActionError - loanRenewInProgress reset', () => {
+  it('clears loanRenewInProgress on any renew_loan failure, not just "not available"', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: { user_has_browsed: true, browsingExpired: true },
+      })
+    );
+    await el.updateComplete;
+
+    el.loanRenewInProgress = true;
+
+    el.handleLendingActionError({
+      detail: {
+        action: 'renew_loan',
+        data: { error: 'some other unrelated failure' },
+      },
+    });
+
+    expect(el.loanRenewInProgress).to.be.false;
+  });
+});
+
+describe('showWarningModal', () => {
+  it('shows a headline, one Okay button, and an info-icon help link; Okay dismisses without renewing', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: { user_has_browsed: true, secondsLeftOnLoan: 100 },
+      })
+    );
+    await el.updateComplete;
+
+    await el.showWarningModal();
+
+    const modalManagerEl = document.body.querySelector('modal-manager');
+    const modalTemplateEl =
+      modalManagerEl.shadowRoot.querySelector('modal-template');
+    const headline =
+      modalTemplateEl.shadowRoot.querySelector('.headline')?.textContent;
+    expect(headline).to.contain('Are you still there?');
+
+    const helpLink = modalTemplateEl.shadowRoot.querySelector(
+      'a[href="https://help.archive.org/help/borrowing-from-the-lending-library"]'
+    );
+    expect(helpLink).to.exist;
+
+    const buttons = modalManagerEl.shadowRoot.querySelectorAll(
+      '#book-action-bar-custom-buttons button'
+    );
+    expect(buttons.length).to.equal(1);
+    expect(buttons[0].textContent).to.contain('Okay');
+
+    buttons[0].click();
+
+    expect(el.warningModalOpen).to.be.false;
+    expect(el.warningModalDismissed).to.be.true;
+    expect(el.loanRenewResult.renewNow).to.be.false;
+  });
+
+  it('does not reopen while already open', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: { user_has_browsed: true, secondsLeftOnLoan: 100 },
+      })
+    );
+    await el.updateComplete;
+
+    await el.showWarningModal();
+    const showModalSpy = Sinon.spy(el.modal, 'showModal');
+
+    await el.showWarningModal();
+
+    expect(showModalSpy.called).to.be.false;
+  });
+});
+
 describe('Shared Resize Observer', () => {
   it('can receive a Shared Resize Observer', async () => {
     const sharedObserverStub = new SharedResizeObserver();
