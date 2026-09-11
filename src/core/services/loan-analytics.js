@@ -150,7 +150,7 @@ export default class LoanAnanlytics {
   }
 
   /**
-   * reponsible to sent events to GA
+   * responsible to sent events to GA
    *
    * @param {*} eventCategory
    * @param {*} eventAction

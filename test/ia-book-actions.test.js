@@ -82,7 +82,7 @@ describe('<ia-book-actions>', () => {
     expect(el.disableActionGroup).to.be.true;
   });
 
-  it('handles `BookReader:userAction` event', async () => {
+  it('handles `BookReader:userAction` event when loan is active', async () => {
     const el = await fixture(
       container({
         userid: '@user1',
@@ -91,6 +91,28 @@ describe('<ia-book-actions>', () => {
     );
 
     const spy = Sinon.spy(el, 'autoLoanRenewChecker');
+    el.lendingStatus = { ...el.lendingStatus, browsingExpired: false };
+    await el.updateComplete;
+    // Set borrowType after the update so setupLendingToolbarActions() doesn't overwrite it
+    el.borrowType = 'browsed';
+
+    window.dispatchEvent(new Event('BookReader:userAction'));
+    await el.updateComplete;
+
+    expect(spy.calledOnce).to.be.true;
+    expect(spy.calledWith(true)).to.be.true;
+  });
+
+  it('handles `BookReader:userAction` event when loan has expired', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: { user_has_browsed: true, browsingExpired: true },
+      })
+    );
+
+    const spy = Sinon.spy(el, 'autoRenewExpiredLoan');
     el.borrowType = 'browsed';
     await el.updateComplete;
 
@@ -98,7 +120,6 @@ describe('<ia-book-actions>', () => {
     await el.updateComplete;
 
     expect(spy.calledOnce).to.be.true;
-    expect(spy.calledWith(true)).to.be.true;
   });
 });
 
@@ -328,7 +349,9 @@ describe('Browsing expired status', () => {
     await aTimeout(1500); // wait for 1.5 second
     await el.updateComplete;
 
-    expect(el.primaryActions[0].text).to.equal('Borrow');
+    // Auto-return must not visibly change the action bar — it should stay
+    // exactly as it looked while reading (see WEBDEV-8322).
+    expect(el.primaryActions[0].text).to.equal('Return now');
 
     expect(el.timerCountdownEl).to.exist;
 
@@ -371,7 +394,9 @@ describe('Browsing expired status', () => {
     await aTimeout(1500); // wait for 1.5 sec
 
     expect(eventReceived).to.equal(true);
-    expect(el.primaryActions[0].text).to.equal('Borrow');
+    // Auto-return must not visibly change the action bar — it should stay
+    // exactly as it looked while reading (see WEBDEV-8322).
+    expect(el.primaryActions[0].text).to.equal('Return now');
     expect(el.tokenPoller.loanTokenInterval).to.equal(undefined);
   });
 });
@@ -467,7 +492,7 @@ describe('Visibility change API for document', async () => {
     });
   });
 
-  it('when book is not expired', async () => {
+  it('when book is not expired and loan time is valid', async () => {
     const el = await fixture(
       container({
         userid: '@user1',
@@ -480,28 +505,338 @@ describe('Visibility change API for document', async () => {
     );
     await el.updateComplete;
 
+    // Set a valid loan time well into the future
+    await el.localCache.set({
+      key: 'foobar-loanTime',
+      value: new Date(new Date().getTime() + 3600 * 1000),
+      ttl: 3600,
+    });
+
     const spy = Sinon.spy(el, 'loanStatusCheckInterval');
     document.dispatchEvent(new Event('visibilitychange'));
+    await aTimeout(100);
 
     expect(spy.calledOnce).to.be.true;
   });
 
-  it('when book is already expired', async () => {
+  it('when loan expired while tab was hidden (browsingExpired false, loanTime past)', async () => {
     const el = await fixture(
       container({
         userid: '@user1',
         identifier: 'foobar',
         lendingStatus: {
           user_has_browsed: true,
+          browsingExpired: false,
         },
       })
     );
     await el.updateComplete;
 
-    const spy = Sinon.spy(el, 'browseHasExpired');
+    // Set a loan time already in the past
+    await el.localCache.set({
+      key: 'foobar-loanTime',
+      value: new Date(new Date().getTime() - 10 * 1000),
+      ttl: 3600,
+    });
+
+    const spy = Sinon.spy(el, 'autoRenewExpiredLoan');
     document.dispatchEvent(new Event('visibilitychange'));
+    await aTimeout(100);
 
     expect(spy.calledOnce).to.be.true;
+  });
+
+  it('when loan already marked expired (browsingExpired true)', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: {
+          user_has_browsed: true,
+          browsingExpired: true,
+        },
+      })
+    );
+    await el.updateComplete;
+
+    el.borrowType = 'browsed';
+
+    const spy = Sinon.spy(el, 'autoRenewExpiredLoan');
+    document.dispatchEvent(new Event('visibilitychange'));
+    await aTimeout(100);
+
+    expect(spy.calledOnce).to.be.true;
+  });
+});
+
+describe('autoRenewExpiredLoan', () => {
+  it('optimistically resets browsingExpired so the button stays red', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: {
+          user_has_browsed: true,
+          available_to_browse: true,
+          browsingExpired: true,
+        },
+      })
+    );
+    await el.updateComplete;
+
+    // Before: browsingExpired true → borrow1HrAction → primary color is 'primary' (blue)
+    expect(el.primaryColor).to.equal('primary');
+
+    el.autoRenewExpiredLoan();
+    await el.updateComplete;
+
+    // After: browsingExpired flipped to false → patronIsReadingAction → 'danger' (red)
+    expect(el.lendingStatus.browsingExpired).to.be.false;
+    expect(el.primaryColor).to.equal('danger');
+  });
+
+  it('sets loanRenewInProgress and triggers renewNow after timeout', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: {
+          user_has_browsed: true,
+          browsingExpired: true,
+        },
+      })
+    );
+    await el.updateComplete;
+
+    el.autoRenewExpiredLoan();
+
+    expect(el.loanRenewInProgress).to.be.true;
+
+    // renewNow is set in a setTimeout — flush the macrotask queue
+    await aTimeout(50);
+    expect(el.loanRenewResult.renewNow).to.be.true;
+    expect(el.loanRenewResult.renewType).to.equal('auto');
+  });
+
+  it('ignores subsequent calls while a renewal is already in progress', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: {
+          user_has_browsed: true,
+          browsingExpired: true,
+        },
+      })
+    );
+    await el.updateComplete;
+
+    // Spy *after* fixture so the handler is the same instance
+    const spy = Sinon.spy(el, 'autoRenewExpiredLoan');
+
+    el.autoRenewExpiredLoan(); // first call — proceeds
+    el.autoRenewExpiredLoan(); // second call — should be a no-op
+
+    // The spy counts both invocations but the internal guard stops the second
+    expect(spy.callCount).to.equal(2);
+    // loanRenewInProgress is still true (not double-set or cleared)
+    expect(el.loanRenewInProgress).to.be.true;
+
+    // Only one setTimeout fires (the second call returned early)
+    await aTimeout(50);
+    expect(el.loanRenewResult.renewNow).to.be.true;
+  });
+
+  it('clears loanRenewInProgress after a successful loanAutoRenewed event', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: {
+          user_has_browsed: true,
+          browsingExpired: false,
+          secondsLeftOnLoan: 100,
+        },
+      })
+    );
+    await el.updateComplete;
+
+    await el.localCache.set({
+      key: 'foobar-loanTime',
+      value: new Date(new Date().getTime() + 3600 * 1000),
+      ttl: 3600,
+    });
+
+    el.autoRenewExpiredLoan();
+    expect(el.loanRenewInProgress).to.be.true;
+
+    // Wait for the deferred renewNow to be set
+    await aTimeout(50);
+
+    // Simulate the renew_loan success response
+    const collapsibleActionGroupEl = el.shadowRoot.querySelector(
+      'collapsible-action-group'
+    );
+    collapsibleActionGroupEl.dispatchEvent(
+      new CustomEvent('loanAutoRenewed', {
+        detail: { data: { loan: { identifier: 'foobar' } } },
+      })
+    );
+
+    await aTimeout(100);
+    await el.updateComplete;
+
+    expect(el.loanRenewInProgress).to.be.false;
+  });
+
+  it('clears loanRenewInProgress and shows unavailable modal on renew_loan failure', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: {
+          user_has_browsed: true,
+          browsingExpired: true,
+        },
+      })
+    );
+    await el.updateComplete;
+
+    const showModalSpy = Sinon.spy(el, 'showLoanUnavailableModal');
+
+    el.autoRenewExpiredLoan();
+    expect(el.loanRenewInProgress).to.be.true;
+
+    el.handleLendingActionError({
+      detail: {
+        action: 'renew_loan',
+        data: { error: 'book is not available' },
+      },
+    });
+
+    expect(el.loanRenewInProgress).to.be.false;
+    expect(showModalSpy.calledOnce).to.be.true;
+  });
+});
+
+describe('BookReader:userAction race regression (WEBDEV-8322)', () => {
+  it('does not let autoLoanRenewChecker clobber an in-flight expired-loan renewal', async () => {
+    // Get borrowType derived as 'browsed' first, same as the
+    // "Expiring book cancels interval" test above — hasExpired renders
+    // leave borrowType untouched, so it must already be 'browsed' before
+    // the loan is marked expired.
+    const baseStatus = {
+      is_lendable: true,
+      user_has_browsed: true,
+      browsingExpired: false,
+    };
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: baseStatus,
+      })
+    );
+    await el.updateComplete;
+    expect(el.borrowType).to.equal('browsed');
+
+    el.lendingStatus = { ...baseStatus, browsingExpired: true };
+    await el.updateComplete;
+
+    const autoLoanRenewCheckerSpy = Sinon.spy(el, 'autoLoanRenewChecker');
+
+    window.dispatchEvent(new CustomEvent('BookReader:userAction'));
+
+    // autoRenewExpiredLoan()'s setTimeout(0) sets renewNow=true. If the old
+    // bug were present, the still-live lendingStatus.browsingExpired check
+    // would (wrongly) also let autoLoanRenewChecker(true) run — which reads
+    // the already-deleted loanTime cache key and overwrites renewNow back
+    // to false. Give both paths plenty of time to resolve.
+    await aTimeout(300);
+
+    expect(autoLoanRenewCheckerSpy.called).to.be.false;
+    expect(el.loanRenewResult.renewNow).to.be.true;
+  });
+});
+
+describe('handleLendingActionError - loanRenewInProgress reset', () => {
+  it('clears loanRenewInProgress on any renew_loan failure, not just "not available"', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: { user_has_browsed: true, browsingExpired: true },
+      })
+    );
+    await el.updateComplete;
+
+    el.loanRenewInProgress = true;
+
+    el.handleLendingActionError({
+      detail: {
+        action: 'renew_loan',
+        data: { error: 'some other unrelated failure' },
+      },
+    });
+
+    expect(el.loanRenewInProgress).to.be.false;
+  });
+});
+
+describe('showWarningModal', () => {
+  it('shows a headline, one Okay button, and an info-icon help link; Okay dismisses without renewing', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: { user_has_browsed: true, secondsLeftOnLoan: 100 },
+      })
+    );
+    await el.updateComplete;
+
+    await el.showWarningModal();
+
+    const modalManagerEl = document.body.querySelector('modal-manager');
+    const modalTemplateEl =
+      modalManagerEl.shadowRoot.querySelector('modal-template');
+    const headline =
+      modalTemplateEl.shadowRoot.querySelector('.headline')?.textContent;
+    expect(headline).to.contain('Are you still there?');
+
+    const helpLink = modalTemplateEl.shadowRoot.querySelector(
+      'a[href="https://help.archive.org/help/borrowing-from-the-lending-library"]'
+    );
+    expect(helpLink).to.exist;
+
+    const buttons = modalManagerEl.shadowRoot.querySelectorAll(
+      '#book-action-bar-custom-buttons button'
+    );
+    expect(buttons.length).to.equal(1);
+    expect(buttons[0].textContent).to.contain('Okay');
+
+    buttons[0].click();
+
+    expect(el.warningModalOpen).to.be.false;
+    expect(el.warningModalDismissed).to.be.true;
+    expect(el.loanRenewResult.renewNow).to.be.false;
+  });
+
+  it('does not reopen while already open', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: { user_has_browsed: true, secondsLeftOnLoan: 100 },
+      })
+    );
+    await el.updateComplete;
+
+    await el.showWarningModal();
+    const showModalSpy = Sinon.spy(el.modal, 'showModal');
+
+    await el.showWarningModal();
+
+    expect(showModalSpy.called).to.be.false;
   });
 });
 

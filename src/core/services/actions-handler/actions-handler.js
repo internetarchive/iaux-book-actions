@@ -53,20 +53,8 @@ export default class ActionsHandler extends LitElement {
       );
     });
 
-    this.addEventListener('autoRenew', async ({ detail }) => {
-      this.handleLoanRenewNow();
-      await this.loanAnanlytics?.storeLoanStatsCount(
-        this.identifier,
-        'autorenew'
-      );
-
-      const analyticsLabel = detail?.renewType === 'auto' ? analyticsLabels.browseAutoRenew : analyticsLabels.browseManualRenew;
-      this.loanAnanlytics?.sendEvent(
-        analyticsCategories.browse,
-        analyticsActions.browseRenew,
-        analyticsLabel,
-        this.identifier
-      );
+    this.addEventListener('autoRenew', ({ detail }) => {
+      this.handleLoanRenewNow(detail?.renewType);
     });
 
     this.addEventListener('autoReturn', async () => {
@@ -177,20 +165,38 @@ export default class ActionsHandler extends LitElement {
     });
   }
 
-  handleLoanRenewNow() {
+  handleLoanRenewNow(renewType) {
     const action = 'renew_loan';
 
     ActionsHandlerService({
       action,
       identifier: this.identifier,
-      success: data => {
+      success: async data => {
         log('RENEW_LOAN --- ', data, action, data.loan, this.identifier);
         const activeLoan = data.loan ? data.loan : undefined;
         const isRenewal = activeLoan.renewal;
 
         if (activeLoan && isRenewal) {
-          // when loan is renewed, let's reset timer & let everyone know.
-          this.setBrowseTimeSession();
+          // Await — loanAutoRenewed listeners read this same cache key
+          // immediately; dispatching before the write lands was a race.
+          await this.setBrowseTimeSession();
+
+          // Only record the renew analytics event once the renewal has
+          // actually succeeded — not merely attempted.
+          await this.loanAnanlytics?.storeLoanStatsCount(
+            this.identifier,
+            'autorenew'
+          );
+          const analyticsLabel =
+            renewType === 'auto'
+              ? analyticsLabels.browseAutoRenew
+              : analyticsLabels.browseManualRenew;
+          this.loanAnanlytics?.sendEvent(
+            analyticsCategories.browse,
+            analyticsActions.browseRenew,
+            analyticsLabel,
+            this.identifier
+          );
         } else {
           log('RENEW_LOAN ERROR --- ', {
             action,

@@ -80,7 +80,7 @@ describe('Loan Renew Determine', () => {
     );
 
     expect(toastMsg).to.be.equal(
-      'With no action, this book will be auto-returned in 2 minutes.'
+      'Go to any other page to keep your loan active.'
     );
   });
 });

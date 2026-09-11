@@ -1,5 +1,6 @@
 /* eslint-disable */
 import { sentryLogs } from '../../config/sentry-events.js';
+import log from '../log.js';
 
 /**
  * Helper to call loan service
@@ -29,7 +30,7 @@ export default async function ActionsHandlerService(options) {
     'return_loan',
   ];
   const shouldReturnError =
-    location?.href?.indexOf('?error=true') !== -1 &&
+    new URLSearchParams(location?.search).get('error') === 'true' &&
     location?.hostname !== 'archive.org';
 
   const testHostname = ['localhost', 'internetarchive.github.io'];
@@ -42,6 +43,7 @@ export default async function ActionsHandlerService(options) {
   let formData = new FormData();
   formData.append('action', option.action);
   formData.append('identifier', option.identifier);
+
   try {
     await fetch(baseHost, {
       method: 'POST',
@@ -82,8 +84,10 @@ export default async function ActionsHandlerService(options) {
       .then(data => {
         // `data` is the parsed version of the JSON returned from the above endpoint.
         if (!data?.error) {
+          log(`[IABookActions] ✓ ${option.action} succeeded`, data);
           option?.success(data);
         } else {
+          log(`[IABookActions] ✗ ${option.action} failed`, data);
           option?.error(data);
         }
       });
