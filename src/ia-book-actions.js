@@ -415,6 +415,16 @@ export default class IABookActions extends LitElement {
 
     this.modal?.closeModal();
 
+    // The loan genuinely lapsed while the tab was hidden/backgrounded, so
+    // BookReader's page-image access (issued via create_token, not
+    // renew_loan) died with it. Resetting this lets the token poller's
+    // next successful create_token call re-run lendingBarPostInit() —
+    // whatever re-initializes BookReader (e.g. br.init()) — instead of
+    // silently skipping it because a token was already issued once this
+    // page load. Without this, the loan's countdown resets but BookReader
+    // keeps using its now-dead session, so page images break.
+    this.postInitComplete = false;
+
     // Optimistically flip browsingExpired back to false so the action bar
     // stays red (patronIsReadingAction) while the renew_loan request is in
     // flight, instead of showing the blue "Borrow" state.
