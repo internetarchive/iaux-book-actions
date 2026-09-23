@@ -689,6 +689,149 @@ describe('autoRenewExpiredLoan', () => {
     expect(el.loanRenewInProgress).to.be.false;
   });
 
+  it('does not reset postInitComplete until renewal is confirmed, not on the optimistic flip (WEBDEV-8322 follow-up)', async () => {
+    // Regression: resetting postInitComplete (which lets BookReader
+    // re-initialize via create_token) as soon as autoRenewExpiredLoan()
+    // optimistically flips browsingExpired would let create_token race
+    // ahead of renew_loan's response, reading the still-expired loan
+    // record and minting a bad access cookie — breaking page images with
+    // CORS/auth errors until the next natural token refresh.
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: {
+          user_has_browsed: true,
+          browsingExpired: true,
+        },
+      })
+    );
+    await el.updateComplete;
+    el.postInitComplete = true;
+    el.lendingBarPostInit = Sinon.spy();
+
+    await el.localCache.set({
+      key: 'foobar-loanTime',
+      value: new Date(new Date().getTime() + 3600 * 1000),
+      ttl: 3600,
+    });
+
+    el.autoRenewExpiredLoan();
+    await el.updateComplete;
+
+    // Still true right after the optimistic flip — must not reset early.
+    expect(el.postInitComplete).to.be.true;
+    expect(el.lendingBarPostInit.called).to.be.false;
+
+    await aTimeout(50);
+
+    const collapsibleActionGroupEl = el.shadowRoot.querySelector(
+      'collapsible-action-group'
+    );
+    collapsibleActionGroupEl.dispatchEvent(
+      new CustomEvent('loanAutoRenewed', {
+        detail: { data: { loan: { identifier: 'foobar' } } },
+      })
+    );
+
+    await aTimeout(100);
+    await el.updateComplete;
+
+    // The confirmed renewal must have forced a fresh create_token cycle
+    // that re-ran lendingBarPostInit() (BookReader re-init) — postInitComplete
+    // itself ends up true again once that cycle completes, so we assert on
+    // the re-init actually having fired instead of the transient flag.
+    expect(el.lendingBarPostInit.calledOnce).to.be.true;
+    expect(el.recoveringFromLoanExpiry).to.be.false;
+  });
+
+  it('does not start the token poller (create_token) on the optimistic flip, only after renewal is confirmed', async () => {
+    // Regression: even without re-running lendingBarPostInit early, the
+    // token poller restart in setupLendingToolbarActions() was ungated —
+    // it fired on the optimistic lendingStatus flip too, calling
+    // create_token against the still-expired loan. When that failed,
+    // handleLendingActionError cleared ALL lending intervals (including
+    // the countdown timer) and flipped user_has_browsed false, sometimes
+    // permanently killing the countdown if it lost the race against the
+    // real renewal confirming afterward.
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: {
+          user_has_browsed: true,
+          browsingExpired: true,
+        },
+      })
+    );
+    await el.updateComplete;
+
+    await el.localCache.set({
+      key: 'foobar-loanTime',
+      value: new Date(new Date().getTime() + 3600 * 1000),
+      ttl: 3600,
+    });
+
+    const startTokenPollerSpy = Sinon.spy(el, 'startLoanTokenPoller');
+
+    el.autoRenewExpiredLoan();
+    await el.updateComplete;
+    await aTimeout(150); // let the 100ms token-poller-restart check run
+
+    expect(startTokenPollerSpy.called).to.be.false;
+
+    await aTimeout(50);
+    const collapsibleActionGroupEl = el.shadowRoot.querySelector(
+      'collapsible-action-group'
+    );
+    collapsibleActionGroupEl.dispatchEvent(
+      new CustomEvent('loanAutoRenewed', {
+        detail: { data: { loan: { identifier: 'foobar' } } },
+      })
+    );
+
+    await aTimeout(200);
+    await el.updateComplete;
+
+    expect(startTokenPollerSpy.calledOnce).to.be.true;
+  });
+
+  it('does not touch postInitComplete on a routine (non-expiry) renewal', async () => {
+    // A background top-up renewal (loan never actually lapsed) never
+    // interrupted BookReader, so it must not force a re-init.
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: { user_has_browsed: true, browsingExpired: false },
+      })
+    );
+    await el.updateComplete;
+    el.postInitComplete = true;
+    el.loanRenewResult = { texts: '', renewNow: true, renewType: 'auto' };
+    el.lendingBarPostInit = Sinon.spy();
+
+    await el.localCache.set({
+      key: 'foobar-loanTime',
+      value: new Date(new Date().getTime() + 3600 * 1000),
+      ttl: 3600,
+    });
+
+    const collapsibleActionGroupEl = el.shadowRoot.querySelector(
+      'collapsible-action-group'
+    );
+    collapsibleActionGroupEl.dispatchEvent(
+      new CustomEvent('loanAutoRenewed', {
+        detail: { data: { loan: { identifier: 'foobar' } } },
+      })
+    );
+
+    await aTimeout(100);
+    await el.updateComplete;
+
+    expect(el.lendingBarPostInit.called).to.be.false;
+  });
+
   it('clears loanRenewInProgress and shows unavailable modal on renew_loan failure', async () => {
     const el = await fixture(
       container({
@@ -780,6 +923,60 @@ describe('handleLendingActionError - loanRenewInProgress reset', () => {
     });
 
     expect(el.loanRenewInProgress).to.be.false;
+  });
+});
+
+describe('handleLendingActionError - create_token failures must not stop the countdown (WEBDEV-8322 follow-up)', () => {
+  it('does not clear the reading countdown on a create_token failure', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: {
+          user_has_browsed: true,
+          browsingExpired: false,
+          secondsLeftOnLoan: 100,
+        },
+      })
+    );
+    await el.updateComplete;
+    expect(window.IALendingIntervals.timerCountdown).to.not.equal(0);
+
+    el.handleLendingActionError({
+      detail: {
+        action: 'create_token',
+        data: { error: 'loan token not found. please try again later.' },
+      },
+    });
+
+    // The countdown must keep running — a token refresh hiccup says
+    // nothing about how much time is left on the loan itself.
+    expect(window.IALendingIntervals.timerCountdown).to.not.equal(0);
+  });
+
+  it('still clears everything on a renew_loan failure', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: {
+          user_has_browsed: true,
+          browsingExpired: false,
+          secondsLeftOnLoan: 100,
+        },
+      })
+    );
+    await el.updateComplete;
+    expect(window.IALendingIntervals.timerCountdown).to.not.equal(0);
+
+    el.handleLendingActionError({
+      detail: {
+        action: 'renew_loan',
+        data: { error: 'some other unrelated failure' },
+      },
+    });
+
+    expect(window.IALendingIntervals.timerCountdown).to.equal(0);
   });
 });
 

@@ -96,6 +96,15 @@ export default class IABookActions extends LitElement {
 
     this.loanRenewInProgress = false;
 
+    /**
+     * True while a renewal in flight is recovering from a loan that
+     * genuinely lapsed (set by autoRenewExpiredLoan), as opposed to a
+     * routine pre-expiry top-up. Only the recovery case needs BookReader
+     * re-initialized once the renewal is confirmed — see
+     * handleLoanAutoRenewed.
+     */
+    this.recoveringFromLoanExpiry = false;
+
     this.warningModalOpen = false;
 
     /**
@@ -290,10 +299,19 @@ export default class IABookActions extends LitElement {
 
     /**
      * tokenPoller determines if user has loan token for this book
-     * - if book is going to renew, need to wait until renew is completed
+     * - if book is going to renew, need to wait until renew is completed:
+     *   loanRenewInProgress is set before renew_loan is even dispatched
+     *   (including the optimistic pre-confirmation window) and only
+     *   clears once the renewal is confirmed, so starting the poller here
+     *   mid-renewal would call create_token against the loan record
+     *   before it's actually renewed.
      */
     setTimeout(() => {
-      if (!hasExpired && !window.IALendingIntervals.tokenPoller)
+      if (
+        !hasExpired &&
+        !this.loanRenewInProgress &&
+        !window.IALendingIntervals.tokenPoller
+      )
         this.startLoanTokenPoller();
     }, 100);
 
@@ -412,18 +430,9 @@ export default class IABookActions extends LitElement {
   autoRenewExpiredLoan() {
     if (this.loanRenewInProgress) return;
     this.loanRenewInProgress = true;
+    this.recoveringFromLoanExpiry = true;
 
     this.modal?.closeModal();
-
-    // The loan genuinely lapsed while the tab was hidden/backgrounded, so
-    // BookReader's page-image access (issued via create_token, not
-    // renew_loan) died with it. Resetting this lets the token poller's
-    // next successful create_token call re-run lendingBarPostInit() —
-    // whatever re-initializes BookReader (e.g. br.init()) — instead of
-    // silently skipping it because a token was already issued once this
-    // page load. Without this, the loan's countdown resets but BookReader
-    // keeps using its now-dead session, so page images break.
-    this.postInitComplete = false;
 
     // Optimistically flip browsingExpired back to false so the action bar
     // stays red (patronIsReadingAction) while the renew_loan request is in
@@ -666,6 +675,7 @@ export default class IABookActions extends LitElement {
     const activeLoan = detail?.data?.loan;
     const errorMessage = `Whoops, seems we hit a hiccup with renewing this book. Please refresh & retry. --- (Debug: ${detail?.data?.error})`;
     if (!activeLoan) {
+      this.recoveringFromLoanExpiry = false;
       this.showErrorModal(errorMessage, 'handleLoanAutoRenewed');
       return;
     }
@@ -687,6 +697,18 @@ export default class IABookActions extends LitElement {
         rawSecondsLeft,
         ajaxResponse: detail?.data,
       });
+
+      if (this.recoveringFromLoanExpiry) {
+        // The loan genuinely lapsed, and renew_loan has now CONFIRMED it's
+        // renewed server-side — only now is it safe to let BookReader
+        // re-initialize (create_token was minting its access cookie off
+        // the loan's expiry; doing this before confirmation risked reading
+        // the still-expired record). loanRenewInProgress already kept the
+        // token poller from restarting early, so it'll pick up fresh here
+        // once lendingStatus below re-triggers setupLendingToolbarActions().
+        this.postInitComplete = false;
+        this.recoveringFromLoanExpiry = false;
+      }
 
       const currStatus = {
         ...this.lendingStatus,
@@ -909,14 +931,24 @@ export default class IABookActions extends LitElement {
   handleLendingActionError(event) {
     this.disableActionGroup = false;
 
-    // clear all intervals for lending system when error occured
-    window?.IALendingIntervals?.clearAll();
-
     const action = event?.detail?.action;
     const errorMsg = event?.detail?.data?.error;
 
+    // A create_token hiccup only affects BookReader's page-image access
+    // token — it says nothing about how much time is left on the loan
+    // itself, so it must not stop the reading countdown. Only clear the
+    // token poller so it can be retried. Every other action failure
+    // (renew_loan, browse_book, etc.) genuinely affects loan state, so it
+    // still clears everything as before.
+    if (action === 'create_token') {
+      window?.IALendingIntervals?.clearTokenPoller();
+    } else {
+      window?.IALendingIntervals?.clearAll();
+    }
+
     if (action === 'renew_loan') {
       this.loanRenewInProgress = false;
+      this.recoveringFromLoanExpiry = false;
     }
 
     // For renew_loan failures after auto-renew, show the patron-facing message
