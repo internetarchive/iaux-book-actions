@@ -734,7 +734,7 @@ describe('autoRenewExpiredLoan', () => {
       })
     );
 
-    await aTimeout(100);
+    await aTimeout(200);
     await el.updateComplete;
 
     // The confirmed renewal must have forced a fresh create_token cycle
@@ -991,6 +991,40 @@ describe('handleLendingActionError - create_token failures must not stop the cou
     // The countdown must keep running — a token refresh hiccup says
     // nothing about how much time is left on the loan itself.
     expect(window.IALendingIntervals.timerCountdown).to.not.equal(0);
+  });
+
+  it('shows the error modal for a create_token failure that reaches here (retries already exhausted)', async () => {
+    // By the time handleLendingActionError runs for a create_token
+    // failure, LoanTokenPoller has already retried and given up (see
+    // loan-token-poller.js's handleTokenError) — this is a genuine
+    // failure, so the patron must be told instead of it happening
+    // silently.
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: {
+          user_has_browsed: true,
+          browsingExpired: false,
+          secondsLeftOnLoan: 100,
+        },
+      })
+    );
+    await el.updateComplete;
+
+    const showErrorModalSpy = Sinon.spy(el, 'showErrorModal');
+    const errorMsg = 'loan token not found. please try again later.';
+
+    el.handleLendingActionError({
+      detail: {
+        action: 'create_token',
+        data: { error: errorMsg },
+      },
+    });
+
+    expect(showErrorModalSpy.calledOnceWith(errorMsg, 'create_token')).to.be
+      .true;
+    expect(el.lendingStatus.user_has_browsed).to.be.false;
   });
 
   it('still clears everything on a renew_loan failure', async () => {

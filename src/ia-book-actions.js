@@ -311,8 +311,10 @@ export default class IABookActions extends LitElement {
         !hasExpired &&
         !this.loanRenewInProgress &&
         !window.IALendingIntervals.tokenPoller
-      )
+      ) {
+        this.recoveringFromLoanExpiry = false;
         this.startLoanTokenPoller();
+      }
     }, 100);
 
     this.requestUpdate();
@@ -717,8 +719,13 @@ export default class IABookActions extends LitElement {
         // the still-expired record). loanRenewInProgress already kept the
         // token poller from restarting early, so it'll pick up fresh here
         // once lendingStatus below re-triggers setupLendingToolbarActions().
+        // recoveringFromLoanExpiry itself is consumed/reset there, not
+        // here — this ONLY applies to an actual recovery, not a routine
+        // renewal (re-running br.init() on every routine top-up would be
+        // needlessly disruptive). create_token's own retry logic (see
+        // LoanTokenPoller) handles the datanode write-propagation race
+        // for both recovery and routine renewals.
         this.postInitComplete = false;
-        this.recoveringFromLoanExpiry = false;
       }
 
       const currStatus = {
@@ -960,6 +967,14 @@ export default class IABookActions extends LitElement {
         user_has_browsed: false,
         available_to_browse: true,
       };
+
+      // By the time this handler runs, LoanTokenPoller has already
+      // exhausted its retries for the transient datanode-propagation
+      // race (or the error wasn't that in the first place) — this is a
+      // genuine failure, so let the patron know instead of doing this
+      // silently. showErrorModal has dedicated create_token messaging
+      // (refresh button + support email).
+      if (errorMsg) this.showErrorModal(errorMsg, action);
     } else if (action === 'renew_loan') {
       window?.IALendingIntervals?.clearAll();
       this.loanRenewInProgress = false;

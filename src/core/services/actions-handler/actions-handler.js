@@ -172,7 +172,7 @@ export default class ActionsHandler extends LitElement {
       action,
       identifier: this.identifier,
       success: async data => {
-        log('RENEW_LOAN --- ', data, action, data.loan, this.identifier);
+        log('RENEW_LOAN --- ', data, this.identifier);
         const activeLoan = data.loan ? data.loan : undefined;
         const isRenewal = activeLoan.renewal;
 
