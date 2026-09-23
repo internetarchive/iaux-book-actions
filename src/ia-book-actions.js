@@ -407,6 +407,16 @@ export default class IABookActions extends LitElement {
    * @param {Boolean} hasPageChanged
    */
   async autoLoanRenewChecker(hasPageChanged = false) {
+    // Guards against re-entrancy the same way autoRenewExpiredLoan() does.
+    // BookReader:userAction can fire several times in quick succession
+    // (e.g. a single scroll gesture), and this method has no debouncing of
+    // its own — without this guard, each event would spin up its own
+    // LoanRenewHelper concurrently, and whichever's async localCache reads
+    // resolve last would clobber this.loanRenewResult, potentially
+    // re-triggering the whole renew_loan/create_token flow while a
+    // renewal from an earlier event is already in flight or just landed.
+    if (this.loanRenewInProgress) return;
+
     this.loanRenewHelper = new LoanRenewHelper(
       hasPageChanged,
       this.identifier,
@@ -568,13 +578,14 @@ export default class IABookActions extends LitElement {
    * Show modal when the book can no longer be automatically renewed
    * because another patron has checked it out.
    */
-  async showLoanUnavailableModal() {
+  async showLoanUnavailableModal(errorMsg) {
     const config = new ModalConfig({
       headline: '',
       showCloseButton: false,
       closeOnBackdropClick: false,
       headerColor: '#d9534f',
       message:
+        errorMsg ||
         'Due to inactivity, this book was returned, and someone else has now borrowed it. Please try again later.',
     });
 
@@ -934,60 +945,60 @@ export default class IABookActions extends LitElement {
     const action = event?.detail?.action;
     const errorMsg = event?.detail?.data?.error;
 
-    // A create_token hiccup only affects BookReader's page-image access
-    // token — it says nothing about how much time is left on the loan
-    // itself, so it must not stop the reading countdown. Only clear the
-    // token poller so it can be retried. Every other action failure
-    // (renew_loan, browse_book, etc.) genuinely affects loan state, so it
-    // still clears everything as before.
     if (action === 'create_token') {
+      // A create_token hiccup only affects BookReader's page-image access
+      // token — it says nothing about how much time is left on the loan
+      // itself, so it must not stop the reading countdown. Only clear the
+      // token poller so it can be retried.
       window?.IALendingIntervals?.clearTokenPoller();
-    } else {
-      window?.IALendingIntervals?.clearAll();
-    }
 
-    if (action === 'renew_loan') {
-      this.loanRenewInProgress = false;
-      this.recoveringFromLoanExpiry = false;
-    }
-
-    // For renew_loan failures after auto-renew, show the patron-facing message
-    if (
-      errorMsg &&
-      action === 'renew_loan' &&
-      errorMsg.match(/not available/)
-    ) {
-      this.showLoanUnavailableModal();
-    } else if (errorMsg && action !== 'create_token') {
-      this.showErrorModal(errorMsg, action);
-    }
-
-    // if error related to loan token
-    // - set user_has_browsed to `false`
-    if (action === 'create_token') {
-      const currStatus = {
+      // The loan itself is fine — just this token refresh failed — but
+      // the action bar must reflect that it isn't safely browsable right
+      // now rather than silently doing nothing.
+      this.lendingStatus = {
         ...this.lendingStatus,
         user_has_browsed: false,
         available_to_browse: true,
       };
-      this.lendingStatus = currStatus;
-    }
+    } else if (action === 'renew_loan') {
+      window?.IALendingIntervals?.clearAll();
+      this.loanRenewInProgress = false;
+      this.recoveringFromLoanExpiry = false;
 
-    // update action bar state if book is not available to browse or borrow.
-    if (errorMsg && errorMsg.match(/not available to borrow/gm)) {
-      let currStatus = this.lendingStatus;
-      if (action === 'browse_book') {
-        currStatus = {
-          ...this.lendingStatus,
-          available_to_browse: false,
-        };
-      } else if (action === 'borrow_book') {
-        currStatus = {
-          ...this.lendingStatus,
-          available_to_borrow: false,
-        };
+      // The loan was NOT actually renewed — reflect that immediately
+      // (show Borrow, and clear the stale timer value) instead of leaving
+      // the action bar showing "Return now" with a frozen countdown from
+      // before the failed attempt, which falsely implies the book is
+      // still actively being read.
+      this.lendingStatus = {
+        ...this.lendingStatus,
+        user_has_browsed: false,
+        available_to_browse: true,
+        secondsLeftOnLoan: 0,
+      };
+
+      // Show the real error and refresh the page on dismissal (the
+      // modal's Okay button) so the client picks up whatever the server
+      // now authoritatively considers true — matching on "not available"
+      // to guess the reason was fragile since the server can return any
+      // message (e.g. a lending limit).
+      this.showLoanUnavailableModal(errorMsg);
+    } else {
+      // Every other action failure genuinely affects loan state.
+      window?.IALendingIntervals?.clearAll();
+
+      if (!errorMsg) return;
+
+      this.showErrorModal(errorMsg, action);
+
+      // update action bar state if book is not available to browse or borrow.
+      if (errorMsg.match(/not available to borrow/gm)) {
+        if (action === 'browse_book') {
+          this.lendingStatus = { ...this.lendingStatus, available_to_browse: false };
+        } else if (action === 'borrow_book') {
+          this.lendingStatus = { ...this.lendingStatus, available_to_borrow: false };
+        }
       }
-      this.lendingStatus = currStatus;
     }
   }
 

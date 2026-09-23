@@ -900,6 +900,45 @@ describe('BookReader:userAction race regression (WEBDEV-8322)', () => {
     expect(autoLoanRenewCheckerSpy.called).to.be.false;
     expect(el.loanRenewResult.renewNow).to.be.true;
   });
+
+  it('ignores repeated BookReader:userAction events firing in quick succession (e.g. from a scroll)', async () => {
+    // Regression: a single scroll gesture can fire BookReader:userAction
+    // several times in rapid succession. autoLoanRenewChecker() had no
+    // guard against concurrent/repeated invocation, unlike
+    // autoRenewExpiredLoan() — each event spun up its own LoanRenewHelper,
+    // racing to overwrite this.loanRenewResult and potentially
+    // re-triggering renew_loan/create_token while a prior call from an
+    // earlier event was still in flight or had just landed.
+    const baseStatus = {
+      is_lendable: true,
+      user_has_browsed: true,
+      browsingExpired: false,
+    };
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: baseStatus,
+      })
+    );
+    await el.updateComplete;
+    expect(el.borrowType).to.equal('browsed');
+
+    el.loanRenewInProgress = true;
+
+    const loanRenewHelperSpy = Sinon.spy(el, 'autoLoanRenewChecker');
+
+    // Simulate a scroll firing the event several times back to back.
+    window.dispatchEvent(new CustomEvent('BookReader:userAction'));
+    window.dispatchEvent(new CustomEvent('BookReader:userAction'));
+    window.dispatchEvent(new CustomEvent('BookReader:userAction'));
+    await aTimeout(50);
+
+    // The method is still called each time (the guard is inside it), but
+    // must no-op instead of spinning up a new LoanRenewHelper each time.
+    expect(loanRenewHelperSpy.callCount).to.equal(3);
+    expect(el.loanRenewHelper).to.be.undefined;
+  });
 });
 
 describe('handleLendingActionError - loanRenewInProgress reset', () => {
@@ -977,6 +1016,110 @@ describe('handleLendingActionError - create_token failures must not stop the cou
     });
 
     expect(window.IALendingIntervals.timerCountdown).to.equal(0);
+  });
+
+  it('shows the same unavailable-modal-and-refresh path for any renew_loan failure, regardless of message text', async () => {
+    // Regression: branching on errorMsg.match(/not available/) to decide
+    // how to recover was fragile — the server can return any message
+    // (e.g. a lending limit hit), and guessing which lendingStatus fields
+    // are now accurate client-side is error-prone. Every renew_loan
+    // failure now shows the real error and refreshes the page on
+    // dismissal (showLoanUnavailableModal's Okay button), rather than
+    // trying to patch up state without reloading from the server.
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: {
+          is_lendable: true,
+          user_has_browsed: true,
+          browsingExpired: false,
+          available_to_browse: false,
+          secondsLeftOnLoan: 100,
+        },
+      })
+    );
+    await el.updateComplete;
+
+    const showUnavailableSpy = Sinon.spy(el, 'showLoanUnavailableModal');
+    const lendingLimitMsg =
+      'Your account has hit a lending limit. Please try again later or contact info@archive.org.';
+
+    el.handleLendingActionError({
+      detail: {
+        action: 'renew_loan',
+        data: { error: lendingLimitMsg },
+      },
+    });
+    await el.updateComplete;
+
+    expect(showUnavailableSpy.calledOnceWith(lendingLimitMsg)).to.be.true;
+  });
+
+  it('updates lendingStatus immediately on a renew_loan failure — Borrow state, timer cleared', async () => {
+    // The modal's Okay button refreshes the page, but that shouldn't be
+    // the only thing correcting the UI — while the modal is still open,
+    // the action bar must already show Borrow instead of "Return now"
+    // with a stale countdown value from before the failed renewal.
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: {
+          is_lendable: true,
+          user_has_browsed: true,
+          browsingExpired: false,
+          available_to_browse: false,
+          secondsLeftOnLoan: 100,
+        },
+      })
+    );
+    await el.updateComplete;
+
+    el.handleLendingActionError({
+      detail: {
+        action: 'renew_loan',
+        data: {
+          error:
+            'Your account has hit a lending limit. Please try again later or contact info@archive.org.',
+        },
+      },
+    });
+    await el.updateComplete;
+
+    expect(el.lendingStatus.user_has_browsed).to.be.false;
+    expect(el.lendingStatus.available_to_browse).to.be.true;
+    expect(el.lendingStatus.secondsLeftOnLoan).to.equal(0);
+    expect(el.primaryActions[0].text).to.not.equal('Return now');
+  });
+
+  it('also shows the unavailable modal for the "not available" message, with its own text', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: {
+          is_lendable: true,
+          user_has_browsed: true,
+          browsingExpired: false,
+          secondsLeftOnLoan: 100,
+        },
+      })
+    );
+    await el.updateComplete;
+
+    const showUnavailableSpy = Sinon.spy(el, 'showLoanUnavailableModal');
+    const notAvailableMsg = 'This book is not available to borrow at this time.';
+
+    el.handleLendingActionError({
+      detail: {
+        action: 'renew_loan',
+        data: { error: notAvailableMsg },
+      },
+    });
+    await el.updateComplete;
+
+    expect(showUnavailableSpy.calledOnceWith(notAvailableMsg)).to.be.true;
   });
 });
 

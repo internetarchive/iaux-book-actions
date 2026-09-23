@@ -7,7 +7,7 @@
   },
   "author": "Internet Archive",
   "license": "AGPL-3.0-only",
-  "version": "1.4.4-alpha5",
+  "version": "1.4.4-alpha6",
   "main": "index.js",
   "module": "index.js",
   "publishConfig": {
