@@ -61,6 +61,7 @@ export default class IABookActions extends LitElement {
       modal: { Object },
       tokenDelay: { type: Number },
       timerExecutionSeconds: { type: Number },
+      userActionGracePeriod: { type: Number },
       localCache: { type: Object },
       loanRenewTimeConfig: { type: Object },
       loanRenewResult: { type: Object },
@@ -82,6 +83,14 @@ export default class IABookActions extends LitElement {
     this.disableActionGroup = false;
     this.tokenDelay = 120; // in seconds
     this.timerExecutionSeconds = 30;
+
+    /**
+     * How long (ms) after bindLoanRenewEvents() runs to ignore
+     * BookReader:userAction events — BookReader fires that event on its
+     * own init-time jump to the last-read page, not just on genuine
+     * interaction. @see bindLoanRenewEvents
+     */
+    this.userActionGracePeriod = 2000;
 
     // private props
     this.postInitComplete = false;
@@ -283,7 +292,14 @@ export default class IABookActions extends LitElement {
 
     this.borrowType = actions.borrowType ? actions.borrowType : null;
 
-    if (this.borrowType === 'browsed') {
+    // Don't (re)start the countdown while a renewal is in flight — the
+    // optimistic browsingExpired flip in autoRenewExpiredLoan() (which
+    // triggers this same setupLendingToolbarActions() call) happens before
+    // renewal is confirmed, so secondsLeftOnLoan could still be a stale
+    // value from before the renewal. Wait for handleLoanAutoRenewed() to
+    // confirm the real value and clear loanRenewInProgress before showing
+    // a countdown again.
+    if (this.borrowType === 'browsed' && !this.loanRenewInProgress) {
       // start timer for loan-renew
       await this.startTimerCountdown();
 
@@ -327,10 +343,19 @@ export default class IABookActions extends LitElement {
    * 2. IABookActions:loanRenew - dispatched from timer-countdown component
    */
   bindLoanRenewEvents() {
+    this.userActionReadyAt = Date.now() + this.userActionGracePeriod;
+
     /**
      * dispatched this event from bookreader page changed
      */
     window.addEventListener('BookReader:userAction', () => {
+      if (Date.now() < this.userActionReadyAt) {
+        log(
+          '[IABookActions] BookReader:userAction ignored — within startup grace period'
+        );
+        return;
+      }
+
       // Capture before autoRenewExpiredLoan() runs — it synchronously flips
       // lendingStatus.browsingExpired to false as an optimistic UI update,
       // so checking the live property afterward would always see it as
@@ -448,11 +473,17 @@ export default class IABookActions extends LitElement {
 
     // Optimistically flip browsingExpired back to false so the action bar
     // stays red (patronIsReadingAction) while the renew_loan request is in
-    // flight, instead of showing the blue "Borrow" state.
+    // flight, instead of showing the blue "Borrow" state. Deliberately NOT
+    // resetting secondsLeftOnLoan here — the renewal hasn't been confirmed
+    // yet (it can take several seconds, or genuinely fail), so showing a
+    // full hour before we know the outcome would be misleading. The real
+    // value is set once handleLoanAutoRenewed() confirms success;
+    // loanRenewInProgress (already true above) is the signal consumers
+    // should use to show a "renewing" state instead of trusting the
+    // countdown during this window.
     this.lendingStatus = {
       ...this.lendingStatus,
       browsingExpired: false,
-      secondsLeftOnLoan: this.loanRenewTimeConfig.loanTotalTime,
     };
 
     // Defer renewNow until after lendingStatus timer setup completes.
@@ -505,19 +536,14 @@ export default class IABookActions extends LitElement {
       headerColor: '#194880',
       showCloseButton: false,
       closeOnBackdropClick: false,
-      message: html`<span
-        style="display:inline-flex;align-items:center;flex-wrap:nowrap;gap:4px;"
-      >
-        <span>${this.loanRenewHelper?.getMessageTexts(
-          warningTexts,
-          secondsLeft
-        )}</span>
+      message: html`<span>
+        ${this.loanRenewHelper?.getMessageTexts(warningTexts, secondsLeft)}
         <a
           href="https://help.archive.org/help/borrowing-from-the-lending-library"
           target="_blank"
           title="Get more info on borrowing from The Lending Library"
           data-event-click-tracking="BookReader|BrowsableMoreInfo"
-          style="display:inline-flex;flex-shrink:0;line-height:0;"
+          style="display:inline-block;vertical-align:middle;line-height:0;margin-left:4px;"
         >
           ${infoIcon}
         </a>

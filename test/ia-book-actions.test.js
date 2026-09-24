@@ -89,6 +89,8 @@ describe('<ia-book-actions>', () => {
         identifier: 'foobar',
       })
     );
+    // Not testing the BookReader-init grace period here — bypass it.
+    el.userActionReadyAt = 0;
 
     const spy = Sinon.spy(el, 'autoLoanRenewChecker');
     el.lendingStatus = { ...el.lendingStatus, browsingExpired: false };
@@ -111,6 +113,8 @@ describe('<ia-book-actions>', () => {
         lendingStatus: { user_has_browsed: true, browsingExpired: true },
       })
     );
+    // Not testing the BookReader-init grace period here — bypass it.
+    el.userActionReadyAt = 0;
 
     const spy = Sinon.spy(el, 'autoRenewExpiredLoan');
     el.borrowType = 'browsed';
@@ -120,6 +124,34 @@ describe('<ia-book-actions>', () => {
     await el.updateComplete;
 
     expect(spy.calledOnce).to.be.true;
+  });
+
+  it('ignores BookReader:userAction fired within the startup grace period (WEBDEV-8322 follow-up)', async () => {
+    // Regression: BookReader.jumpToIndex() fires its own 'userAction'
+    // event any time it runs — including BookReader's own init-time jump
+    // to the reader's last-read page (updateFromParams(), called from
+    // init()), which has nothing to do with the patron doing anything.
+    // Without this grace period, a plain page refresh on an already-
+    // expired loan would silently auto-renew before the patron did
+    // anything at all.
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: { user_has_browsed: true, browsingExpired: true },
+      })
+    );
+    el.borrowType = 'browsed';
+    await el.updateComplete;
+
+    const spy = Sinon.spy(el, 'autoRenewExpiredLoan');
+
+    // Fired immediately after bindLoanRenewEvents() ran (in firstUpdated())
+    // — well within the default grace period.
+    window.dispatchEvent(new Event('BookReader:userAction'));
+    await el.updateComplete;
+
+    expect(spy.called).to.be.false;
   });
 });
 
@@ -595,6 +627,36 @@ describe('autoRenewExpiredLoan', () => {
     expect(el.primaryColor).to.equal('danger');
   });
 
+  it('does not (re)start the countdown during the optimistic pre-confirmation window (WEBDEV-8322 follow-up)', async () => {
+    // Regression: the optimistic browsingExpired flip above triggers
+    // setupLendingToolbarActions() before renew_loan is even dispatched,
+    // let alone confirmed. Without gating on loanRenewInProgress, that
+    // would (re)start the timer-countdown interval using whatever stale
+    // secondsLeftOnLoan was left over from before the loan expired,
+    // showing a wrong/flickering value until handleLoanAutoRenewed()
+    // corrects it moments later.
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: {
+          user_has_browsed: true,
+          available_to_browse: true,
+          browsingExpired: true,
+        },
+      })
+    );
+    await el.updateComplete;
+
+    const startTimerCountdownSpy = Sinon.spy(el, 'startTimerCountdown');
+
+    el.autoRenewExpiredLoan();
+    await el.updateComplete;
+
+    expect(el.loanRenewInProgress).to.be.true;
+    expect(startTimerCountdownSpy.called).to.be.false;
+  });
+
   it('sets loanRenewInProgress and triggers renewNow after timeout', async () => {
     const el = await fixture(
       container({
@@ -882,6 +944,8 @@ describe('BookReader:userAction race regression (WEBDEV-8322)', () => {
     );
     await el.updateComplete;
     expect(el.borrowType).to.equal('browsed');
+    // Not testing the BookReader-init grace period here — bypass it.
+    el.userActionReadyAt = 0;
 
     el.lendingStatus = { ...baseStatus, browsingExpired: true };
     await el.updateComplete;
@@ -923,6 +987,8 @@ describe('BookReader:userAction race regression (WEBDEV-8322)', () => {
     );
     await el.updateComplete;
     expect(el.borrowType).to.equal('browsed');
+    // Not testing the BookReader-init grace period here — bypass it.
+    el.userActionReadyAt = 0;
 
     el.loanRenewInProgress = true;
 
