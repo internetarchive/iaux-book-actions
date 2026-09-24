@@ -19,6 +19,18 @@ export class LoanTokenPoller {
     this.loanTokenInterval = undefined;
 
     /**
+     * Lending::do_renew() (backend) deletes the old loan record and
+     * writes a brand-new one on every renewal — this poller's initial
+     * create_token call (fired right after a renewal re-establishes the
+     * reading session) can race that write's propagation and come back
+     * with "you do not currently have this book borrowed" even though
+     * the loan is genuinely valid. Retry a few times with backoff instead
+     * of giving up on the first attempt.
+     */
+    this.maxInitialTokenRetries = 3;
+    this.initialTokenRetryDelay = 1000; // ms, multiplied by attempt number
+
+    /**
      * loan analytics instance
      * @see loan-analytics.js
      */
@@ -58,29 +70,64 @@ export class LoanTokenPoller {
     }
   }
 
-  async handleLoanTokenPoller(isInitial = false) {
+  /**
+   * @param {boolean} isInitial - the first create_token call right after
+   *   bookAccessed()/a renewal, as opposed to a routine interval tick.
+   * @param {number} retryCount - internal, counts retries of the initial call.
+   */
+  async handleLoanTokenPoller(isInitial = false, retryCount = 0) {
     const action = 'create_token';
     ActionsHandlerService({
       identifier: this.identifier,
       action,
-      error: data => {
-        this.errorCallback({ detail: { action, data } });
-
-        // send error to Sentry
-        window?.Sentry?.captureMessage(
-          `${sentryLogs.handleLoanTokenPoller} - Error: ${JSON.stringify(data)}`
-        );
-
-        // send LendingServiceError to GA
-        this.loanAnalytics?.sendEvent(
-          'LendingServiceLoanError',
-          action,
-          this.identifier
-        );
-      },
+      error: data => this.handleTokenError(data, isInitial, retryCount),
       success: () => {
         if (isInitial) this.successCallback();
       },
     });
+  }
+
+  /**
+   * Decide whether a create_token failure should be retried (a stale
+   * read of the loan record right after a renewal, see the constructor
+   * comment) or reported via errorCallback. Split out from
+   * handleLoanTokenPoller so it's directly testable without needing to
+   * mock the network call.
+   *
+   * @param {Object} data - the error payload from ActionsHandlerService.
+   * @param {boolean} isInitial
+   * @param {number} retryCount
+   */
+  handleTokenError(data, isInitial, retryCount) {
+    const action = 'create_token';
+    const isStaleLoanReadError =
+      typeof data?.error === 'string' &&
+      /do not currently have this book borrowed/i.test(data.error);
+
+    if (
+      isInitial &&
+      isStaleLoanReadError &&
+      retryCount < this.maxInitialTokenRetries
+    ) {
+      const delay = this.initialTokenRetryDelay * (retryCount + 1);
+      setTimeout(() => {
+        this.handleLoanTokenPoller(true, retryCount + 1);
+      }, delay);
+      return;
+    }
+
+    this.errorCallback({ detail: { action, data } });
+
+    // send error to Sentry
+    window?.Sentry?.captureMessage(
+      `${sentryLogs.handleLoanTokenPoller} - Error: ${JSON.stringify(data)}`
+    );
+
+    // send LendingServiceError to GA
+    this.loanAnalytics?.sendEvent(
+      'LendingServiceLoanError',
+      action,
+      this.identifier
+    );
   }
 }

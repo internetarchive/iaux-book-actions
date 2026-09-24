@@ -56,3 +56,79 @@ describe('Get Loan Token', () => {
     expect(tokenPoller.loanTokenInterval).to.equal(undefined);
   });
 });
+
+describe('handleTokenError retry (WEBDEV-8322 follow-up)', () => {
+  // Lending::do_renew() (backend) deletes the old loan record and writes
+  // a brand-new one on every renewal, so the initial create_token call
+  // right after a renewal can race that write's propagation and come
+  // back with this exact error even though the loan is genuinely valid.
+  const staleLoanReadError = {
+    error: 'You do not currently have this book borrowed.',
+  };
+
+  const makeTokenPoller = () =>
+    new LoanTokenPoller(
+      'identifier1',
+      'browsed',
+      () => {},
+      () => {},
+      2000
+    );
+
+  it('retries the initial call on a stale-loan-read error instead of failing immediately', () => {
+    const tokenPoller = makeTokenPoller();
+    const handleLoanTokenPollerSpy = Sinon.spy(
+      tokenPoller,
+      'handleLoanTokenPoller'
+    );
+    const errorCallbackSpy = Sinon.spy(tokenPoller, 'errorCallback');
+    const clock = Sinon.useFakeTimers();
+
+    try {
+      tokenPoller.handleTokenError(staleLoanReadError, true, 0);
+
+      expect(errorCallbackSpy.called).to.be.false;
+
+      clock.tick(tokenPoller.initialTokenRetryDelay);
+
+      expect(handleLoanTokenPollerSpy.calledWith(true, 1)).to.be.true;
+    } finally {
+      clock.restore();
+    }
+  });
+
+  it('gives up and calls errorCallback after exhausting retries', () => {
+    const tokenPoller = makeTokenPoller();
+    const errorCallbackSpy = Sinon.spy(tokenPoller, 'errorCallback');
+
+    tokenPoller.handleTokenError(
+      staleLoanReadError,
+      true,
+      tokenPoller.maxInitialTokenRetries
+    );
+
+    expect(errorCallbackSpy.calledOnce).to.be.true;
+  });
+
+  it('does not retry a routine (non-initial) poll on the same error', () => {
+    const tokenPoller = makeTokenPoller();
+    const errorCallbackSpy = Sinon.spy(tokenPoller, 'errorCallback');
+
+    tokenPoller.handleTokenError(staleLoanReadError, false, 0);
+
+    expect(errorCallbackSpy.calledOnce).to.be.true;
+  });
+
+  it('does not retry a genuinely different error, even on the initial call', () => {
+    const tokenPoller = makeTokenPoller();
+    const errorCallbackSpy = Sinon.spy(tokenPoller, 'errorCallback');
+
+    tokenPoller.handleTokenError(
+      { error: 'loan token not found. please try again later.' },
+      true,
+      0
+    );
+
+    expect(errorCallbackSpy.calledOnce).to.be.true;
+  });
+});

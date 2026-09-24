@@ -20,6 +20,7 @@ import { LoanTokenPoller } from './core/services/loan-token-poller.js';
 import { LoanRenewHelper } from './core/services/loan-renew-helper.js';
 import log from './core/services/log.js';
 import { URLHelper } from './core/config/url-helper.js';
+import { infoIcon } from './assets/data/info.js';
 
 export const events = {
   browseExpired: 'IABookReader:BrowsingHasExpired',
@@ -60,6 +61,7 @@ export default class IABookActions extends LitElement {
       modal: { Object },
       tokenDelay: { type: Number },
       timerExecutionSeconds: { type: Number },
+      userActionGracePeriod: { type: Number },
       localCache: { type: Object },
       loanRenewTimeConfig: { type: Object },
       loanRenewResult: { type: Object },
@@ -82,6 +84,14 @@ export default class IABookActions extends LitElement {
     this.tokenDelay = 120; // in seconds
     this.timerExecutionSeconds = 30;
 
+    /**
+     * How long (ms) after bindLoanRenewEvents() runs to ignore
+     * BookReader:userAction events — BookReader fires that event on its
+     * own init-time jump to the last-read page, not just on genuine
+     * interaction. @see bindLoanRenewEvents
+     */
+    this.userActionGracePeriod = 2000;
+
     // private props
     this.postInitComplete = false;
     this.primaryActions = [];
@@ -93,10 +103,28 @@ export default class IABookActions extends LitElement {
     this.browseTimer = undefined; // timeout
     this.timeWhenTimerStart = undefined;
 
+    this.loanRenewInProgress = false;
+
     /**
-     * when user click on [return the book] button on warning modal
+     * True while a renewal in flight is recovering from a loan that
+     * genuinely lapsed (set by autoRenewExpiredLoan), as opposed to a
+     * routine pre-expiry top-up. Only the recovery case needs BookReader
+     * re-initialized once the renewal is confirmed — see
+     * handleLoanAutoRenewed.
      */
-    this.returnNow = false;
+    this.recoveringFromLoanExpiry = false;
+
+    this.warningModalOpen = false;
+
+    /**
+     * Once the patron has seen & dismissed the informational warning modal,
+     * don't nag them again with the same modal every timer tick — only a
+     * real renewal (via interacting with the book) clears this, giving the
+     * next pre-expiry window its own single warning.
+     * @see loanRenewAttempt
+     * @see handleLoanAutoRenewed
+     */
+    this.warningModalDismissed = false;
 
     /**
      * contains one hour auto-loan-renew time configuration
@@ -141,7 +169,6 @@ export default class IABookActions extends LitElement {
    * @param {string} msg
    */
   sentryCaptureMsg(msg) {
-    log(window?.Sentry);
     window?.Sentry?.captureMessage(msg);
   }
 
@@ -171,6 +198,13 @@ export default class IABookActions extends LitElement {
     }
 
     if (changed.has('loanRenewResult') && this.loanRenewResult.renewNow) {
+      // Any renewal — not just the auto-return recovery path — pauses the
+      // countdown for the renew_loan round-trip. Flag it here, centrally,
+      // so every path (interaction during active reading, periodic
+      // checker, auto-return recovery) gets the same "renewing" signal
+      // instead of just looking frozen until handleLoanAutoRenewed() clears
+      // this and restarts the timer.
+      this.loanRenewInProgress = true;
       window.IALendingIntervals.clearAll();
     }
   }
@@ -208,6 +242,35 @@ export default class IABookActions extends LitElement {
   /** End SharedObserver resize handler */
 
   async setupLendingToolbarActions() {
+    const hasExpired =
+      'browsingExpired' in this.lendingStatus &&
+      this.lendingStatus?.browsingExpired;
+    if (hasExpired) {
+      // Intentionally do NOT recompute primaryActions/primaryColor/borrowType
+      // here — per the ticket, auto-return must not visibly change anything.
+      // The action bar stays exactly as it looked while reading; only a
+      // successful silent renewal or the "unavailable" error modal are
+      // allowed to change what's shown next.
+      log('[IABookActions] browsing expired — leaving action bar untouched');
+
+      if (!this.tokenPoller) {
+        this.sentryCaptureMsg(sentryLogs.bookWasExpired);
+      }
+      window?.IALendingIntervals?.clearAll();
+
+      /** Global event - always fire */
+      this.dispatchEvent(
+        new Event(events.browseExpired, {
+          bubbles: true,
+          cancelable: false,
+          composed: true,
+        })
+      );
+
+      // early return if book is already expired
+      return;
+    }
+
     this.lendingOptions = new GetLendingActions(
       this.userid,
       this.identifier,
@@ -229,31 +292,14 @@ export default class IABookActions extends LitElement {
 
     this.borrowType = actions.borrowType ? actions.borrowType : null;
 
-    const hasExpired =
-      'browsingExpired' in this.lendingStatus &&
-      this.lendingStatus?.browsingExpired;
-    if (hasExpired) {
-      log('setupLendingToolbarActions > hasExpired --- ');
-
-      if (!this.tokenPoller) {
-        this.sentryCaptureMsg(sentryLogs.bookWasExpired);
-      }
-      window?.IALendingIntervals?.clearAll();
-
-      /** Global event - always fire */
-      this.dispatchEvent(
-        new Event(events.browseExpired, {
-          bubbles: true,
-          cancelable: false,
-          composed: true,
-        })
-      );
-
-      // early return if book is already expired
-      return;
-    }
-
-    if (this.borrowType === 'browsed') {
+    // Don't (re)start the countdown while a renewal is in flight — the
+    // optimistic browsingExpired flip in autoRenewExpiredLoan() (which
+    // triggers this same setupLendingToolbarActions() call) happens before
+    // renewal is confirmed, so secondsLeftOnLoan could still be a stale
+    // value from before the renewal. Wait for handleLoanAutoRenewed() to
+    // confirm the real value and clear loanRenewInProgress before showing
+    // a countdown again.
+    if (this.borrowType === 'browsed' && !this.loanRenewInProgress) {
       // start timer for loan-renew
       await this.startTimerCountdown();
 
@@ -269,11 +315,22 @@ export default class IABookActions extends LitElement {
 
     /**
      * tokenPoller determines if user has loan token for this book
-     * - if book is going to renew, need to wait until renew is completed
+     * - if book is going to renew, need to wait until renew is completed:
+     *   loanRenewInProgress is set before renew_loan is even dispatched
+     *   (including the optimistic pre-confirmation window) and only
+     *   clears once the renewal is confirmed, so starting the poller here
+     *   mid-renewal would call create_token against the loan record
+     *   before it's actually renewed.
      */
     setTimeout(() => {
-      if (!hasExpired && !window.IALendingIntervals.tokenPoller)
+      if (
+        !hasExpired &&
+        !this.loanRenewInProgress &&
+        !window.IALendingIntervals.tokenPoller
+      ) {
+        this.recoveringFromLoanExpiry = false;
         this.startLoanTokenPoller();
+      }
     }, 100);
 
     this.requestUpdate();
@@ -286,12 +343,40 @@ export default class IABookActions extends LitElement {
    * 2. IABookActions:loanRenew - dispatched from timer-countdown component
    */
   bindLoanRenewEvents() {
+    this.userActionReadyAt = Date.now() + this.userActionGracePeriod;
+
     /**
      * dispatched this event from bookreader page changed
      */
     window.addEventListener('BookReader:userAction', () => {
-      log('IABookActions:BookReader:userAction');
-      if (this.borrowType === 'browsed') {
+      if (Date.now() < this.userActionReadyAt) {
+        log(
+          '[IABookActions] BookReader:userAction ignored — within startup grace period'
+        );
+        return;
+      }
+
+      // Capture before autoRenewExpiredLoan() runs — it synchronously flips
+      // lendingStatus.browsingExpired to false as an optimistic UI update,
+      // so checking the live property afterward would always see it as
+      // false and wrongly let autoLoanRenewChecker() run too. That second
+      // call would then overwrite loanRenewResult.renewNow (set true by
+      // autoRenewExpiredLoan) back to false, since the loanTime cache entry
+      // was already deleted by browseHasExpired() — silently killing the
+      // in-flight renewal and leaving the countdown stuck.
+      const wasExpired = this.lendingStatus.browsingExpired;
+
+      log('[IABookActions] BookReader:userAction received', {
+        borrowType: this.borrowType,
+        browsingExpired: wasExpired,
+      });
+
+      // If the loan expired while the tab stayed visible, auto-renew on page turn
+      if (wasExpired) {
+        this.autoRenewExpiredLoan();
+      }
+
+      if (this.borrowType === 'browsed' && !wasExpired) {
         this.autoLoanRenewChecker(true);
       }
     });
@@ -302,18 +387,23 @@ export default class IABookActions extends LitElement {
      * the [visibilitychange] event can trigger timer to show relavent messages
      */
     document.addEventListener('visibilitychange', async () => {
-      if (!document.hidden) {
-        log(
-          'visibilitychange event execute:------------------ ',
-          new Date().getMinutes(),
-          new Date().getSeconds(),
-          this.borrowType
-        );
+      if (document.hidden) {
+        log('[IABookActions] visibilitychange: tab backgrounded');
+        return;
+      }
 
-        if (
-          this.borrowType === 'browsed' &&
-          this.lendingStatus.browsingExpired === false
-        ) {
+      log('[IABookActions] visibilitychange: tab foregrounded', this.borrowType);
+
+      try {
+        // Loan already expired while tab was hidden — try to silently renew
+        if (this.lendingStatus.browsingExpired === true) {
+          this.autoRenewExpiredLoan();
+          return;
+        }
+
+        if (this.borrowType !== 'browsed') return;
+
+        if (this.lendingStatus.browsingExpired === false) {
           const loanTime = await this.localCache.get(
             `${this.identifier}-loanTime`
           );
@@ -324,10 +414,15 @@ export default class IABookActions extends LitElement {
           if (secondsLeft >= this.timerExecutionSeconds) {
             this.loanStatusCheckInterval(Number(secondsLeft));
           } else {
-            this.browseHasExpired();
+            // Loan expired while user was away — try to silently renew
+            this.autoRenewExpiredLoan();
             this.disconnectedCallback();
           }
         }
+      } catch (error) {
+        // Surface localCache failures instead of an unhandled rejection.
+        log('[IABookActions] visibilitychange handler failed', error);
+        this.sentryCaptureMsg(`visibilitychange handler failed: ${error}`);
       }
     });
   }
@@ -339,6 +434,16 @@ export default class IABookActions extends LitElement {
    * @param {Boolean} hasPageChanged
    */
   async autoLoanRenewChecker(hasPageChanged = false) {
+    // Guards against re-entrancy the same way autoRenewExpiredLoan() does.
+    // BookReader:userAction can fire several times in quick succession
+    // (e.g. a single scroll gesture), and this method has no debouncing of
+    // its own — without this guard, each event would spin up its own
+    // LoanRenewHelper concurrently, and whichever's async localCache reads
+    // resolve last would clobber this.loanRenewResult, potentially
+    // re-triggering the whole renew_loan/create_token flow while a
+    // renewal from an earlier event is already in flight or just landed.
+    if (this.loanRenewInProgress) return;
+
     this.loanRenewHelper = new LoanRenewHelper(
       hasPageChanged,
       this.identifier,
@@ -348,6 +453,43 @@ export default class IABookActions extends LitElement {
 
     await this.loanRenewHelper.handleLoanRenew();
     this.loanRenewResult = this.loanRenewHelper.result;
+  }
+
+  /**
+   * Attempt to automatically renew a browse loan that has expired.
+   * Called on visibilitychange (user returns to tab) or on page turn when
+   * the loan has expired but the book may still be available.
+   *
+   * Reuses the same renew_loan path as the automatic loan-renew checker.
+   * On success: handleLoanAutoRenewed() resets the timer seamlessly.
+   * On error: handleLendingActionError() shows showLoanUnavailableModal().
+   */
+  autoRenewExpiredLoan() {
+    if (this.loanRenewInProgress) return;
+    this.loanRenewInProgress = true;
+    this.recoveringFromLoanExpiry = true;
+
+    this.modal?.closeModal();
+
+    // Optimistically flip browsingExpired back to false so the action bar
+    // stays red (patronIsReadingAction) while the renew_loan request is in
+    // flight, instead of showing the blue "Borrow" state. Deliberately NOT
+    // resetting secondsLeftOnLoan here — the renewal hasn't been confirmed
+    // yet (it can take several seconds, or genuinely fail), so showing a
+    // full hour before we know the outcome would be misleading. The real
+    // value is set once handleLoanAutoRenewed() confirms success;
+    // loanRenewInProgress (already true above) is the signal consumers
+    // should use to show a "renewing" state instead of trusting the
+    // countdown during this window.
+    this.lendingStatus = {
+      ...this.lendingStatus,
+      browsingExpired: false,
+    };
+
+    // Defer renewNow until after lendingStatus timer setup completes.
+    setTimeout(() => {
+      this.loanRenewResult = { texts: '', renewNow: true, renewType: 'auto' };
+    }, 0);
   }
 
   /**
@@ -362,50 +504,62 @@ export default class IABookActions extends LitElement {
   }
 
   /**
-   * Show the waring modal to ask user if they are still reading
+   * Show the informational modal warning the patron their loan will expire
+   * soon. This is acknowledgement-only — closing it does not renew the loan.
+   * Only interacting with the book itself (e.g. turning a page) renews it.
    */
   async showWarningModal() {
-    log('****** showWarningModal ******');
-    // clear modal
-    this.modal.customModalContent = nothing;
-    this.modal?.closeModal();
-    this.loanRenewResult = { texts: '', renewNow: false };
+    if (this.warningModalOpen) return;
+    this.warningModalOpen = true;
 
-    // if secondsLeft < 60, consider it 1 minute
-    let { secondsLeft } = this.loanRenewResult;
-    if (secondsLeft === undefined) {
+    log('[IABookActions] showWarningModal');
+
+    // Capture texts and secondsLeft before resetting loanRenewResult
+    const {
+      texts: warningTexts,
+      secondsLeft: rawSecondsLeft,
+    } = this.loanRenewResult;
+    let secondsLeft = rawSecondsLeft;
+    if (secondsLeft === undefined || secondsLeft <= 0) {
       secondsLeft = this.lendingStatus.secondsLeftOnLoan;
     } else {
       secondsLeft = secondsLeft > 60 ? secondsLeft : 60;
     }
 
+    // clear modal and reset renew state
+    this.modal.customModalContent = nothing;
+    this.modal?.closeModal();
+    this.loanRenewResult = { texts: '', renewNow: false };
+
     const config = new ModalConfig({
-      headline: 'Are you still reading?',
+      headline: 'Are you still there?',
       headerColor: '#194880',
       showCloseButton: false,
       closeOnBackdropClick: false,
-      message: this.loanRenewHelper?.getMessageTexts(
-        this.loanRenewResult.texts,
-        secondsLeft
-      ),
+      message: html`<span>
+        ${this.loanRenewHelper?.getMessageTexts(warningTexts, secondsLeft)}
+        <a
+          href="https://help.archive.org/help/borrowing-from-the-lending-library"
+          target="_blank"
+          title="Get more info on borrowing from The Lending Library"
+          data-event-click-tracking="BookReader|BrowsableMoreInfo"
+          style="display:inline-block;vertical-align:middle;line-height:0;margin-left:4px;"
+        >
+          ${infoIcon}
+        </a>
+      </span>`,
     });
 
-    const customModalContent = html`<br />
+    const customModalContent = html`
       <div
         id="book-action-bar-custom-buttons"
-        style="display:flex;justify-content:center;"
+        style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;margin-top:10px;"
       >
         <button
           style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
-          @click=${() => this.patronWantsToRenewBook()}
+          @click=${() => this.dismissWarningModal()}
         >
-          Keep reading
-        </button>
-        <button
-          style="${modalButtonStyle.iaButton} ${modalButtonStyle.return}"
-          @click=${() => this.patronWantsToReturnBook()}
-        >
-          Return the book
+          Okay
         </button>
       </div> `;
 
@@ -413,107 +567,18 @@ export default class IABookActions extends LitElement {
     await this.modal?.showModal({ config, customModalContent });
   }
 
-  /** @param { 'renewBook' | 'returnBook' } buttonToDisable */
-  async showWarningDisabledModal(buttonToDisable = 'renewBook') {
-    // if secondsLeft < 60, consider it 1 minute
-    let { secondsLeft } = this.loanRenewResult;
-    if (secondsLeft === undefined) {
-      secondsLeft = this.lendingStatus.secondsLeftOnLoan;
-    } else {
-      secondsLeft = secondsLeft > 60 ? secondsLeft : 60;
-    }
-
-    const config = new ModalConfig({
-      headline: 'Are you still reading?',
-      headerColor: '#194880',
-      showCloseButton: false,
-      closeOnBackdropClick: false,
-      message: this.loanRenewHelper?.getMessageTexts(
-        this.loanRenewResult.texts,
-        secondsLeft
-      ),
-    });
-
-    const customModalContent = html`<br />
-      <div
-        id="disabled-book-action-bar-custom-buttons"
-        style="display:flex;justify-content:center; opacity:0.8; pointer-events:none;"
-      >
-        <button
-          disabled
-          style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
-        >
-          ${buttonToDisable === 'renewBook'
-            ? html`<ia-activity-indicator
-                mode="processing"
-                style=${modalButtonStyle.loaderIcon}
-              ></ia-activity-indicator>`
-            : 'Keep reading'}
-        </button>
-        <span
-          style="position: absolute; visibility: none; height: 1px; width: 1px; overflow: hidden;"
-          >Renewing loan, one moment please.</span
-        >
-        <button
-          disabled
-          style="${modalButtonStyle.iaButton} ${modalButtonStyle.return}"
-        >
-          ${buttonToDisable === 'returnBook'
-            ? html`<ia-activity-indicator
-                mode="processing"
-                style=${modalButtonStyle.loaderIcon}
-              ></ia-activity-indicator>`
-            : 'Return the book'}
-        </button>
-      </div> `;
-
-    await this.modal?.showModal({ config, customModalContent });
-  }
-
-  /** Handles Renew action in warning modal */
-  async patronWantsToRenewBook() {
-    this.showWarningDisabledModal();
-    this.loanRenewResult = { texts: '', renewNow: true, renewType: 'manual' };
-  }
-
-  async patronWantsToReturnBook() {
-    this.showWarningDisabledModal('returnBook');
-    document.querySelector('ia-book-actions').disableActionGroup = true;
-    this.returnNow = true;
-  }
-
-  /**
-   * Show modal when book is auto returned
-   */
-  async showExpiredModal() {
-    const config = new ModalConfig({
-      headline: '',
-      showCloseButton: false,
-      closeOnBackdropClick: false,
-      headerColor: '#194880',
-      message: 'This book has been returned due to inactivity.',
-    });
-
-    const customModalContent = html`<br />
-      <div style="text-align: center">
-        <button
-          style="${modalButtonStyle.iaButton} ${modalButtonStyle.renew}"
-          @click=${() => {
-            URLHelper.goToUrl(this.returnUrl, true);
-          }}
-        >
-          Okay
-        </button>
-      </div> `;
-
-    await this.modal?.showModal({ config, customModalContent });
+  /** Acknowledges the warning modal — closes it without renewing the loan */
+  dismissWarningModal() {
+    this.modal?.closeModal();
+    this.warningModalOpen = false;
+    this.warningModalDismissed = true;
   }
 
   /**
    * Execute when loan is expired
    */
   async browseHasExpired() {
-    log('BrowseHasExpired ---');
+    log('[IABookActions] browseHasExpired');
     window?.IALendingIntervals?.clearAll();
 
     const currStatus = {
@@ -532,31 +597,53 @@ export default class IABookActions extends LitElement {
     this.loanRenewResult.texts =
       'This book has been returned due to inactivity.';
 
-    await this.showExpiredModal();
+    this.modal?.closeModal();
 
     this.sentryCaptureMsg(sentryLogs.browseHasExpired);
+  }
+
+  /**
+   * Show modal when the book can no longer be automatically renewed
+   * because another patron has checked it out.
+   */
+  async showLoanUnavailableModal(errorMsg) {
+    const config = new ModalConfig({
+      headline: '',
+      showCloseButton: false,
+      closeOnBackdropClick: false,
+      headerColor: '#d9534f',
+      message:
+        errorMsg ||
+        'Due to inactivity, this book was returned, and someone else has now borrowed it. Please try again later.',
+    });
+
+    const customModalContent = html`<br />
+      <div style="text-align: center">
+        <button
+          style="${modalButtonStyle.iaButton} ${modalButtonStyle.return}"
+          @click=${() => URLHelper.goToUrl(this.returnUrl, true)}
+        >
+          Okay
+        </button>
+      </div>`;
+
+    await this.modal?.showModal({ config, customModalContent });
   }
 
   async startBrowseTimer() {
     window?.IALendingIntervals?.clearBrowseExpireTimeout();
 
-    const { browsingExpired, user_has_browsed, secondsLeftOnLoan } =
-      this.lendingStatus;
+    const {
+      browsingExpired,
+      user_has_browsed,
+      secondsLeftOnLoan,
+    } = this.lendingStatus;
 
     if (!user_has_browsed || browsingExpired) {
-      log('startBrowseTimer --- !user_has_browsed || browsingExpired', {
-        user_has_browsed,
-        browsingExpired,
-        secondsLeftOnLoan,
-      });
       return;
     }
 
     window.IALendingIntervals.browseExpireTimeout = setTimeout(() => {
-      log(
-        'startBrowseTimer > browseExpireTimeout --- will expire loan',
-        secondsLeftOnLoan
-      );
       this.browseHasExpired();
     }, secondsLeftOnLoan * 1000);
   }
@@ -602,7 +689,6 @@ export default class IABookActions extends LitElement {
         ?disabled=${this.disableActionGroup}
         ?autoRenew=${this.loanRenewResult.renewNow}
         ?autoReturn=${this.lendingStatus.browsingExpired}
-        ?returnNow=${this.returnNow}
         @loanAutoRenewed=${this.handleLoanAutoRenewed}
         @lendingActionError=${this.handleLendingActionError}
         @toggleActionGroup=${this.handleToggleActionGroup}
@@ -628,6 +714,7 @@ export default class IABookActions extends LitElement {
     const activeLoan = detail?.data?.loan;
     const errorMessage = `Whoops, seems we hit a hiccup with renewing this book. Please refresh & retry. --- (Debug: ${detail?.data?.error})`;
     if (!activeLoan) {
+      this.recoveringFromLoanExpiry = false;
       this.showErrorModal(errorMessage, 'handleLoanAutoRenewed');
       return;
     }
@@ -637,14 +724,35 @@ export default class IABookActions extends LitElement {
       const loanTime = await this.localCache.get(`${this.identifier}-loanTime`);
 
       // number of seconds left in current loan
-      const secondsLeft = Math.round((loanTime - new Date()) / 1000);
-      log(loanTime, secondsLeft);
-
-      log('IABookActions: handleLoanAutoRenewed --- ', {
+      const rawSecondsLeft = Math.round((loanTime - new Date()) / 1000);
+      // Guard against a stale/missing loanTime read producing NaN, which
+      // would get the loan stuck "active" with a countdown that never moves.
+      const secondsLeft =
+        Number.isFinite(rawSecondsLeft) && rawSecondsLeft > 0
+          ? rawSecondsLeft
+          : this.loanRenewTimeConfig.loanTotalTime;
+      log('[IABookActions] handleLoanAutoRenewed', {
+        secondsLeft,
+        rawSecondsLeft,
         ajaxResponse: detail?.data,
-        loanRenewResult: this.loanRenewResult,
-        secondsLeftOnLoan: secondsLeft,
       });
+
+      if (this.recoveringFromLoanExpiry) {
+        // The loan genuinely lapsed, and renew_loan has now CONFIRMED it's
+        // renewed server-side — only now is it safe to let BookReader
+        // re-initialize (create_token was minting its access cookie off
+        // the loan's expiry; doing this before confirmation risked reading
+        // the still-expired record). loanRenewInProgress already kept the
+        // token poller from restarting early, so it'll pick up fresh here
+        // once lendingStatus below re-triggers setupLendingToolbarActions().
+        // recoveringFromLoanExpiry itself is consumed/reset there, not
+        // here — this ONLY applies to an actual recovery, not a routine
+        // renewal (re-running br.init() on every routine top-up would be
+        // needlessly disruptive). create_token's own retry logic (see
+        // LoanTokenPoller) handles the datanode write-propagation race
+        // for both recovery and routine renewals.
+        this.postInitComplete = false;
+      }
 
       const currStatus = {
         ...this.lendingStatus,
@@ -659,7 +767,11 @@ export default class IABookActions extends LitElement {
       this.modal.removeAttribute('id');
       this.modal.customModalContent = nothing;
       this.sentryCaptureMsg(sentryLogs.bookHasRenewed);
+      this.warningModalDismissed = false;
     }
+
+    this.warningModalOpen = false;
+    this.loanRenewInProgress = false;
   }
 
   /**
@@ -695,29 +807,20 @@ export default class IABookActions extends LitElement {
     // re-sync timer if gone off because of background window
     // side effect: updates this.lendingStatus & kicks off lifecycle,
     // if really updated, escape from here
-    const resyncd = await this.reSyncTimerIfGoneOff(secondsLeft);
+    const resyncd = this.reSyncTimerIfGoneOff(secondsLeft);
 
     if (resyncd.hasSynced) {
       secondsLeft = resyncd.whatShouldLeft;
-      log('startTimerCountdown --- stale, timer has resyncd', {
+      log('[IABookActions] timer: timer re-synced', {
         secondsLeft,
       });
     }
 
-    log(
-      'startTimerCountdown --- countdown still valid. continue...',
-      {
-        resyncd,
-        secondsLeft,
-        loanRenewAtLast: this.loanRenewTimeConfig.loanRenewAtLast,
-      },
-      'time: ',
-      new Date().getMinutes(),
-      ':',
-      new Date().getSeconds(),
-      ', timerDelay: ',
-      this.timerExecutionSeconds
-    );
+    log('[IABookActions] timer', {
+      secondsLeft,
+      loanRenewAtLast: this.loanRenewTimeConfig.loanRenewAtLast,
+      pageChangedInLast: this.loanRenewTimeConfig.pageChangedInLast,
+    });
 
     /**
      * execute from last 10th minutes to 0th minute
@@ -742,7 +845,7 @@ export default class IABookActions extends LitElement {
    * @param {number} timerSecondsLeft - actual seconds left get from setInterval
    * @returns {Object} { hasSynced: [boolean], whatShouldLeft: [number] }
    */
-  async reSyncTimerIfGoneOff(timerSecondsLeft) {
+  reSyncTimerIfGoneOff(timerSecondsLeft) {
     const currentTime = new Date();
 
     // current time - loan time
@@ -752,26 +855,10 @@ export default class IABookActions extends LitElement {
     const secondsShouldLeft =
       this.lendingStatus.secondsLeftOnLoan - diffInSeconds;
 
-    log('currentTime: ', currentTime);
-    log('timeWhenTimerStart: ', this.timeWhenTimerStart);
-    log('diffInSeconds: ', diffInSeconds);
-    log('secondsShouldLeft: ', secondsShouldLeft);
-    log(
-      'this.lendingStatus.secondsLeftOnLoan: ',
-      this.lendingStatus.secondsLeftOnLoan
-    );
-
     // convert in minutes
     const whatIsleft = Math.round(timerSecondsLeft);
     const whatShouldLeft = Math.round(secondsShouldLeft);
     const timerElSeconds = this.timerCountdownEl.secondsLeftOnLoan || 0;
-
-    log(`reSyncTimerIfGoneOff?`, {
-      whatIsleft,
-      whatShouldLeft,
-      timerElSeconds,
-      timeLeftInMin: Math.ceil(timerSecondsLeft / 60),
-    });
 
     if (timerElSeconds !== whatShouldLeft || whatIsleft !== whatShouldLeft) {
       // set lending status with new time to update decrementor
@@ -783,7 +870,9 @@ export default class IABookActions extends LitElement {
     }
 
     if (whatIsleft !== whatShouldLeft) {
-      log(`reSyncTimerIfGoneOff --- let's re-sync.`);
+      log(
+        `[IABookActions] reSyncTimerIfGoneOff ${whatIsleft} - ${whatShouldLeft}: re-syncing timer`
+      );
       return { hasSynced: true, whatShouldLeft };
     }
 
@@ -799,10 +888,6 @@ export default class IABookActions extends LitElement {
    * @memberof IABookActions
    */
   async loanRenewAttempt(secondsLeft) {
-    log('loanRenewAttempt ---', {
-      secondsLeft,
-      loanRenewResult: this.loanRenewResult,
-    });
     let loanSecondsLeft = secondsLeft;
     /**
      * auto-renew is not possible in last seconds (let say 50 second) because,
@@ -812,7 +897,7 @@ export default class IABookActions extends LitElement {
      * so if seconds left is < 50, just expire the loan
      */
     if (loanSecondsLeft < 50) {
-      log('loanRenewAttempt --- loanSecondsLeft < 50, will expire');
+      log('[IABookActions] loanRenewAttempt: < 50s left, expiring loan');
       await this.browseHasExpired();
       return;
     }
@@ -820,7 +905,9 @@ export default class IABookActions extends LitElement {
     await this.autoLoanRenewChecker(false);
 
     // show warning modal with remaining time to auto returned it.
-    if (this.loanRenewResult.renewNow === false) {
+    // once the patron has dismissed it, don't re-show it on every subsequent
+    // tick — only an actual renewal (see handleLoanAutoRenewed) re-arms it.
+    if (this.loanRenewResult.renewNow === false && !this.warningModalDismissed) {
       /**
        * so compensate for the 50 second buffer to handle above race conditions
        * let's reduce 1 min from warning texts and early return the book when 1 min left.
@@ -888,42 +975,71 @@ export default class IABookActions extends LitElement {
   handleLendingActionError(event) {
     this.disableActionGroup = false;
 
-    // clear all intervals for lending system when error occured
-    window?.IALendingIntervals?.clearAll();
-
     const action = event?.detail?.action;
     const errorMsg = event?.detail?.data?.error;
 
-    // template not show create_token errors
-    if (errorMsg && action !== 'create_token')
-      this.showErrorModal(errorMsg, action);
-
-    // if error related to loan token
-    // - set user_has_browsed to `false`
     if (action === 'create_token') {
-      const currStatus = {
+      // A create_token hiccup only affects BookReader's page-image access
+      // token — it says nothing about how much time is left on the loan
+      // itself, so it must not stop the reading countdown. Only clear the
+      // token poller so it can be retried.
+      window?.IALendingIntervals?.clearTokenPoller();
+
+      // The loan itself is fine — just this token refresh failed — but
+      // the action bar must reflect that it isn't safely browsable right
+      // now rather than silently doing nothing.
+      this.lendingStatus = {
         ...this.lendingStatus,
         user_has_browsed: false,
         available_to_browse: true,
       };
-      this.lendingStatus = currStatus;
-    }
 
-    // update action bar state if book is not available to browse or borrow.
-    if (errorMsg && errorMsg.match(/not available to borrow/gm)) {
-      let currStatus = this.lendingStatus;
-      if (action === 'browse_book') {
-        currStatus = {
-          ...this.lendingStatus,
-          available_to_browse: false,
-        };
-      } else if (action === 'borrow_book') {
-        currStatus = {
-          ...this.lendingStatus,
-          available_to_borrow: false,
-        };
+      // By the time this handler runs, LoanTokenPoller has already
+      // exhausted its retries for the transient datanode-propagation
+      // race (or the error wasn't that in the first place) — this is a
+      // genuine failure, so let the patron know instead of doing this
+      // silently. showErrorModal has dedicated create_token messaging
+      // (refresh button + support email).
+      if (errorMsg) this.showErrorModal(errorMsg, action);
+    } else if (action === 'renew_loan') {
+      window?.IALendingIntervals?.clearAll();
+      this.loanRenewInProgress = false;
+      this.recoveringFromLoanExpiry = false;
+
+      // The loan was NOT actually renewed — reflect that immediately
+      // (show Borrow, and clear the stale timer value) instead of leaving
+      // the action bar showing "Return now" with a frozen countdown from
+      // before the failed attempt, which falsely implies the book is
+      // still actively being read.
+      this.lendingStatus = {
+        ...this.lendingStatus,
+        user_has_browsed: false,
+        available_to_browse: true,
+        secondsLeftOnLoan: 0,
+      };
+
+      // Show the real error and refresh the page on dismissal (the
+      // modal's Okay button) so the client picks up whatever the server
+      // now authoritatively considers true — matching on "not available"
+      // to guess the reason was fragile since the server can return any
+      // message (e.g. a lending limit).
+      this.showLoanUnavailableModal(errorMsg);
+    } else {
+      // Every other action failure genuinely affects loan state.
+      window?.IALendingIntervals?.clearAll();
+
+      if (!errorMsg) return;
+
+      this.showErrorModal(errorMsg, action);
+
+      // update action bar state if book is not available to browse or borrow.
+      if (errorMsg.match(/not available to borrow/gm)) {
+        if (action === 'browse_book') {
+          this.lendingStatus = { ...this.lendingStatus, available_to_browse: false };
+        } else if (action === 'borrow_book') {
+          this.lendingStatus = { ...this.lendingStatus, available_to_borrow: false };
+        }
       }
-      this.lendingStatus = currStatus;
     }
   }
 

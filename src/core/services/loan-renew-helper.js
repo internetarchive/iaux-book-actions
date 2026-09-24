@@ -16,8 +16,7 @@ export class LoanRenewHelper {
     // messages for auto return machenism
     this.loanRenewMessage =
       'This book has been renewed for #time #unitsOfTime.';
-    this.loanReturnWarning =
-      'With no action, this book will be auto-returned in #time #unitsOfTime.';
+    this.loanReturnWarning = 'Go to any other page to keep your loan active.';
 
     // private props
     this.result = {
@@ -27,7 +26,7 @@ export class LoanRenewHelper {
     };
   }
 
-  handleLoanRenew() {
+  async handleLoanRenew() {
     try {
       if (this.hasPageChanged) {
         return this.pageChanged(); // user clicked on page
