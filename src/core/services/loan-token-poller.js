@@ -20,26 +20,6 @@ export class LoanTokenPoller {
     this.loanTokenInterval = undefined;
 
     /**
-     * Lending::do_renew() (backend) deletes the old loan record and
-     * writes a brand-new one on every renewal — this poller's initial
-     * create_token call (fired right after a renewal re-establishes the
-     * reading session) can race that write's propagation and come back
-     * with "you do not currently have this book borrowed" even though
-     * the loan is genuinely valid. Retry a few times with backoff instead
-     * of giving up on the first attempt.
-     */
-    this.maxTokenRetries = 3;
-    this.tokenRetryDelay = 1000; // ms, multiplied by attempt number
-
-    /**
-     * Handle for a pending retry, so teardown can cancel it. It's a bare
-     * setTimeout rather than an IALendingIntervals entry, so without this
-     * a retry scheduled just before the loan is returned would still fire
-     * its create_token afterwards.
-     */
-    this.retryTimeout = undefined;
-
-    /**
      * loan analytics instance
      * @see loan-analytics.js
      */
@@ -50,8 +30,6 @@ export class LoanTokenPoller {
 
   disconnectedCallback() {
     window?.IALendingIntervals?.clearTokenPoller();
-    clearTimeout(this.retryTimeout);
-    this.retryTimeout = undefined;
   }
 
   async bookAccessed() {
@@ -84,24 +62,21 @@ export class LoanTokenPoller {
   /**
    * @param {boolean} isInitial - the first create_token call right after
    *   bookAccessed()/a renewal, as opposed to a routine interval tick.
-   * @param {number} retryCount - internal, counts retries of the initial call.
    */
-  async handleLoanTokenPoller(isInitial = false, retryCount = 0) {
+  async handleLoanTokenPoller(isInitial = false) {
     const action = 'create_token';
     log('[LoanTokenPoller] create_token requested', {
       identifier: this.identifier,
       isInitial,
-      retryCount,
     });
     ActionsHandlerService({
       identifier: this.identifier,
       action,
-      error: data => this.handleTokenError(data, isInitial, retryCount),
+      error: data => this.handleTokenError(data, isInitial),
       success: () => {
         log('[LoanTokenPoller] create_token succeeded', {
           identifier: this.identifier,
           isInitial,
-          retryCount,
         });
         if (isInitial) this.successCallback();
       },
@@ -109,56 +84,21 @@ export class LoanTokenPoller {
   }
 
   /**
-   * Decide whether a create_token failure should be retried (a stale
-   * read of the loan record right after a renewal, see the constructor
-   * comment) or reported via errorCallback. Split out from
+   * Reports a create_token failure via errorCallback — no retry, it's
+   * treated as terminal on the first failure. Split out from
    * handleLoanTokenPoller so it's directly testable without needing to
    * mock the network call.
    *
    * @param {Object} data - the error payload from ActionsHandlerService.
    * @param {boolean} isInitial
-   * @param {number} retryCount
    */
-  handleTokenError(data, isInitial, retryCount) {
+  handleTokenError(data, isInitial) {
     const action = 'create_token';
-    const isStaleLoanReadError =
-      typeof data?.error === 'string' &&
-      /do not currently have this book borrowed/i.test(data.error);
 
     log('[LoanTokenPoller] create_token failed', {
       identifier: this.identifier,
       isInitial,
-      retryCount,
-      isStaleLoanReadError,
       error: data?.error,
-    });
-
-    // The renewal write can be mid-propagation for an interval refresh too,
-    // not just the initial call — a routine tick landing moments after a
-    // renewal hits the same race. Retry both; isInitial only decides how a
-    // final failure is reported, not whether it's worth retrying.
-    if (isStaleLoanReadError && retryCount < this.maxTokenRetries) {
-      const delay = this.tokenRetryDelay * (retryCount + 1);
-      log(
-        '[LoanTokenPoller] retrying create_token after stale-loan-read error',
-        {
-          identifier: this.identifier,
-          nextRetryCount: retryCount + 1,
-          delay,
-        }
-      );
-      clearTimeout(this.retryTimeout);
-      this.retryTimeout = setTimeout(() => {
-        this.retryTimeout = undefined;
-        this.handleLoanTokenPoller(isInitial, retryCount + 1);
-      }, delay);
-      return;
-    }
-
-    log('[LoanTokenPoller] giving up on create_token, reporting error', {
-      identifier: this.identifier,
-      isInitial,
-      retryCount,
     });
 
     // isInitial rides along so the consumer can distinguish "the book won't

@@ -97,18 +97,6 @@ export default class IABookActions extends LitElement {
     this.loanRenewInProgress = false;
 
     /**
-     * True while a create_token error modal is up and the token poller is
-     * retrying in the background. Cleared by startLoanTokenPoller()'s
-     * successCallback. See handleLendingActionError.
-     */
-    this.awaitingTokenRecovery = false;
-
-    /** Bounds how many times handleLendingActionError restarts the poller
-     * for one outage, so a genuinely-lost loan can't retry forever. */
-    this.tokenRecoveryAttempts = 0;
-    this.maxTokenRecoveryAttempts = 3;
-
-    /**
      * True while recovering from a loan that genuinely lapsed (set by
      * autoRenewExpiredLoan), as opposed to a routine pre-expiry top-up.
      * Only the recovery case needs BookReader re-initialized — see
@@ -301,14 +289,9 @@ export default class IABookActions extends LitElement {
 
     if (!this.applyLendingActions()) return;
 
-    // Don't (re)start the countdown mid-renewal (stale secondsLeftOnLoan)
-    // or while recovering a create_token failure (timers stopped
-    // deliberately — see handleLendingActionError).
-    if (
-      this.borrowType === 'browsed' &&
-      !this.loanRenewInProgress &&
-      !this.awaitingTokenRecovery
-    ) {
+    // Don't (re)start the countdown mid-renewal — secondsLeftOnLoan could
+    // still be stale until handleLoanAutoRenewed() confirms it.
+    if (this.borrowType === 'browsed' && !this.loanRenewInProgress) {
       await this.startTimerCountdown();
       await this.startBrowseTimer();
     }
@@ -405,10 +388,6 @@ export default class IABookActions extends LitElement {
 
         if (this.borrowType !== 'browsed') return;
 
-        // Timers are deliberately stopped during create_token recovery
-        // (see handleLendingActionError) — leave them alone here.
-        if (this.awaitingTokenRecovery) return;
-
         if (this.lendingStatus.browsingExpired === false) {
           const loanTime = await this.localCache.get(
             `${this.identifier}-loanTime`
@@ -442,11 +421,9 @@ export default class IABookActions extends LitElement {
    * @param {Boolean} hasPageChanged
    */
   async autoLoanRenewChecker(hasPageChanged = false) {
-    // Re-entrancy guard against rapid BookReader:userAction events, and
-    // against restarting a renewal while still recovering the last one's
-    // create_token (loanRenewInProgress clears as soon as renew_loan
-    // itself succeeds, before that's known).
-    if (this.loanRenewInProgress || this.awaitingTokenRecovery) return;
+    // Re-entrancy guard against rapid BookReader:userAction events (e.g. a
+    // single scroll firing several in quick succession).
+    if (this.loanRenewInProgress) return;
 
     this.loanRenewHelper = new LoanRenewHelper(
       hasPageChanged,
@@ -465,14 +442,10 @@ export default class IABookActions extends LitElement {
    * handleLendingActionError() handle the outcome either way.
    */
   autoRenewExpiredLoan() {
-    if (this.loanRenewInProgress || this.awaitingTokenRecovery) {
+    if (this.loanRenewInProgress) {
       log(
         '[IABookActions] autoRenewExpiredLoan: skipped, renewal already in progress',
-        {
-          identifier: this.identifier,
-          loanRenewInProgress: this.loanRenewInProgress,
-          awaitingTokenRecovery: this.awaitingTokenRecovery,
-        }
+        { identifier: this.identifier }
       );
       return;
     }
@@ -919,48 +892,18 @@ export default class IABookActions extends LitElement {
    * @see LoanTokenPoller
    */
   startLoanTokenPoller() {
-    const successCallback = async () => {
+    const successCallback = () => {
       if (!this.postInitComplete) {
         this.lendingBarPostInit();
       }
       this.postInitComplete = true;
-
-      if (this.awaitingTokenRecovery) {
-        log(
-          '[IABookActions] create_token recovered — closing error modal, resuming timer',
-          { identifier: this.identifier }
-        );
-        this.awaitingTokenRecovery = false;
-        this.tokenRecoveryAttempts = 0;
-        this.modal?.closeModal();
-        this.modal.removeAttribute('id');
-        this.modal.customModalContent = nothing;
-
-        // Recompute the true remaining time from the cache — not however
-        // long the outage lasted — before resuming the stopped timers.
-        const loanTime = await this.localCache.get(
-          `${this.identifier}-loanTime`
-        );
-        const rawSecondsLeft = Math.round((loanTime - new Date()) / 1000);
-        const secondsLeft =
-          Number.isFinite(rawSecondsLeft) && rawSecondsLeft > 0
-            ? rawSecondsLeft
-            : this.loanRenewTimeConfig.loanTotalTime;
-        this.lendingStatus = {
-          ...this.lendingStatus,
-          secondsLeftOnLoan: secondsLeft,
-        };
-        await this.startTimerCountdown();
-        await this.startBrowseTimer();
-      }
     };
     const errorCallback = eventObj => {
       this.handleLendingActionError(eventObj);
     };
 
-    // Tear down any previous poller first — otherwise its own pending
-    // internal retry timeout (see LoanTokenPoller.handleTokenError) is
-    // never cancelled and can fire later against stale state.
+    // Tear down any previous poller first, so only one is ever controlling
+    // window.IALendingIntervals.tokenPoller at a time.
     this.tokenPoller?.disconnectedCallback();
     this.tokenPoller = new LoanTokenPoller(
       this.identifier,
@@ -1005,38 +948,28 @@ export default class IABookActions extends LitElement {
     });
 
     if (action === 'create_token') {
-      // A create_token hiccup says nothing about how much time is left on
-      // the loan, so it must not stop the countdown by itself.
-      window?.IALendingIntervals?.clearTokenPoller();
-
-      // Only the INITIAL token matters enough to interrupt the patron —
-      // a routine interval refresh stays silent and just retries next tick.
+      // Only the INITIAL token matters enough to interrupt the patron — a
+      // routine interval refresh stays silent; the pages already loaded
+      // are still served, and the next scheduled poll tries again on its
+      // own without any special retry.
       if (!isInitial) {
         log(
-          '[IABookActions] create_token failed on interval refresh — staying silent, poller will retry'
+          '[IABookActions] create_token failed on interval refresh — staying silent'
         );
         return;
       }
 
-      // The loan itself is still active (do_renew succeeded) — don't touch
-      // lendingStatus, which would collapse borrowType to null and strand
-      // the poller from ever restarting. Still nothing to read right now
-      // though, so stop the countdown timers too; startLoanTokenPoller()'s
-      // successCallback resumes them once access recovers.
-      this.awaitingTokenRecovery = true;
-      window?.IALendingIntervals?.clearTimerCountdown();
-      window?.IALendingIntervals?.clearBrowseExpireTimeout();
-
-      // Bounded: a genuinely-lost (not just slow-to-propagate) loan would
-      // otherwise retry this forever.
-      this.tokenRecoveryAttempts += 1;
-      if (this.tokenRecoveryAttempts <= this.maxTokenRecoveryAttempts) {
-        this.startLoanTokenPoller();
-      } else {
-        log('[IABookActions] create_token recovery attempts exhausted', {
-          identifier: this.identifier,
-        });
-      }
+      // The book never opened, and we don't retry — reset the bar to
+      // Borrow and the timer to 0 rather than leaving a red "Return now"
+      // with a stale countdown for a session that isn't accessible.
+      window?.IALendingIntervals?.clearAll();
+      this.tokenPoller?.disconnectedCallback();
+      this.lendingStatus = {
+        ...this.lendingStatus,
+        user_has_browsed: false,
+        available_to_browse: true,
+        secondsLeftOnLoan: 0,
+      };
 
       // showErrorModal has dedicated create_token messaging (refresh
       // button + support email).

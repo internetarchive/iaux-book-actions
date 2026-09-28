@@ -755,35 +755,6 @@ describe('autoRenewExpiredLoan', () => {
     expect(el.loanRenewResult.renewNow).to.be.true;
   });
 
-  it('does not start a new renewal while awaiting create_token recovery from the last one', async () => {
-    // loanRenewInProgress clears as soon as renew_loan itself succeeds
-    // (see handleLoanAutoRenewed), before create_token is known to work.
-    // A visibilitychange/userAction landing in that window must not kick
-    // off ANOTHER renewal — that repeats the do_renew() delete+create
-    // write for no reason. See WEBDEV-8322 production log, 2026-09-28.
-    const el = await fixture(
-      container({
-        userid: '@user1',
-        identifier: 'foobar',
-        lendingStatus: {
-          user_has_browsed: true,
-          browsingExpired: true,
-        },
-      })
-    );
-    await el.updateComplete;
-
-    el.loanRenewInProgress = false;
-    el.awaitingTokenRecovery = true;
-
-    const spy = Sinon.spy(el, 'autoRenewExpiredLoan');
-    el.autoRenewExpiredLoan();
-
-    expect(spy.callCount).to.equal(1);
-    expect(el.loanRenewInProgress).to.be.false;
-    expect(el.loanRenewResult.renewNow).to.be.false;
-  });
-
   it('clears loanRenewInProgress after a successful loanAutoRenewed event', async () => {
     const el = await fixture(
       container({
@@ -1130,14 +1101,11 @@ describe('handleLendingActionError - create_token failures must not stop the cou
     expect(window.IALendingIntervals.timerCountdown).to.not.equal(0);
   });
 
-  it('shows the error modal for a create_token failure that reaches here (retries already exhausted)', async () => {
-    // By the time handleLendingActionError runs for a create_token
-    // failure, LoanTokenPoller has already retried and given up (see
-    // loan-token-poller.js's handleTokenError). For the INITIAL token
-    // that's terminal — BookReader can't be initialized and the book
-    // won't open — so the patron must be told rather than left staring
-    // at nothing. (An interval refresh failing is handled separately and
-    // stays silent; see the WEBDEV-8322 review fixes below.)
+  it('shows the error modal and resets to Borrow/0 on a failed INITIAL create_token (no retry)', async () => {
+    // For the INITIAL token, BookReader never got page images — the book
+    // never opened. We don't retry, so the bar must reflect that honestly
+    // (Borrow, 0 left) instead of staying red with a stale countdown for a
+    // session that isn't actually accessible.
     const el = await fixture(
       container({
         userid: '@user1',
@@ -1164,24 +1132,16 @@ describe('handleLendingActionError - create_token failures must not stop the cou
 
     expect(showErrorModalSpy.calledOnceWith(errorMsg, 'create_token')).to.be
       .true;
-    // The loan itself is still active (do_renew succeeded) — flipping this
-    // to false used to collapse borrowType to null in
-    // getCurrentLendingActions(), which made setupLendingToolbarActions()
-    // bail out before ever restarting the token poller, silently
-    // stranding the patron until the countdown force-returned the book.
-    // See WEBDEV-8322 production log, 2026-09-28.
-    expect(el.lendingStatus.user_has_browsed).to.be.true;
-    expect(el.awaitingTokenRecovery).to.be.true;
+    expect(el.lendingStatus.user_has_browsed).to.be.false;
+    expect(el.lendingStatus.available_to_browse).to.be.true;
+    expect(el.lendingStatus.secondsLeftOnLoan).to.equal(0);
   });
 
   it('stops the countdown/expiry timers on a failed INITIAL create_token — nothing to read yet', async () => {
     // Unlike the interval-refresh case above (pages already loaded, keep
-    // ticking), an initial create_token failure means BookReader never
-    // got page images — there's nothing to read. Letting the countdown
-    // keep running just re-syncs on every single tick against a broken
-    // session (see WEBDEV-8322 QA log, 2026-09-28) until the loan
-    // eventually force-expires. Stop both timers instead; they resume
-    // once startLoanTokenPoller()'s successCallback confirms recovery.
+    // ticking), an initial create_token failure means BookReader never got
+    // page images and we're resetting the bar to Borrow — both timers
+    // should stop rather than keep counting down a dead session.
     const el = await fixture(
       container({
         userid: '@user1',
@@ -1582,70 +1542,6 @@ describe('WEBDEV-8322 review fixes', () => {
     expect(el.lendingStatus.user_has_browsed).to.be.true;
   });
 
-  it('surfaces a failed initial create_token, which blocks opening the book', async () => {
-    const el = await fixture(
-      container({
-        userid: '@user1',
-        identifier: 'token-initial',
-        lendingStatus: {
-          is_lendable: true,
-          available_to_browse: true,
-          user_has_browsed: true,
-          browsingExpired: false,
-          secondsLeftOnLoan: 300,
-        },
-      })
-    );
-    await el.updateComplete;
-    const spy = Sinon.spy(el, 'showErrorModal');
-
-    el.handleLendingActionError({
-      detail: {
-        action: 'create_token',
-        isInitial: true,
-        data: { error: 'loan token not found. please try again later.' },
-      },
-    });
-    await el.updateComplete;
-
-    expect(spy.calledOnce).to.be.true;
-    // Still reading — see the identical assertion above for why this must
-    // stay true (WEBDEV-8322 production log, 2026-09-28).
-    expect(el.lendingStatus.user_has_browsed).to.be.true;
-    expect(el.awaitingTokenRecovery).to.be.true;
-  });
-
-  it('does not resume the countdown via visibilitychange while awaiting create_token recovery', async () => {
-    // Regression: visibilitychange's resync path didn't check
-    // awaitingTokenRecovery, so backgrounding/foregrounding the tab during
-    // a create_token outage could resume the timers that
-    // handleLendingActionError had deliberately stopped, and auto-return a
-    // loan the server still considers valid.
-    const el = await fixture(
-      container({
-        userid: '@user1',
-        identifier: 'foobar',
-        lendingStatus: {
-          user_has_browsed: true,
-          browsingExpired: false,
-          secondsLeftOnLoan: 300,
-        },
-      })
-    );
-    await el.updateComplete;
-    el.awaitingTokenRecovery = true;
-
-    const spy = Sinon.spy(el, 'loanStatusCheckInterval');
-    Object.defineProperty(document, 'hidden', {
-      value: false,
-      configurable: true,
-    });
-    document.dispatchEvent(new Event('visibilitychange'));
-    await aTimeout(100);
-
-    expect(spy.called).to.be.false;
-  });
-
   it('tears down the previous poller before starting a new one', async () => {
     // Regression: startLoanTokenPoller() always replaced this.tokenPoller
     // without cancelling the old instance's pending internal retry timer,
@@ -1675,9 +1571,7 @@ describe('WEBDEV-8322 review fixes', () => {
     expect(el.tokenPoller).to.not.equal(firstPoller);
   });
 
-  it('stops restarting the poller after maxTokenRecoveryAttempts consecutive create_token failures', async () => {
-    // Regression: an outer restart loop with no cap meant a genuinely-lost
-    // (not just slow-to-propagate) loan retried forever.
+  it('never restarts the poller on a create_token failure — no retry', async () => {
     const el = await fixture(
       container({
         userid: '@user1',
@@ -1694,19 +1588,15 @@ describe('WEBDEV-8322 review fixes', () => {
     await el.updateComplete;
 
     const startSpy = Sinon.spy(el, 'startLoanTokenPoller');
-    const errorMsg = 'loan token not found. please try again later.';
 
-    for (let i = 0; i < el.maxTokenRecoveryAttempts + 1; i += 1) {
-      el.handleLendingActionError({
-        detail: {
-          action: 'create_token',
-          isInitial: true,
-          data: { error: errorMsg },
-        },
-      });
-    }
+    el.handleLendingActionError({
+      detail: {
+        action: 'create_token',
+        isInitial: true,
+        data: { error: 'loan token not found. please try again later.' },
+      },
+    });
 
-    expect(startSpy.callCount).to.equal(el.maxTokenRecoveryAttempts);
-    expect(el.tokenRecoveryAttempts).to.equal(el.maxTokenRecoveryAttempts + 1);
+    expect(startSpy.called).to.be.false;
   });
 });
