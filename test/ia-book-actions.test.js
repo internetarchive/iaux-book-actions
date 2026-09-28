@@ -1614,4 +1614,99 @@ describe('WEBDEV-8322 review fixes', () => {
     expect(el.lendingStatus.user_has_browsed).to.be.true;
     expect(el.awaitingTokenRecovery).to.be.true;
   });
+
+  it('does not resume the countdown via visibilitychange while awaiting create_token recovery', async () => {
+    // Regression: visibilitychange's resync path didn't check
+    // awaitingTokenRecovery, so backgrounding/foregrounding the tab during
+    // a create_token outage could resume the timers that
+    // handleLendingActionError had deliberately stopped, and auto-return a
+    // loan the server still considers valid.
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: {
+          user_has_browsed: true,
+          browsingExpired: false,
+          secondsLeftOnLoan: 300,
+        },
+      })
+    );
+    await el.updateComplete;
+    el.awaitingTokenRecovery = true;
+
+    const spy = Sinon.spy(el, 'loanStatusCheckInterval');
+    Object.defineProperty(document, 'hidden', {
+      value: false,
+      configurable: true,
+    });
+    document.dispatchEvent(new Event('visibilitychange'));
+    await aTimeout(100);
+
+    expect(spy.called).to.be.false;
+  });
+
+  it('tears down the previous poller before starting a new one', async () => {
+    // Regression: startLoanTokenPoller() always replaced this.tokenPoller
+    // without cancelling the old instance's pending internal retry timer,
+    // which could later fire against stale state.
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'poller-teardown',
+        lendingStatus: {
+          is_lendable: true,
+          available_to_browse: true,
+          user_has_browsed: true,
+          browsingExpired: false,
+          secondsLeftOnLoan: 300,
+        },
+      })
+    );
+    await el.updateComplete;
+
+    el.startLoanTokenPoller();
+    const firstPoller = el.tokenPoller;
+    const disconnectSpy = Sinon.spy(firstPoller, 'disconnectedCallback');
+
+    el.startLoanTokenPoller();
+
+    expect(disconnectSpy.calledOnce).to.be.true;
+    expect(el.tokenPoller).to.not.equal(firstPoller);
+  });
+
+  it('stops restarting the poller after maxTokenRecoveryAttempts consecutive create_token failures', async () => {
+    // Regression: an outer restart loop with no cap meant a genuinely-lost
+    // (not just slow-to-propagate) loan retried forever.
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'token-exhausted',
+        lendingStatus: {
+          is_lendable: true,
+          available_to_browse: true,
+          user_has_browsed: true,
+          browsingExpired: false,
+          secondsLeftOnLoan: 300,
+        },
+      })
+    );
+    await el.updateComplete;
+
+    const startSpy = Sinon.spy(el, 'startLoanTokenPoller');
+    const errorMsg = 'loan token not found. please try again later.';
+
+    for (let i = 0; i < el.maxTokenRecoveryAttempts + 1; i += 1) {
+      el.handleLendingActionError({
+        detail: {
+          action: 'create_token',
+          isInitial: true,
+          data: { error: errorMsg },
+        },
+      });
+    }
+
+    expect(startSpy.callCount).to.equal(el.maxTokenRecoveryAttempts);
+    expect(el.tokenRecoveryAttempts).to.equal(el.maxTokenRecoveryAttempts + 1);
+  });
 });
