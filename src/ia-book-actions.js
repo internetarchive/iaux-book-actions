@@ -465,7 +465,15 @@ export default class IABookActions extends LitElement {
    * On error: handleLendingActionError() shows showLoanUnavailableModal().
    */
   autoRenewExpiredLoan() {
-    if (this.loanRenewInProgress) return;
+    if (this.loanRenewInProgress) {
+      log('[IABookActions] autoRenewExpiredLoan: skipped, renewal already in progress', {
+        identifier: this.identifier,
+      });
+      return;
+    }
+    log('[IABookActions] autoRenewExpiredLoan: starting silent renewal', {
+      identifier: this.identifier,
+    });
     this.loanRenewInProgress = true;
     this.recoveringFromLoanExpiry = true;
 
@@ -578,7 +586,10 @@ export default class IABookActions extends LitElement {
    * Execute when loan is expired
    */
   async browseHasExpired() {
-    log('[IABookActions] browseHasExpired');
+    log('[IABookActions] browseHasExpired', {
+      identifier: this.identifier,
+      loanRenewInProgress: this.loanRenewInProgress,
+    });
     window?.IALendingIntervals?.clearAll();
 
     const currStatus = {
@@ -591,6 +602,9 @@ export default class IABookActions extends LitElement {
     // remove respected key:value for loan-renew
     await this.localCache.delete(`${this.identifier}-loanTime`);
     await this.localCache.delete(`${this.identifier}-pageChangedTime`);
+    log('[IABookActions] browseHasExpired: cleared loanTime/pageChangedTime cache', {
+      identifier: this.identifier,
+    });
 
     // show message after browsed book is expired.
     this.loanRenewResult.renewNow = false;
@@ -817,9 +831,8 @@ export default class IABookActions extends LitElement {
     }
 
     log('[IABookActions] timer', {
-      secondsLeft,
-      loanRenewAtLast: this.loanRenewTimeConfig.loanRenewAtLast,
-      pageChangedInLast: this.loanRenewTimeConfig.pageChangedInLast,
+      whatShouldLeft: resyncd.whatShouldLeft,
+      whatIsleft: secondsLeft,
     });
 
     /**
@@ -977,6 +990,14 @@ export default class IABookActions extends LitElement {
 
     const action = event?.detail?.action;
     const errorMsg = event?.detail?.data?.error;
+
+    log('[IABookActions] handleLendingActionError', {
+      identifier: this.identifier,
+      action,
+      errorMsg,
+      loanRenewInProgress: this.loanRenewInProgress,
+      recoveringFromLoanExpiry: this.recoveringFromLoanExpiry,
+    });
 
     if (action === 'create_token') {
       // A create_token hiccup only affects BookReader's page-image access

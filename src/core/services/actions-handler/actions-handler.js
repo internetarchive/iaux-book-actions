@@ -372,6 +372,12 @@ export default class ActionsHandler extends LitElement {
         new Date().getTime() + this.loanTotalTime * 1000
       );
 
+      log('[ActionsHandler] setBrowseTimeSession: resetting loanTime', {
+        identifier: this.identifier,
+        expireDate,
+        loanTotalTime: this.loanTotalTime,
+      });
+
       // set a value
       await this.localCache.set({
         key: `${this.identifier}-loanTime`,
@@ -381,12 +387,20 @@ export default class ActionsHandler extends LitElement {
 
       // delete pageChangedTime when book is auto renew at nth minute
       await this.localCache.delete(`${this.identifier}-pageChangedTime`);
+
+      log('[ActionsHandler] setBrowseTimeSession: loanTime reset complete', {
+        identifier: this.identifier,
+      });
     } catch (error) {
-      log(error);
+      log('[ActionsHandler] setBrowseTimeSession failed', error);
     }
   }
 
   deleteLoanCookies() {
+    log('[ActionsHandler] deleteLoanCookies: expiring loan cookies', {
+      identifier: this.identifier,
+    });
+
     const date = new Date();
     date.setTime(date.getTime() - 24 * 60 * 60 * 1000); // one day ago
 

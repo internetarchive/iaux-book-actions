@@ -2,6 +2,7 @@
 import ActionsHandlerService from './actions-handler/actions-handler-service.js';
 import LoanAnanlytics from './loan-analytics.js';
 import { sentryLogs } from '../config/sentry-events.js';
+import log from './log.js';
 
 /**
  * This class is used to create loan token for borrowed books
@@ -77,11 +78,21 @@ export class LoanTokenPoller {
    */
   async handleLoanTokenPoller(isInitial = false, retryCount = 0) {
     const action = 'create_token';
+    log('[LoanTokenPoller] create_token requested', {
+      identifier: this.identifier,
+      isInitial,
+      retryCount,
+    });
     ActionsHandlerService({
       identifier: this.identifier,
       action,
       error: data => this.handleTokenError(data, isInitial, retryCount),
       success: () => {
+        log('[LoanTokenPoller] create_token succeeded', {
+          identifier: this.identifier,
+          isInitial,
+          retryCount,
+        });
         if (isInitial) this.successCallback();
       },
     });
@@ -104,17 +115,36 @@ export class LoanTokenPoller {
       typeof data?.error === 'string' &&
       /do not currently have this book borrowed/i.test(data.error);
 
+    log('[LoanTokenPoller] create_token failed', {
+      identifier: this.identifier,
+      isInitial,
+      retryCount,
+      isStaleLoanReadError,
+      error: data?.error,
+    });
+
     if (
       isInitial &&
       isStaleLoanReadError &&
       retryCount < this.maxInitialTokenRetries
     ) {
       const delay = this.initialTokenRetryDelay * (retryCount + 1);
+      log('[LoanTokenPoller] retrying create_token after stale-loan-read error', {
+        identifier: this.identifier,
+        nextRetryCount: retryCount + 1,
+        delay,
+      });
       setTimeout(() => {
         this.handleLoanTokenPoller(true, retryCount + 1);
       }, delay);
       return;
     }
+
+    log('[LoanTokenPoller] giving up on create_token, reporting error', {
+      identifier: this.identifier,
+      isInitial,
+      retryCount,
+    });
 
     this.errorCallback({ detail: { action, data } });
 
