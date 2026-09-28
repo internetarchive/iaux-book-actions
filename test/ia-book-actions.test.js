@@ -89,8 +89,6 @@ describe('<ia-book-actions>', () => {
         identifier: 'foobar',
       })
     );
-    // Not testing the BookReader-init grace period here — bypass it.
-    el.userActionReadyAt = 0;
 
     const spy = Sinon.spy(el, 'autoLoanRenewChecker');
     el.lendingStatus = { ...el.lendingStatus, browsingExpired: false };
@@ -113,8 +111,6 @@ describe('<ia-book-actions>', () => {
         lendingStatus: { user_has_browsed: true, browsingExpired: true },
       })
     );
-    // Not testing the BookReader-init grace period here — bypass it.
-    el.userActionReadyAt = 0;
 
     const spy = Sinon.spy(el, 'autoRenewExpiredLoan');
     el.borrowType = 'browsed';
@@ -126,14 +122,17 @@ describe('<ia-book-actions>', () => {
     expect(spy.calledOnce).to.be.true;
   });
 
-  it('ignores BookReader:userAction fired within the startup grace period (WEBDEV-8322 follow-up)', async () => {
-    // Regression: BookReader.jumpToIndex() fires its own 'userAction'
-    // event any time it runs — including BookReader's own init-time jump
-    // to the reader's last-read page (updateFromParams(), called from
+  it('ignores BookReader:userAction fired by BookReader init (WEBDEV-8322 follow-up)', async () => {
+    // Regression: BookReader.updateFirstIndex() fires 'userAction'
+    // unconditionally — including on BookReader's own init-time jump to
+    // the reader's last-read page (updateFromParams(), called from
     // init()), which has nothing to do with the patron doing anything.
-    // Without this grace period, a plain page refresh on an already-
-    // expired loan would silently auto-renew before the patron did
-    // anything at all.
+    // Auto-renewing off that would silently re-borrow a lapsed book on a
+    // plain page refresh, before the patron did anything at all.
+    //
+    // BookReader.trigger() passes the BookReader instance as
+    // detail.props, and init() holds init.initComplete === false for
+    // exactly the span containing that jump.
     const el = await fixture(
       container({
         userid: '@user1',
@@ -146,12 +145,59 @@ describe('<ia-book-actions>', () => {
 
     const spy = Sinon.spy(el, 'autoRenewExpiredLoan');
 
-    // Fired immediately after bindLoanRenewEvents() ran (in firstUpdated())
-    // — well within the default grace period.
-    window.dispatchEvent(new Event('BookReader:userAction'));
+    window.dispatchEvent(
+      new CustomEvent('BookReader:userAction', {
+        detail: { props: { init: { initComplete: false } } },
+      })
+    );
     await el.updateComplete;
 
     expect(spy.called).to.be.false;
+  });
+
+  it('honours BookReader:userAction once BookReader init has completed', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: { user_has_browsed: true, browsingExpired: true },
+      })
+    );
+    el.borrowType = 'browsed';
+    await el.updateComplete;
+
+    const spy = Sinon.spy(el, 'autoRenewExpiredLoan');
+
+    window.dispatchEvent(
+      new CustomEvent('BookReader:userAction', {
+        detail: { props: { init: { initComplete: true } } },
+      })
+    );
+    await el.updateComplete;
+
+    expect(spy.calledOnce).to.be.true;
+  });
+
+  it('treats a userAction with no BookReader detail as a genuine interaction', async () => {
+    // A BookReader too old to expose init.initComplete, or any synthetic
+    // dispatch, must not be silently swallowed — only an explicit false
+    // suppresses the event.
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: { user_has_browsed: true, browsingExpired: true },
+      })
+    );
+    el.borrowType = 'browsed';
+    await el.updateComplete;
+
+    const spy = Sinon.spy(el, 'autoRenewExpiredLoan');
+
+    window.dispatchEvent(new Event('BookReader:userAction'));
+    await el.updateComplete;
+
+    expect(spy.calledOnce).to.be.true;
   });
 });
 
@@ -709,6 +755,35 @@ describe('autoRenewExpiredLoan', () => {
     expect(el.loanRenewResult.renewNow).to.be.true;
   });
 
+  it('does not start a new renewal while awaiting create_token recovery from the last one', async () => {
+    // loanRenewInProgress clears as soon as renew_loan itself succeeds
+    // (see handleLoanAutoRenewed), before create_token is known to work.
+    // A visibilitychange/userAction landing in that window must not kick
+    // off ANOTHER renewal — that repeats the do_renew() delete+create
+    // write for no reason. See WEBDEV-8322 production log, 2026-09-28.
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: {
+          user_has_browsed: true,
+          browsingExpired: true,
+        },
+      })
+    );
+    await el.updateComplete;
+
+    el.loanRenewInProgress = false;
+    el.awaitingTokenRecovery = true;
+
+    const spy = Sinon.spy(el, 'autoRenewExpiredLoan');
+    el.autoRenewExpiredLoan();
+
+    expect(spy.callCount).to.equal(1);
+    expect(el.loanRenewInProgress).to.be.false;
+    expect(el.loanRenewResult.renewNow).to.be.false;
+  });
+
   it('clears loanRenewInProgress after a successful loanAutoRenewed event', async () => {
     const el = await fixture(
       container({
@@ -741,7 +816,7 @@ describe('autoRenewExpiredLoan', () => {
     );
     collapsibleActionGroupEl.dispatchEvent(
       new CustomEvent('loanAutoRenewed', {
-        detail: { data: { loan: { identifier: 'foobar' } } },
+        detail: { data: { loan: { identifier: 'foobar', renewal: true } } },
       })
     );
 
@@ -792,7 +867,7 @@ describe('autoRenewExpiredLoan', () => {
     );
     collapsibleActionGroupEl.dispatchEvent(
       new CustomEvent('loanAutoRenewed', {
-        detail: { data: { loan: { identifier: 'foobar' } } },
+        detail: { data: { loan: { identifier: 'foobar', renewal: true } } },
       })
     );
 
@@ -848,7 +923,7 @@ describe('autoRenewExpiredLoan', () => {
     );
     collapsibleActionGroupEl.dispatchEvent(
       new CustomEvent('loanAutoRenewed', {
-        detail: { data: { loan: { identifier: 'foobar' } } },
+        detail: { data: { loan: { identifier: 'foobar', renewal: true } } },
       })
     );
 
@@ -884,7 +959,7 @@ describe('autoRenewExpiredLoan', () => {
     );
     collapsibleActionGroupEl.dispatchEvent(
       new CustomEvent('loanAutoRenewed', {
-        detail: { data: { loan: { identifier: 'foobar' } } },
+        detail: { data: { loan: { identifier: 'foobar', renewal: true } } },
       })
     );
 
@@ -944,8 +1019,6 @@ describe('BookReader:userAction race regression (WEBDEV-8322)', () => {
     );
     await el.updateComplete;
     expect(el.borrowType).to.equal('browsed');
-    // Not testing the BookReader-init grace period here — bypass it.
-    el.userActionReadyAt = 0;
 
     el.lendingStatus = { ...baseStatus, browsingExpired: true };
     await el.updateComplete;
@@ -987,8 +1060,6 @@ describe('BookReader:userAction race regression (WEBDEV-8322)', () => {
     );
     await el.updateComplete;
     expect(el.borrowType).to.equal('browsed');
-    // Not testing the BookReader-init grace period here — bypass it.
-    el.userActionReadyAt = 0;
 
     el.loanRenewInProgress = true;
 
@@ -1062,9 +1133,11 @@ describe('handleLendingActionError - create_token failures must not stop the cou
   it('shows the error modal for a create_token failure that reaches here (retries already exhausted)', async () => {
     // By the time handleLendingActionError runs for a create_token
     // failure, LoanTokenPoller has already retried and given up (see
-    // loan-token-poller.js's handleTokenError) — this is a genuine
-    // failure, so the patron must be told instead of it happening
-    // silently.
+    // loan-token-poller.js's handleTokenError). For the INITIAL token
+    // that's terminal — BookReader can't be initialized and the book
+    // won't open — so the patron must be told rather than left staring
+    // at nothing. (An interval refresh failing is handled separately and
+    // stays silent; see the WEBDEV-8322 review fixes below.)
     const el = await fixture(
       container({
         userid: '@user1',
@@ -1084,13 +1157,56 @@ describe('handleLendingActionError - create_token failures must not stop the cou
     el.handleLendingActionError({
       detail: {
         action: 'create_token',
+        isInitial: true,
         data: { error: errorMsg },
       },
     });
 
     expect(showErrorModalSpy.calledOnceWith(errorMsg, 'create_token')).to.be
       .true;
-    expect(el.lendingStatus.user_has_browsed).to.be.false;
+    // The loan itself is still active (do_renew succeeded) — flipping this
+    // to false used to collapse borrowType to null in
+    // getCurrentLendingActions(), which made setupLendingToolbarActions()
+    // bail out before ever restarting the token poller, silently
+    // stranding the patron until the countdown force-returned the book.
+    // See WEBDEV-8322 production log, 2026-09-28.
+    expect(el.lendingStatus.user_has_browsed).to.be.true;
+    expect(el.awaitingTokenRecovery).to.be.true;
+  });
+
+  it('stops the countdown/expiry timers on a failed INITIAL create_token — nothing to read yet', async () => {
+    // Unlike the interval-refresh case above (pages already loaded, keep
+    // ticking), an initial create_token failure means BookReader never
+    // got page images — there's nothing to read. Letting the countdown
+    // keep running just re-syncs on every single tick against a broken
+    // session (see WEBDEV-8322 QA log, 2026-09-28) until the loan
+    // eventually force-expires. Stop both timers instead; they resume
+    // once startLoanTokenPoller()'s successCallback confirms recovery.
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: {
+          user_has_browsed: true,
+          browsingExpired: false,
+          secondsLeftOnLoan: 100,
+        },
+      })
+    );
+    await el.updateComplete;
+    expect(window.IALendingIntervals.timerCountdown).to.not.equal(0);
+    expect(window.IALendingIntervals.browseExpireTimeout).to.not.equal(0);
+
+    el.handleLendingActionError({
+      detail: {
+        action: 'create_token',
+        isInitial: true,
+        data: { error: 'loan token not found. please try again later.' },
+      },
+    });
+
+    expect(window.IALendingIntervals.timerCountdown).to.equal(0);
+    expect(window.IALendingIntervals.browseExpireTimeout).to.equal(0);
   });
 
   it('still clears everything on a renew_loan failure', async () => {
@@ -1314,5 +1430,188 @@ describe('Shared Resize Observer', () => {
 
     await component.updateComplete;
     expect(component.sharedObserver).to.not.be.undefined;
+  });
+});
+
+describe('WEBDEV-8322 review fixes', () => {
+  it('populates the action bar on a fresh load of an already-expired loan', async () => {
+    // Regression: the hasExpired early-return was hoisted above the
+    // GetLendingActions computation so auto-return wouldn't visibly change
+    // the bar. That's right for the transition, but this method also runs
+    // on the FIRST lendingStatus update, where there is no bar to preserve
+    // — leaving the patron a blank bar and no way to re-borrow.
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'fresh-expired',
+        lendingStatus: {
+          is_lendable: true,
+          available_to_browse: true,
+          available_to_borrow: true,
+          user_has_browsed: true,
+          browsingExpired: true,
+          secondsLeftOnLoan: 0,
+        },
+      })
+    );
+    await el.updateComplete;
+
+    expect(el.primaryActions.length).to.be.greaterThan(0);
+    expect(el.primaryActions.map(a => a.id)).to.include('browseBook');
+  });
+
+  it('still leaves a rendered action bar untouched when the loan auto-returns', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'auto-returned',
+        lendingStatus: {
+          is_lendable: true,
+          available_to_browse: true,
+          available_to_borrow: true,
+          user_has_browsed: true,
+          browsingExpired: false,
+          secondsLeftOnLoan: 300,
+        },
+      })
+    );
+    await el.updateComplete;
+    expect(el.primaryActions[0].text).to.equal('Return now');
+
+    el.lendingStatus = { ...el.lendingStatus, browsingExpired: true };
+    await el.updateComplete;
+
+    // Auto-return must not visibly change the bar (the ticket's core ask).
+    expect(el.primaryActions[0].text).to.equal('Return now');
+  });
+
+  it('does not treat a `renewal: false` response as a successful renewal', async () => {
+    // Regression: handleLoanAutoRenewed saw a truthy `loan` and took the
+    // success path. setBrowseTimeSession() never ran, so the loanTime read
+    // was undefined -> NaN -> the fallback invented a full fresh hour,
+    // putting a new countdown on screen next to the failure modal.
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'not-renewed',
+        lendingStatus: {
+          is_lendable: true,
+          available_to_browse: true,
+          user_has_browsed: true,
+          browsingExpired: true,
+          secondsLeftOnLoan: 0,
+        },
+      })
+    );
+    await el.updateComplete;
+    el.loanRenewResult = { texts: '', renewNow: true, renewType: 'auto' };
+    el.loanRenewInProgress = true;
+    await el.updateComplete;
+
+    await el.handleLoanAutoRenewed({
+      detail: {
+        action: 'renew_loan',
+        data: { success: true, loan: { renewal: false } },
+      },
+    });
+    await el.updateComplete;
+
+    expect(el.lendingStatus.secondsLeftOnLoan).to.not.equal(
+      el.loanRenewTimeConfig.loanTotalTime
+    );
+    expect(el.loanRenewInProgress).to.be.false;
+  });
+
+  it('clears loanRenewInProgress when the renewal response carries no loan', async () => {
+    // Regression: the !activeLoan branch cleared recoveringFromLoanExpiry
+    // but left loanRenewInProgress set, latching the component — every
+    // later renewal attempt no-ops and neither the countdown nor the token
+    // poller ever restarts.
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'no-loan',
+        lendingStatus: { user_has_browsed: true, browsingExpired: true },
+      })
+    );
+    await el.updateComplete;
+
+    el.autoRenewExpiredLoan();
+    expect(el.loanRenewInProgress).to.be.true;
+
+    await el.handleLoanAutoRenewed({
+      detail: { action: 'renew_loan', data: { success: true } },
+    });
+
+    expect(el.loanRenewInProgress).to.be.false;
+    expect(el.recoveringFromLoanExpiry).to.be.false;
+
+    // and the component is usable again, not latched
+    el.autoRenewExpiredLoan();
+    expect(el.loanRenewInProgress).to.be.true;
+  });
+
+  it('stays silent when an interval create_token refresh fails', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'token-blip',
+        lendingStatus: {
+          is_lendable: true,
+          available_to_browse: true,
+          user_has_browsed: true,
+          browsingExpired: false,
+          secondsLeftOnLoan: 300,
+        },
+      })
+    );
+    await el.updateComplete;
+    const spy = Sinon.spy(el, 'showErrorModal');
+
+    el.handleLendingActionError({
+      detail: {
+        action: 'create_token',
+        isInitial: false,
+        data: { error: 'loan token not found. please try again later.' },
+      },
+    });
+    await el.updateComplete;
+
+    expect(spy.called).to.be.false;
+    // the patron is still reading — don't knock them out of the loan
+    expect(el.lendingStatus.user_has_browsed).to.be.true;
+  });
+
+  it('surfaces a failed initial create_token, which blocks opening the book', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'token-initial',
+        lendingStatus: {
+          is_lendable: true,
+          available_to_browse: true,
+          user_has_browsed: true,
+          browsingExpired: false,
+          secondsLeftOnLoan: 300,
+        },
+      })
+    );
+    await el.updateComplete;
+    const spy = Sinon.spy(el, 'showErrorModal');
+
+    el.handleLendingActionError({
+      detail: {
+        action: 'create_token',
+        isInitial: true,
+        data: { error: 'loan token not found. please try again later.' },
+      },
+    });
+    await el.updateComplete;
+
+    expect(spy.calledOnce).to.be.true;
+    // Still reading — see the identical assertion above for why this must
+    // stay true (WEBDEV-8322 production log, 2026-09-28).
+    expect(el.lendingStatus.user_has_browsed).to.be.true;
+    expect(el.awaitingTokenRecovery).to.be.true;
   });
 });

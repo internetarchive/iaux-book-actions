@@ -26,7 +26,7 @@ export class LoanRenewHelper {
     };
   }
 
-  async handleLoanRenew() {
+  handleLoanRenew() {
     try {
       if (this.hasPageChanged) {
         return this.pageChanged(); // user clicked on page
@@ -99,7 +99,7 @@ export class LoanRenewHelper {
     } else if (pageChangedTime >= pageChangeTimeFrame) {
       this.result = {
         texts: '',
-        renewNow: true,  // viewed in last time frame
+        renewNow: true, // viewed in last time frame
         renewType: 'auto',
       };
     }

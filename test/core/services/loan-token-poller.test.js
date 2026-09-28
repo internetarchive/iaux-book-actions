@@ -1,4 +1,4 @@
-import { expect } from '@open-wc/testing';
+import { expect, aTimeout } from '@open-wc/testing';
 import Sinon from 'sinon';
 
 import { LoanTokenPoller } from '../../../src/core/services/loan-token-poller.js';
@@ -89,7 +89,7 @@ describe('handleTokenError retry (WEBDEV-8322 follow-up)', () => {
 
       expect(errorCallbackSpy.called).to.be.false;
 
-      clock.tick(tokenPoller.initialTokenRetryDelay);
+      clock.tick(tokenPoller.tokenRetryDelay);
 
       expect(handleLoanTokenPollerSpy.calledWith(true, 1)).to.be.true;
     } finally {
@@ -104,19 +104,35 @@ describe('handleTokenError retry (WEBDEV-8322 follow-up)', () => {
     tokenPoller.handleTokenError(
       staleLoanReadError,
       true,
-      tokenPoller.maxInitialTokenRetries
+      tokenPoller.maxTokenRetries
     );
 
     expect(errorCallbackSpy.calledOnce).to.be.true;
   });
 
-  it('does not retry a routine (non-initial) poll on the same error', () => {
+  it('retries a routine (non-initial) poll on the same error too', () => {
+    // A routine tick landing moments after a renewal hits the very same
+    // write-propagation race as the initial call, so it's equally worth
+    // retrying. isInitial only decides how a FINAL failure is reported.
     const tokenPoller = makeTokenPoller();
+    const handleLoanTokenPollerSpy = Sinon.spy(
+      tokenPoller,
+      'handleLoanTokenPoller'
+    );
     const errorCallbackSpy = Sinon.spy(tokenPoller, 'errorCallback');
+    const clock = Sinon.useFakeTimers();
 
-    tokenPoller.handleTokenError(staleLoanReadError, false, 0);
+    try {
+      tokenPoller.handleTokenError(staleLoanReadError, false, 0);
 
-    expect(errorCallbackSpy.calledOnce).to.be.true;
+      expect(errorCallbackSpy.called).to.be.false;
+
+      clock.tick(tokenPoller.tokenRetryDelay);
+
+      expect(handleLoanTokenPollerSpy.calledWith(false, 1)).to.be.true;
+    } finally {
+      clock.restore();
+    }
   });
 
   it('does not retry a genuinely different error, even on the initial call', () => {
@@ -130,5 +146,55 @@ describe('handleTokenError retry (WEBDEV-8322 follow-up)', () => {
     );
 
     expect(errorCallbackSpy.calledOnce).to.be.true;
+  });
+});
+
+describe('LoanTokenPoller - WEBDEV-8322 review fixes', () => {
+  it('retries a stale-loan-read error on interval refreshes too, not just the initial call', async () => {
+    const poller = new LoanTokenPoller('foo', 'browsed', () => {}, () => {}, 120);
+    poller.disconnectedCallback(); // stop the real poller started in the ctor
+
+    const retrySpy = Sinon.stub(poller, 'handleLoanTokenPoller');
+    poller.tokenRetryDelay = 1;
+
+    poller.handleTokenError(
+      { error: 'you do not currently have this book borrowed' },
+      false, // interval refresh
+      0
+    );
+    await aTimeout(30);
+
+    expect(retrySpy.calledOnce).to.be.true;
+    expect(retrySpy.firstCall.args).to.deep.equal([false, 1]);
+    poller.disconnectedCallback();
+  });
+
+  it('passes isInitial through to the error callback', () => {
+    const errorCallback = Sinon.spy();
+    const poller = new LoanTokenPoller('foo', 'browsed', () => {}, errorCallback, 120);
+    poller.disconnectedCallback();
+
+    poller.handleTokenError({ error: 'something else went wrong' }, true, 0);
+
+    expect(errorCallback.calledOnce).to.be.true;
+    expect(errorCallback.firstCall.args[0].detail.isInitial).to.be.true;
+  });
+
+  it('cancels a pending retry on teardown', async () => {
+    const poller = new LoanTokenPoller('foo', 'browsed', () => {}, () => {}, 120);
+    const retrySpy = Sinon.stub(poller, 'handleLoanTokenPoller');
+    poller.tokenRetryDelay = 20;
+
+    poller.handleTokenError(
+      { error: 'you do not currently have this book borrowed' },
+      true,
+      0
+    );
+    expect(poller.retryTimeout).to.not.be.undefined;
+
+    poller.disconnectedCallback();
+    await aTimeout(60);
+
+    expect(retrySpy.called).to.be.false;
   });
 });

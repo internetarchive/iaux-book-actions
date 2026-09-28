@@ -6,7 +6,11 @@ import log from '../log.js';
 
 import ActionsHandlerService from './actions-handler-service.js';
 import LoanAnanlytics from '../loan-analytics.js';
-import { analyticsCategories, analyticsActions, analyticsLabels } from '../../config/analytics-event-and-category.js';
+import {
+  analyticsCategories,
+  analyticsActions,
+  analyticsLabels,
+} from '../../config/analytics-event-and-category.js';
 import * as Cookies from '../doc-cookies.js';
 
 /**
@@ -172,32 +176,53 @@ export default class ActionsHandler extends LitElement {
       action,
       identifier: this.identifier,
       success: async data => {
-        log('RENEW_LOAN --- ', data, this.identifier);
-        const activeLoan = data.loan ? data.loan : undefined;
-        const isRenewal = activeLoan.renewal;
+        // Anything thrown in here is an unhandled rejection that dispatches
+        // NOTHING — and IABookActions only clears loanRenewInProgress when
+        // one of these two events arrives, so a throw here latches it on
+        // permanently (dead countdown, loan stuck "active"). Always exit
+        // through exactly one of the two dispatches below.
+        try {
+          log('RENEW_LOAN --- ', data, this.identifier);
+          const activeLoan = data.loan ? data.loan : undefined;
+          // Optional chaining: `data.loan` is genuinely absent on some
+          // failures, and reading `.renewal` off undefined threw here.
+          const isRenewal = activeLoan?.renewal;
 
-        if (activeLoan && isRenewal) {
-          // Await — loanAutoRenewed listeners read this same cache key
-          // immediately; dispatching before the write lands was a race.
-          await this.setBrowseTimeSession();
+          if (activeLoan && isRenewal) {
+            // Await — loanAutoRenewed listeners read this same cache key
+            // immediately; dispatching before the write lands was a race.
+            await this.setBrowseTimeSession();
 
-          // Only record the renew analytics event once the renewal has
-          // actually succeeded — not merely attempted.
-          await this.loanAnanlytics?.storeLoanStatsCount(
-            this.identifier,
-            'autorenew'
-          );
-          const analyticsLabel =
-            renewType === 'auto'
-              ? analyticsLabels.browseAutoRenew
-              : analyticsLabels.browseManualRenew;
-          this.loanAnanlytics?.sendEvent(
-            analyticsCategories.browse,
-            analyticsActions.browseRenew,
-            analyticsLabel,
-            this.identifier
-          );
-        } else {
+            // Only record the renew analytics event once the renewal has
+            // actually succeeded — not merely attempted.
+            await this.loanAnanlytics?.storeLoanStatsCount(
+              this.identifier,
+              'autorenew'
+            );
+            const analyticsLabel =
+              renewType === 'auto'
+                ? analyticsLabels.browseAutoRenew
+                : analyticsLabels.browseManualRenew;
+            this.loanAnanlytics?.sendEvent(
+              analyticsCategories.browse,
+              analyticsActions.browseRenew,
+              analyticsLabel,
+              this.identifier
+            );
+
+            // Dispatch the success outcome ONLY for a confirmed renewal.
+            // This used to fire on the failure path too, so a
+            // `{loan: {renewal: false}}` response reported an error AND a
+            // success: the error modal went up while handleLoanAutoRenewed
+            // simultaneously put a fresh countdown back on the bar.
+            this.dispatchEvent(
+              new CustomEvent('loanAutoRenewed', {
+                detail: { action, data: { ...data, loan: activeLoan } },
+              })
+            );
+            return;
+          }
+
           log('RENEW_LOAN ERROR --- ', {
             action,
             isRenewal,
@@ -213,14 +238,17 @@ export default class ActionsHandler extends LitElement {
             error: true,
             message: 'Loan renewal failed: no loan active.',
           });
+        } catch (error) {
+          log('RENEW_LOAN THREW --- ', error);
+          window?.Sentry?.captureException(
+            `${sentryLogs.bookRenewFailed} - Exception: ${error}`
+          );
+          this.dispatchActionError(action, {
+            data,
+            error: true,
+            message: `Loan renewal failed: ${error}`,
+          });
         }
-
-        // dispatch outcome of loan renewal
-        this.dispatchEvent(
-          new CustomEvent('loanAutoRenewed', {
-            detail: { action, data: { ...data, loan: activeLoan } },
-          })
-        );
       },
       error: data => {
         this.dispatchActionError(action, data);
@@ -428,7 +456,8 @@ export default class ActionsHandler extends LitElement {
    * @returns {void}
    */
   setStickyAdminAccess(value) {
-    const domain = window.location.hostname === 'localhost' ? 'localhost' : '.archive.org';
+    const domain =
+      window.location.hostname === 'localhost' ? 'localhost' : '.archive.org';
     const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
     Cookies.setItem('sticky-admin-access', value, expires, '/', domain);
   }

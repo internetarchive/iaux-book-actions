@@ -95,5 +95,22 @@ export default async function ActionsHandlerService(options) {
     window?.Sentry?.captureException(
       `${sentryLogs.actionsHandlerService} - Error: ${error}`
     );
+
+    /**
+     * Report it, don't just swallow it. A rejected fetch (offline, dropped
+     * connection) or a non-JSON body (a 405 returning HTML, which QA has
+     * been seeing) lands here, and calling neither `success` nor `error`
+     * leaves every caller waiting on a callback that never comes.
+     *
+     * For renew_loan that's not merely a missing modal: IABookActions
+     * clears its loanRenewInProgress guard from these callbacks, so a
+     * silent failure latched it on for good and every later renewal
+     * attempt became a no-op. Backgrounding a tab on a flaky mobile
+     * connection is exactly when this fires.
+     */
+    log(`[IABookActions] ✗ ${option.action} threw`, error);
+    option?.error({
+      error: `Could not reach the lending service. Please check your connection and try again. (${error})`,
+    });
   }
 }

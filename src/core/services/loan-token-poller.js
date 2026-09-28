@@ -28,8 +28,16 @@ export class LoanTokenPoller {
      * the loan is genuinely valid. Retry a few times with backoff instead
      * of giving up on the first attempt.
      */
-    this.maxInitialTokenRetries = 3;
-    this.initialTokenRetryDelay = 1000; // ms, multiplied by attempt number
+    this.maxTokenRetries = 3;
+    this.tokenRetryDelay = 1000; // ms, multiplied by attempt number
+
+    /**
+     * Handle for a pending retry, so teardown can cancel it. It's a bare
+     * setTimeout rather than an IALendingIntervals entry, so without this
+     * a retry scheduled just before the loan is returned would still fire
+     * its create_token afterwards.
+     */
+    this.retryTimeout = undefined;
 
     /**
      * loan analytics instance
@@ -42,6 +50,8 @@ export class LoanTokenPoller {
 
   disconnectedCallback() {
     window?.IALendingIntervals?.clearTokenPoller();
+    clearTimeout(this.retryTimeout);
+    this.retryTimeout = undefined;
   }
 
   async bookAccessed() {
@@ -123,19 +133,24 @@ export class LoanTokenPoller {
       error: data?.error,
     });
 
-    if (
-      isInitial &&
-      isStaleLoanReadError &&
-      retryCount < this.maxInitialTokenRetries
-    ) {
-      const delay = this.initialTokenRetryDelay * (retryCount + 1);
-      log('[LoanTokenPoller] retrying create_token after stale-loan-read error', {
-        identifier: this.identifier,
-        nextRetryCount: retryCount + 1,
-        delay,
-      });
-      setTimeout(() => {
-        this.handleLoanTokenPoller(true, retryCount + 1);
+    // The renewal write can be mid-propagation for an interval refresh too,
+    // not just the initial call — a routine tick landing moments after a
+    // renewal hits the same race. Retry both; isInitial only decides how a
+    // final failure is reported, not whether it's worth retrying.
+    if (isStaleLoanReadError && retryCount < this.maxTokenRetries) {
+      const delay = this.tokenRetryDelay * (retryCount + 1);
+      log(
+        '[LoanTokenPoller] retrying create_token after stale-loan-read error',
+        {
+          identifier: this.identifier,
+          nextRetryCount: retryCount + 1,
+          delay,
+        }
+      );
+      clearTimeout(this.retryTimeout);
+      this.retryTimeout = setTimeout(() => {
+        this.retryTimeout = undefined;
+        this.handleLoanTokenPoller(isInitial, retryCount + 1);
       }, delay);
       return;
     }
@@ -146,7 +161,10 @@ export class LoanTokenPoller {
       retryCount,
     });
 
-    this.errorCallback({ detail: { action, data } });
+    // isInitial rides along so the consumer can distinguish "the book won't
+    // open at all" from "a mid-read refresh blipped" — see
+    // IABookActions.handleLendingActionError.
+    this.errorCallback({ detail: { action, data, isInitial } });
 
     // send error to Sentry
     window?.Sentry?.captureMessage(
