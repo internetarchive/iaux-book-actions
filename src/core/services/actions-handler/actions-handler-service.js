@@ -18,7 +18,6 @@ export default async function ActionsHandlerService(options) {
   let baseHost = '/services/loans/loan';
   const location = window?.location;
 
-  // return error reponse when not production and has ?error=true param...
   const tokenError = 'loan token not found. please try again later.';
   const borrowError =
     'This book is not available to borrow at this time. Please try again later.';
@@ -29,9 +28,18 @@ export default async function ActionsHandlerService(options) {
     'renew_loan',
     'return_loan',
   ];
+  const searchParams = new URLSearchParams(location?.search);
+  // ?error=true fails every erroneous action (e.g. simulates the book
+  // already being borrowed by someone else). ?failAction=create_token (or
+  // any action name) fails ONLY that action, so a renew_loan can succeed
+  // and the immediately-following create_token can be made to fail —
+  // reproducing WEBDEV-8322's "renewed, but create_token failed" bug
+  // without needing a real book.
   const shouldReturnError =
-    new URLSearchParams(location?.search).get('error') === 'true' &&
-    location?.hostname !== 'archive.org';
+    location?.hostname !== 'archive.org' &&
+    erroneousActions.includes(option?.action) &&
+    (searchParams.get('error') === 'true' ||
+      searchParams.get('failAction') === option?.action);
 
   const testHostname = ['localhost', 'internetarchive.github.io'];
   let isTest = false;
@@ -51,7 +59,7 @@ export default async function ActionsHandlerService(options) {
     })
       .then(async response => {
         // intentional error on localhost
-        if (shouldReturnError && erroneousActions.includes(option?.action)) {
+        if (shouldReturnError) {
           return {
             success: false,
             error: option?.action === 'create_token' ? tokenError : borrowError,

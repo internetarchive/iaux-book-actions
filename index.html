@@ -360,7 +360,33 @@
       });
     });
 
-    
+    // WEBDEV-8322 repro: fail only create_token (via ?failAction=create_token),
+    // leaving renew_loan (and every other action) succeeding normally —
+    // see actions-handler-service.js's shouldReturnError.
+    document.querySelectorAll('.failCreateToken input[type=checkbox]').forEach((item) => {
+      if (window.location.href.indexOf('?failAction=create_token') !== -1) {
+        item.checked = true;
+      }
+      item.addEventListener('click', (e) => {
+        console.log(`[Demo] fail-create_token-only mode ${e.target.checked ? 'enabled' : 'disabled'}`);
+
+        var searchParams = new URLSearchParams(window.location.search);
+        var separate = '';
+        if (e.target.checked) {
+          separate = '?';
+          searchParams.set('failAction', 'create_token');
+        } else {
+          separate = '';
+          searchParams.delete('failAction');
+        }
+
+        if (history.pushState) {
+          var newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + separate + searchParams;
+          window.history.pushState({path:newurl},'',newurl);
+        }
+      });
+    });
+
     document.querySelectorAll('.userState input[type=checkbox]').forEach((item) => {
       item.addEventListener('click', (e) => {
         if (e.target.checked) {
@@ -723,6 +749,17 @@
                 <span style="color: #666; font-size: 11px; display: block; padding: 0 10px 10px;">
                   Tip: turn this on before scenarios 3/4 below to simulate someone else having
                   already borrowed the book (shows the "Due to inactivity..." modal).
+                </span>
+              </td>
+            </tr>
+            <tr colspan='5'>
+              <td class="failCreateToken">
+                <label><input type="checkbox" name="failCreateToken" value="failCreateToken" />Fail create_token only (renew_loan still succeeds)</label>
+                <span style="color: #666; font-size: 11px; display: block; padding: 0 10px 10px;">
+                  WEBDEV-8322 repro: unlike the checkbox above, this leaves renew_loan
+                  succeeding and fails only the create_token call right after it — turn
+                  this on, then run scenario 2 → 3 (or 2 → 4) below. Expect the error
+                  modal, and the bar/timer resetting to Borrow/0 (no retry).
                 </span>
               </td>
             </tr>

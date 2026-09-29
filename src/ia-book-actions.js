@@ -289,6 +289,14 @@ export default class IABookActions extends LitElement {
 
     if (!this.applyLendingActions()) return;
 
+    // primaryActions/borrowType/etc are plain fields, not reactive
+    // properties, so nothing pushes them to the rendered template (and
+    // from there to <collapsible-action-group>) on its own. Do that now,
+    // unconditionally — the early returns below (not borrowed, title bar)
+    // must not skip it, or the action bar visibly goes stale (e.g. a
+    // create_token failure resetting to Borrow never actually shows it).
+    this.requestUpdate();
+
     // Don't (re)start the countdown mid-renewal — secondsLeftOnLoan could
     // still be stale until handleLoanAutoRenewed() confirms it.
     if (this.borrowType === 'browsed' && !this.loanRenewInProgress) {
@@ -314,8 +322,6 @@ export default class IABookActions extends LitElement {
         this.startLoanTokenPoller();
       }
     }, 100);
-
-    this.requestUpdate();
   }
 
   /**
