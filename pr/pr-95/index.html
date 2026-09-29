@@ -191,7 +191,7 @@
       display: none;
     }
   </style>
-  <script type="module" crossorigin src="assets/main.e89e48fc.js"></script>
+  <script type="module" crossorigin src="assets/main.829394d4.js"></script>
 </head>
 
 <body>
@@ -327,6 +327,17 @@
                 <span style="color: #666; font-size: 11px; display: block; padding: 0 10px 10px;">
                   Tip: turn this on before scenarios 3/4 below to simulate someone else having
                   already borrowed the book (shows the "Due to inactivity..." modal).
+                </span>
+              </td>
+            </tr>
+            <tr colspan='5'>
+              <td class="failCreateToken">
+                <label><input type="checkbox" name="failCreateToken" value="failCreateToken" />Fail create_token only (renew_loan still succeeds)</label>
+                <span style="color: #666; font-size: 11px; display: block; padding: 0 10px 10px;">
+                  WEBDEV-8322 repro: unlike the checkbox above, this leaves renew_loan
+                  succeeding and fails only the create_token call right after it — turn
+                  this on, then run scenario 2 → 3 (or 2 → 4) below. Expect the error
+                  modal, and the bar/timer resetting to Borrow/0 (no retry).
                 </span>
               </td>
             </tr>
