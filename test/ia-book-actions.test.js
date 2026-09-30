@@ -479,8 +479,7 @@ describe('Browsing expired status', () => {
   });
 });
 
-describe('Auto renew one hour loan', async () => {
-  await aTimeout(5000);
+describe('Auto renew one hour loan', () => {
   it('Book is browsing and renewed it now', async () => {
     const loanTime = 88;
     const el = await fixture(
@@ -553,8 +552,7 @@ describe('Auto renew one hour loan', async () => {
   });
 });
 
-describe('Visibility change API for document', async () => {
-  await aTimeout(5000);
+describe('Visibility change API for document', () => {
 
   beforeEach(() => {
     Object.defineProperty(document, 'hidden', {
@@ -578,6 +576,10 @@ describe('Visibility change API for document', async () => {
         lendingStatus: {
           user_has_browsed: true,
           browsingExpired: false,
+          // Without this, startBrowseTimer() computes setTimeout(fn,
+          // undefined * 1000) -> NaN, which fires almost immediately and
+          // expires the loan before this test ever dispatches its event.
+          secondsLeftOnLoan: 3600,
         },
       })
     );
@@ -605,6 +607,7 @@ describe('Visibility change API for document', async () => {
         lendingStatus: {
           user_has_browsed: true,
           browsingExpired: false,
+          secondsLeftOnLoan: 3600,
         },
       })
     );
@@ -938,6 +941,106 @@ describe('autoRenewExpiredLoan', () => {
     await el.updateComplete;
 
     expect(el.lendingBarPostInit.called).to.be.false;
+  });
+
+  it('also skips the initial create_token after a routine (non-expiry) renewal', async () => {
+    // BookLoanService::attempt_to_renew_loan() mints the access token as
+    // part of EVERY renew_loan response, not just a recovery from expiry.
+    // A routine top-up also has its poller stopped mid-renewal (see
+    // updated()'s clearAll() on loanRenewResult.renewNow), so it would
+    // otherwise fire this same redundant call once the poller restarts.
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: { user_has_browsed: true, browsingExpired: false },
+      })
+    );
+    await el.updateComplete;
+    el.postInitComplete = true;
+    el.reloadPageImages = Sinon.spy();
+
+    await el.localCache.set({
+      key: 'foobar-loanTime',
+      value: new Date(new Date().getTime() + 3600 * 1000),
+      ttl: 3600,
+    });
+
+    const startTokenPollerSpy = Sinon.spy(el, 'startLoanTokenPoller');
+
+    // Triggers updated()'s clearAll(), stopping the running poller, same
+    // as a real routine top-up would.
+    el.loanRenewResult = { texts: '', renewNow: true, renewType: 'auto' };
+    await el.updateComplete;
+
+    const collapsibleActionGroupEl = el.shadowRoot.querySelector(
+      'collapsible-action-group'
+    );
+    collapsibleActionGroupEl.dispatchEvent(
+      new CustomEvent('loanAutoRenewed', {
+        detail: { data: { loan: { identifier: 'foobar', renewal: true } } },
+      })
+    );
+
+    await aTimeout(200);
+    await el.updateComplete;
+
+    expect(startTokenPollerSpy.calledOnceWith(true)).to.be.true;
+    // Retried right away rather than waiting for the (now-skipped) initial
+    // create_token or the next routine tick.
+    expect(el.reloadPageImages.called).to.be.true;
+  });
+
+  it('calls lendingBarPostInit directly on a recovery renewal and skips the initial create_token', async () => {
+    // BookLoanService::attempt_to_renew_loan() now mints the access token
+    // as part of the renew_loan response itself (using the just-written
+    // loan record already in memory, not a separate read) -- so recovering
+    // from a genuine expiry no longer needs to wait on a confirming
+    // create_token success before re-initializing BookReader, and the
+    // poller it starts afterward shouldn't fire a redundant immediate call.
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'foobar',
+        lendingStatus: {
+          user_has_browsed: true,
+          browsingExpired: true,
+        },
+      })
+    );
+    await el.updateComplete;
+    el.lendingBarPostInit = Sinon.spy();
+    el.reloadPageImages = Sinon.spy();
+
+    await el.localCache.set({
+      key: 'foobar-loanTime',
+      value: new Date(new Date().getTime() + 3600 * 1000),
+      ttl: 3600,
+    });
+
+    const startTokenPollerSpy = Sinon.spy(el, 'startLoanTokenPoller');
+
+    el.autoRenewExpiredLoan();
+    await el.updateComplete;
+    await aTimeout(50); // let autoRenewExpiredLoan's setTimeout(0) set renewNow
+
+    await el.handleLoanAutoRenewed({
+      detail: {
+        action: 'renew_loan',
+        data: { success: true, loan: { identifier: 'foobar', renewal: true } },
+      },
+    });
+
+    // Called synchronously from handleLoanAutoRenewed, not via a
+    // create_token success callback.
+    expect(el.lendingBarPostInit.calledOnce).to.be.true;
+    expect(el.postInitComplete).to.be.true;
+    expect(el.reloadPageImages.called).to.be.true;
+
+    await el.updateComplete;
+    await aTimeout(150); // let the 100ms token-poller-restart check run
+
+    expect(startTokenPollerSpy.calledOnceWith(true)).to.be.true;
   });
 
   it('clears loanRenewInProgress and shows unavailable modal on renew_loan failure', async () => {

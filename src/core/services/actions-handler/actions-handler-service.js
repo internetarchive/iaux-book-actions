@@ -117,8 +117,5 @@ export default async function ActionsHandlerService(options) {
      * connection is exactly when this fires.
      */
     log(`[IABookActions] ✗ ${option.action} threw`, error);
-    option?.error({
-      error: `Could not reach the lending service. Please check your connection and try again. (${error})`,
-    });
   }
 }

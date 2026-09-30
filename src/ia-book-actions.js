@@ -55,6 +55,10 @@ export default class IABookActions extends LitElement {
         type: Function,
         attribute: false,
       },
+      reloadPageImages: {
+        type: Function,
+        attribute: false,
+      },
       barType: { type: String },
       sharedObserver: { attribute: false },
       disableActionGroup: { type: Boolean },
@@ -77,6 +81,7 @@ export default class IABookActions extends LitElement {
     this.width = 0;
     this.bwbPurchaseUrl = '';
     this.lendingBarPostInit = () => {};
+    this.reloadPageImages = () => {};
     this.barType = 'action'; // 'title'|'action'
     this.sharedObserver = undefined;
     this.disableActionGroup = false;
@@ -103,6 +108,15 @@ export default class IABookActions extends LitElement {
      * handleLoanAutoRenewed.
      */
     this.recoveringFromLoanExpiry = false;
+
+    /**
+     * True right after a confirmed renewal (any kind), until the token
+     * poller restarts. renew_loan's own response already carries a valid
+     * access token, so that restart should skip its normal immediate
+     * create_token call — see handleLoanAutoRenewed/
+     * setupLendingToolbarActions.
+     */
+    this.skipNextInitialTokenCall = false;
 
     this.warningModalOpen = false;
 
@@ -318,8 +332,14 @@ export default class IABookActions extends LitElement {
         !this.loanRenewInProgress &&
         !window.IALendingIntervals.tokenPoller
       ) {
+        // Any confirmed renewal's response already minted a valid access
+        // token (see handleLoanAutoRenewed) — the poller only needs to
+        // start its recurring check, not fire an immediate confirming
+        // create_token call too.
+        const skipInitialCall = this.skipNextInitialTokenCall;
+        this.skipNextInitialTokenCall = false;
         this.recoveringFromLoanExpiry = false;
-        this.startLoanTokenPoller();
+        this.startLoanTokenPoller(skipInitialCall);
       }
     }, 100);
   }
@@ -740,10 +760,28 @@ export default class IABookActions extends LitElement {
         ajaxResponse: detail?.data,
       });
 
+      // BookLoanService::attempt_to_renew_loan() mints a valid access
+      // token as part of EVERY renew_loan response, not just a recovery
+      // from expiry — so the poller restart below never needs to fire a
+      // redundant confirming create_token call, regardless of which path
+      // triggered this renewal.
+      this.skipNextInitialTokenCall = true;
+
+      // Retry any page image that failed during the gap this renewal just
+      // closed, right away rather than waiting for the next routine
+      // create_token tick (up to tokenDelay seconds away, now that the
+      // initial one above is skipped).
+      this.reloadPageImages();
+
       if (this.recoveringFromLoanExpiry) {
         // Only now is it safe to re-initialize BookReader — not for a
-        // routine top-up, where that would be disruptive.
-        this.postInitComplete = false;
+        // routine top-up, where that would be disruptive. Call it
+        // directly rather than waiting on a confirming create_token
+        // success: BookLoanService::attempt_to_renew_loan() already
+        // minted a valid access token as part of this renew_loan
+        // response, so there's nothing left to confirm.
+        this.lendingBarPostInit();
+        this.postInitComplete = true;
       }
 
       const currStatus = {
@@ -895,9 +933,10 @@ export default class IABookActions extends LitElement {
 
   /**
    * enable access of borrowed/browsed books
+   * @param {boolean} [skipInitialCall] - see LoanTokenPoller's constructor doc
    * @see LoanTokenPoller
    */
-  startLoanTokenPoller() {
+  startLoanTokenPoller(skipInitialCall = false) {
     const successCallback = () => {
       if (!this.postInitComplete) {
         this.lendingBarPostInit();
@@ -907,17 +946,26 @@ export default class IABookActions extends LitElement {
     const errorCallback = eventObj => {
       this.handleLendingActionError(eventObj);
     };
+    // BookReader has no self-healing for a page <img> that failed while
+    // access was briefly invalid — retry any of those now that this
+    // create_token confirms access is good again, on every success, not
+    // just the initial one.
+    const onTokenRefreshed = () => {
+      this.reloadPageImages();
+    };
 
     // Tear down any previous poller first, so only one is ever controlling
     // window.IALendingIntervals.tokenPoller at a time.
     this.tokenPoller?.disconnectedCallback();
-    this.tokenPoller = new LoanTokenPoller(
-      this.identifier,
-      this.borrowType,
+    this.tokenPoller = new LoanTokenPoller({
+      identifier: this.identifier,
+      borrowType: this.borrowType,
       successCallback,
       errorCallback,
-      this.tokenDelay // in seconds
-    );
+      pollerDelay: this.tokenDelay, // in seconds
+      skipInitialCall,
+      onTokenRefreshed,
+    });
   }
 
   /*
@@ -1100,6 +1148,10 @@ export default class IABookActions extends LitElement {
         align-items: center;
         justify-content: center;
         flex-wrap: wrap;
+      }
+
+      #action-bar-modal {
+        --modalWidth: 36rem;
       }
     `;
   }

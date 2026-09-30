@@ -10,12 +10,46 @@ import log from './log.js';
  * ActionsHandlerService is a function being used to execute
  */
 export class LoanTokenPoller {
-  constructor(id, borrowType, successCallback, errorCallback, pollerDelay) {
-    this.identifier = id;
+  /**
+   * @param {Object} options
+   * @param {string} options.identifier
+   * @param {string} options.borrowType
+   * @param {Function} options.successCallback - called after the initial
+   *   loan token is created.
+   * @param {Function} options.errorCallback - called on any create_token
+   *   failure (initial or a routine interval tick).
+   * @param {number} options.pollerDelay - interval between routine
+   *   create_token checks, in seconds.
+   * @param {boolean} [options.skipInitialCall] - skip the immediate
+   *   create_token call, only start the recurring interval. Used after a
+   *   loan-expiry recovery renewal, where BookLoanService::
+   *   attempt_to_renew_loan() already minted a valid access token as part
+   *   of the renew_loan response itself — an immediate confirming
+   *   create_token call is redundant.
+   * @param {Function} [options.onTokenRefreshed] - called after EVERY
+   *   successful create_token, initial or routine — unlike successCallback,
+   *   which only fires for the initial one. Lets the consumer retry any
+   *   page image that failed during a prior access gap, now that access is
+   *   confirmed good again.
+   */
+  constructor(options = {}) {
+    const {
+      identifier,
+      borrowType,
+      successCallback,
+      errorCallback,
+      pollerDelay,
+      skipInitialCall = false,
+      onTokenRefreshed,
+    } = options;
+
+    this.identifier = identifier;
     this.borrowType = borrowType;
     this.successCallback = successCallback; // callback function to be called after loan token is created
     this.errorCallback = errorCallback; // callback function to be called after loan token is created
     this.pollerDelay = pollerDelay; // value in seconds
+    this.skipInitialCall = skipInitialCall === true;
+    this.onTokenRefreshed = onTokenRefreshed;
 
     this.loanTokenInterval = undefined;
 
@@ -34,8 +68,14 @@ export class LoanTokenPoller {
 
   async bookAccessed() {
     if (this.borrowType) {
-      // Do an initial token, then set an interval
-      this.handleLoanTokenPoller(true);
+      if (this.skipInitialCall) {
+        log('[LoanTokenPoller] skipping initial create_token — already minted by the renewal response', {
+          identifier: this.identifier,
+        });
+      } else {
+        // Do an initial token, then set an interval
+        this.handleLoanTokenPoller(true);
+      }
 
       // if this.borrowType = adminBorrowed,
       // - we don't want to fetch token on interval
@@ -78,6 +118,7 @@ export class LoanTokenPoller {
           identifier: this.identifier,
           isInitial,
         });
+        this.onTokenRefreshed?.();
         if (isInitial) this.successCallback();
       },
     });
