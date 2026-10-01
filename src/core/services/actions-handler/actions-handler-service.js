@@ -106,9 +106,9 @@ export default async function ActionsHandlerService(options) {
 
     /**
      * Report it, don't just swallow it. A rejected fetch (offline, dropped
-     * connection) or a non-JSON body (a 405 returning HTML, which QA has
-     * been seeing) lands here, and calling neither `success` nor `error`
-     * leaves every caller waiting on a callback that never comes.
+     * connection) or a non-JSON body (a 405 returning HTML) lands here, and
+     * calling neither `success` nor `error` leaves every caller waiting on a
+     * callback that never comes.
      *
      * For renew_loan that's not merely a missing modal: IABookActions
      * clears its loanRenewInProgress guard from these callbacks, so a
@@ -117,5 +117,6 @@ export default async function ActionsHandlerService(options) {
      * connection is exactly when this fires.
      */
     log(`[IABookActions] ✗ ${option.action} threw`, error);
+    option?.error?.({ error: String(error) });
   }
 }

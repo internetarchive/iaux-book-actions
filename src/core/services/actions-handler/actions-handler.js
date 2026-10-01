@@ -185,7 +185,7 @@ export default class ActionsHandler extends LitElement {
           log('RENEW_LOAN --- ', data, this.identifier);
           const activeLoan = data.loan ? data.loan : undefined;
           // Optional chaining: `data.loan` is genuinely absent on some
-          // failures, and reading `.renewal` off undefined threw here.
+          // failures, and `activeLoan` can be undefined here.
           const isRenewal = activeLoan?.renewal;
 
           if (activeLoan && isRenewal) {
@@ -210,11 +210,9 @@ export default class ActionsHandler extends LitElement {
               this.identifier
             );
 
-            // Dispatch the success outcome ONLY for a confirmed renewal.
-            // This used to fire on the failure path too, so a
-            // `{loan: {renewal: false}}` response reported an error AND a
-            // success: the error modal went up while handleLoanAutoRenewed
-            // simultaneously put a fresh countdown back on the bar.
+            // Dispatch the success outcome ONLY for a confirmed renewal —
+            // a `{loan: {renewal: false}}` response goes through
+            // dispatchActionError below instead, never both.
             this.dispatchEvent(
               new CustomEvent('loanAutoRenewed', {
                 detail: { action, data: { ...data, loan: activeLoan } },

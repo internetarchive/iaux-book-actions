@@ -55,10 +55,6 @@ export default class IABookActions extends LitElement {
         type: Function,
         attribute: false,
       },
-      reloadPageImages: {
-        type: Function,
-        attribute: false,
-      },
       barType: { type: String },
       sharedObserver: { attribute: false },
       disableActionGroup: { type: Boolean },
@@ -81,7 +77,6 @@ export default class IABookActions extends LitElement {
     this.width = 0;
     this.bwbPurchaseUrl = '';
     this.lendingBarPostInit = () => {};
-    this.reloadPageImages = () => {};
     this.barType = 'action'; // 'title'|'action'
     this.sharedObserver = undefined;
     this.disableActionGroup = false;
@@ -767,12 +762,6 @@ export default class IABookActions extends LitElement {
       // triggered this renewal.
       this.skipNextInitialTokenCall = true;
 
-      // Retry any page image that failed during the gap this renewal just
-      // closed, right away rather than waiting for the next routine
-      // create_token tick (up to tokenDelay seconds away, now that the
-      // initial one above is skipped).
-      this.reloadPageImages();
-
       if (this.recoveringFromLoanExpiry) {
         // Only now is it safe to re-initialize BookReader — not for a
         // routine top-up, where that would be disruptive. Call it
@@ -946,13 +935,6 @@ export default class IABookActions extends LitElement {
     const errorCallback = eventObj => {
       this.handleLendingActionError(eventObj);
     };
-    // BookReader has no self-healing for a page <img> that failed while
-    // access was briefly invalid — retry any of those now that this
-    // create_token confirms access is good again, on every success, not
-    // just the initial one.
-    const onTokenRefreshed = () => {
-      this.reloadPageImages();
-    };
 
     // Tear down any previous poller first, so only one is ever controlling
     // window.IALendingIntervals.tokenPoller at a time.
@@ -964,7 +946,6 @@ export default class IABookActions extends LitElement {
       errorCallback,
       pollerDelay: this.tokenDelay, // in seconds
       skipInitialCall,
-      onTokenRefreshed,
     });
   }
 
@@ -989,7 +970,12 @@ export default class IABookActions extends LitElement {
     this.disableActionGroup = false;
 
     const action = event?.detail?.action;
-    const errorMsg = event?.detail?.data?.error;
+    // handleLoanRenewNow's failure path sets `.error` to a boolean flag and
+    // puts the real text in `.message` — only take `.error` when it's
+    // actually a string, or the modal renders the literal word "true".
+    const rawErrorMsg = event?.detail?.data?.error;
+    const errorMsg =
+      typeof rawErrorMsg === 'string' ? rawErrorMsg : undefined;
     const isInitial = event?.detail?.isInitial === true;
 
     log('[IABookActions] handleLendingActionError', {

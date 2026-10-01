@@ -958,7 +958,6 @@ describe('autoRenewExpiredLoan', () => {
     );
     await el.updateComplete;
     el.postInitComplete = true;
-    el.reloadPageImages = Sinon.spy();
 
     await el.localCache.set({
       key: 'foobar-loanTime',
@@ -986,9 +985,6 @@ describe('autoRenewExpiredLoan', () => {
     await el.updateComplete;
 
     expect(startTokenPollerSpy.calledOnceWith(true)).to.be.true;
-    // Retried right away rather than waiting for the (now-skipped) initial
-    // create_token or the next routine tick.
-    expect(el.reloadPageImages.called).to.be.true;
   });
 
   it('calls lendingBarPostInit directly on a recovery renewal and skips the initial create_token', async () => {
@@ -1010,7 +1006,6 @@ describe('autoRenewExpiredLoan', () => {
     );
     await el.updateComplete;
     el.lendingBarPostInit = Sinon.spy();
-    el.reloadPageImages = Sinon.spy();
 
     await el.localCache.set({
       key: 'foobar-loanTime',
@@ -1035,7 +1030,6 @@ describe('autoRenewExpiredLoan', () => {
     // create_token success callback.
     expect(el.lendingBarPostInit.calledOnce).to.be.true;
     expect(el.postInitComplete).to.be.true;
-    expect(el.reloadPageImages.called).to.be.true;
 
     await el.updateComplete;
     await aTimeout(150); // let the 100ms token-poller-restart check run

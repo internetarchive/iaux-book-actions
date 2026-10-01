@@ -26,11 +26,6 @@ export class LoanTokenPoller {
    *   attempt_to_renew_loan() already minted a valid access token as part
    *   of the renew_loan response itself — an immediate confirming
    *   create_token call is redundant.
-   * @param {Function} [options.onTokenRefreshed] - called after EVERY
-   *   successful create_token, initial or routine — unlike successCallback,
-   *   which only fires for the initial one. Lets the consumer retry any
-   *   page image that failed during a prior access gap, now that access is
-   *   confirmed good again.
    */
   constructor(options = {}) {
     const {
@@ -40,7 +35,6 @@ export class LoanTokenPoller {
       errorCallback,
       pollerDelay,
       skipInitialCall = false,
-      onTokenRefreshed,
     } = options;
 
     this.identifier = identifier;
@@ -49,7 +43,6 @@ export class LoanTokenPoller {
     this.errorCallback = errorCallback; // callback function to be called after loan token is created
     this.pollerDelay = pollerDelay; // value in seconds
     this.skipInitialCall = skipInitialCall === true;
-    this.onTokenRefreshed = onTokenRefreshed;
 
     this.loanTokenInterval = undefined;
 
@@ -118,7 +111,6 @@ export class LoanTokenPoller {
           identifier: this.identifier,
           isInitial,
         });
-        this.onTokenRefreshed?.();
         if (isInitial) this.successCallback();
       },
     });
