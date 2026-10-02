@@ -958,6 +958,7 @@ describe('autoRenewExpiredLoan', () => {
     );
     await el.updateComplete;
     el.postInitComplete = true;
+    el.reloadPageImages = Sinon.spy();
 
     await el.localCache.set({
       key: 'foobar-loanTime',
@@ -985,6 +986,8 @@ describe('autoRenewExpiredLoan', () => {
     await el.updateComplete;
 
     expect(startTokenPollerSpy.calledOnceWith(true)).to.be.true;
+    // Retries any page image broken during the gap this renewal just closed.
+    expect(el.reloadPageImages.called).to.be.true;
   });
 
   it('calls lendingBarPostInit directly on a recovery renewal and skips the initial create_token', async () => {
@@ -1006,6 +1009,7 @@ describe('autoRenewExpiredLoan', () => {
     );
     await el.updateComplete;
     el.lendingBarPostInit = Sinon.spy();
+    el.reloadPageImages = Sinon.spy();
 
     await el.localCache.set({
       key: 'foobar-loanTime',
@@ -1030,6 +1034,7 @@ describe('autoRenewExpiredLoan', () => {
     // create_token success callback.
     expect(el.lendingBarPostInit.calledOnce).to.be.true;
     expect(el.postInitComplete).to.be.true;
+    expect(el.reloadPageImages.called).to.be.true;
 
     await el.updateComplete;
     await aTimeout(150); // let the 100ms token-poller-restart check run
@@ -1170,39 +1175,75 @@ describe('handleLendingActionError - loanRenewInProgress reset', () => {
   });
 });
 
-describe('handleLendingActionError - create_token failures must not stop the countdown (WEBDEV-8322 follow-up)', () => {
-  it('does not clear the reading countdown on a create_token failure', async () => {
-    const el = await fixture(
-      container({
-        userid: '@user1',
-        identifier: 'foobar',
-        lendingStatus: {
-          user_has_browsed: true,
-          browsingExpired: false,
-          secondsLeftOnLoan: 100,
-        },
-      })
-    );
-    await el.updateComplete;
-    expect(window.IALendingIntervals.timerCountdown).to.not.equal(0);
+describe('handleLendingActionError - every create_token failure resets the bar (WEBDEV-8322 follow-up)', () => {
+  // A create_token failure can't be told apart from "the loan was actually
+  // returned" (e.g. a stale loan-record cache on another node, or a genuine
+  // revokeAccess() in BookReaderImages.php) from here, so initial and
+  // routine interval failures are treated identically: no retry, reset to
+  // Borrow/0, show the modal every time.
+  for (const isInitial of [true, false]) {
+    it(`shows the error modal and resets to Borrow/0 on a failed create_token (isInitial=${isInitial})`, async () => {
+      const el = await fixture(
+        container({
+          userid: '@user1',
+          identifier: 'foobar',
+          lendingStatus: {
+            user_has_browsed: true,
+            browsingExpired: false,
+            secondsLeftOnLoan: 100,
+          },
+        })
+      );
+      await el.updateComplete;
 
-    el.handleLendingActionError({
-      detail: {
-        action: 'create_token',
-        data: { error: 'loan token not found. please try again later.' },
-      },
+      const showErrorModalSpy = Sinon.spy(el, 'showErrorModal');
+      const errorMsg = 'loan token not found. please try again later.';
+
+      el.handleLendingActionError({
+        detail: {
+          action: 'create_token',
+          isInitial,
+          data: { error: errorMsg },
+        },
+      });
+
+      expect(showErrorModalSpy.calledOnceWith(errorMsg, 'create_token')).to.be
+        .true;
+      expect(el.lendingStatus.user_has_browsed).to.be.false;
+      expect(el.lendingStatus.available_to_browse).to.be.true;
+      expect(el.lendingStatus.secondsLeftOnLoan).to.equal(0);
     });
 
-    // The countdown must keep running — a token refresh hiccup says
-    // nothing about how much time is left on the loan itself.
-    expect(window.IALendingIntervals.timerCountdown).to.not.equal(0);
-  });
+    it(`stops the countdown/expiry timers on a failed create_token (isInitial=${isInitial})`, async () => {
+      const el = await fixture(
+        container({
+          userid: '@user1',
+          identifier: 'foobar',
+          lendingStatus: {
+            user_has_browsed: true,
+            browsingExpired: false,
+            secondsLeftOnLoan: 100,
+          },
+        })
+      );
+      await el.updateComplete;
+      expect(window.IALendingIntervals.timerCountdown).to.not.equal(0);
+      expect(window.IALendingIntervals.browseExpireTimeout).to.not.equal(0);
 
-  it('shows the error modal and resets to Borrow/0 on a failed INITIAL create_token (no retry)', async () => {
-    // For the INITIAL token, BookReader never got page images — the book
-    // never opened. We don't retry, so the bar must reflect that honestly
-    // (Borrow, 0 left) instead of staying red with a stale countdown for a
-    // session that isn't actually accessible.
+      el.handleLendingActionError({
+        detail: {
+          action: 'create_token',
+          isInitial,
+          data: { error: 'loan token not found. please try again later.' },
+        },
+      });
+
+      expect(window.IALendingIntervals.timerCountdown).to.equal(0);
+      expect(window.IALendingIntervals.browseExpireTimeout).to.equal(0);
+    });
+  }
+
+  it('shows the modal even without a specific error message', async () => {
     const el = await fixture(
       container({
         userid: '@user1',
@@ -1217,53 +1258,12 @@ describe('handleLendingActionError - create_token failures must not stop the cou
     await el.updateComplete;
 
     const showErrorModalSpy = Sinon.spy(el, 'showErrorModal');
-    const errorMsg = 'loan token not found. please try again later.';
 
     el.handleLendingActionError({
-      detail: {
-        action: 'create_token',
-        isInitial: true,
-        data: { error: errorMsg },
-      },
+      detail: { action: 'create_token', isInitial: false, data: {} },
     });
 
-    expect(showErrorModalSpy.calledOnceWith(errorMsg, 'create_token')).to.be
-      .true;
-    expect(el.lendingStatus.user_has_browsed).to.be.false;
-    expect(el.lendingStatus.available_to_browse).to.be.true;
-    expect(el.lendingStatus.secondsLeftOnLoan).to.equal(0);
-  });
-
-  it('stops the countdown/expiry timers on a failed INITIAL create_token — nothing to read yet', async () => {
-    // Unlike the interval-refresh case above (pages already loaded, keep
-    // ticking), an initial create_token failure means BookReader never got
-    // page images and we're resetting the bar to Borrow — both timers
-    // should stop rather than keep counting down a dead session.
-    const el = await fixture(
-      container({
-        userid: '@user1',
-        identifier: 'foobar',
-        lendingStatus: {
-          user_has_browsed: true,
-          browsingExpired: false,
-          secondsLeftOnLoan: 100,
-        },
-      })
-    );
-    await el.updateComplete;
-    expect(window.IALendingIntervals.timerCountdown).to.not.equal(0);
-    expect(window.IALendingIntervals.browseExpireTimeout).to.not.equal(0);
-
-    el.handleLendingActionError({
-      detail: {
-        action: 'create_token',
-        isInitial: true,
-        data: { error: 'loan token not found. please try again later.' },
-      },
-    });
-
-    expect(window.IALendingIntervals.timerCountdown).to.equal(0);
-    expect(window.IALendingIntervals.browseExpireTimeout).to.equal(0);
+    expect(showErrorModalSpy.calledOnce).to.be.true;
   });
 
   it('still clears everything on a renew_loan failure', async () => {
@@ -1608,7 +1608,10 @@ describe('WEBDEV-8322 review fixes', () => {
     expect(el.loanRenewInProgress).to.be.true;
   });
 
-  it('stays silent when an interval create_token refresh fails', async () => {
+  it('resets the bar and shows the modal on an interval create_token refresh failure too', async () => {
+    // A routine refresh failing is treated the same as the initial one --
+    // there's no reliable way to tell "harmless blip" from "the loan is
+    // actually gone" from here (see handleLendingActionError).
     const el = await fixture(
       container({
         userid: '@user1',
@@ -1634,9 +1637,8 @@ describe('WEBDEV-8322 review fixes', () => {
     });
     await el.updateComplete;
 
-    expect(spy.called).to.be.false;
-    // the patron is still reading — don't knock them out of the loan
-    expect(el.lendingStatus.user_has_browsed).to.be.true;
+    expect(spy.calledOnce).to.be.true;
+    expect(el.lendingStatus.user_has_browsed).to.be.false;
   });
 
   it('tears down the previous poller before starting a new one', async () => {

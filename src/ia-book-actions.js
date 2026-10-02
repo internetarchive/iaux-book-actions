@@ -55,6 +55,10 @@ export default class IABookActions extends LitElement {
         type: Function,
         attribute: false,
       },
+      reloadPageImages: {
+        type: Function,
+        attribute: false,
+      },
       barType: { type: String },
       sharedObserver: { attribute: false },
       disableActionGroup: { type: Boolean },
@@ -77,6 +81,7 @@ export default class IABookActions extends LitElement {
     this.width = 0;
     this.bwbPurchaseUrl = '';
     this.lendingBarPostInit = () => {};
+    this.reloadPageImages = () => {};
     this.barType = 'action'; // 'title'|'action'
     this.sharedObserver = undefined;
     this.disableActionGroup = false;
@@ -762,6 +767,12 @@ export default class IABookActions extends LitElement {
       // triggered this renewal.
       this.skipNextInitialTokenCall = true;
 
+      // A page image requested in the gap between expiry and this renewal
+      // landing can come back broken — browsers don't retry a failed <img>
+      // on their own. Retry once, right when access is confirmed good
+      // again, rather than leaving it broken until the patron reloads.
+      this.reloadPageImages();
+
       if (this.recoveringFromLoanExpiry) {
         // Only now is it safe to re-initialize BookReader — not for a
         // routine top-up, where that would be disruptive. Call it
@@ -988,20 +999,14 @@ export default class IABookActions extends LitElement {
     });
 
     if (action === 'create_token') {
-      // Only the INITIAL token matters enough to interrupt the patron — a
-      // routine interval refresh stays silent; the pages already loaded
-      // are still served, and the next scheduled poll tries again on its
-      // own without any special retry.
-      if (!isInitial) {
-        log(
-          '[IABookActions] create_token failed on interval refresh — staying silent'
-        );
-        return;
-      }
-
-      // The book never opened, and we don't retry — reset the bar to
-      // Borrow and the timer to 0 rather than leaving a red "Return now"
-      // with a stale countdown for a session that isn't accessible.
+      // Any create_token failure — initial or a routine interval refresh —
+      // means access can no longer be confirmed (e.g. a stale loan-record
+      // cache on some other node can make this request fail even though
+      // the loan is fine, or the loan may genuinely have just been
+      // returned via BookReaderImages.php's revokeAccess()). Don't retry
+      // and don't stay silent either way: reset the bar to Borrow and the
+      // timer to 0 rather than leaving a stale countdown for a session
+      // that isn't accessible.
       window?.IALendingIntervals?.clearAll();
       this.tokenPoller?.disconnectedCallback();
       this.lendingStatus = {
@@ -1012,8 +1017,9 @@ export default class IABookActions extends LitElement {
       };
 
       // showErrorModal has dedicated create_token messaging (refresh
-      // button + support email).
-      if (errorMsg) this.showErrorModal(errorMsg, action);
+      // button + support email) and shows regardless of whether a
+      // specific error string came back.
+      this.showErrorModal(errorMsg, action);
     } else if (action === 'renew_loan') {
       window?.IALendingIntervals?.clearAll();
       this.loanRenewInProgress = false;
@@ -1081,7 +1087,7 @@ export default class IABookActions extends LitElement {
             .identifier}"
           >info@archive.org</a
         ><br /><br />
-        <code>errorLog: ${errorMsg}</code>`;
+        ${errorMsg ? html`<code>errorLog: ${errorMsg}</code>` : nothing}`;
     }
 
     await this.modal?.showModal({
