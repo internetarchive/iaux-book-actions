@@ -6,7 +6,11 @@ import log from '../log.js';
 
 import ActionsHandlerService from './actions-handler-service.js';
 import LoanAnanlytics from '../loan-analytics.js';
-import { analyticsCategories, analyticsActions, analyticsLabels } from '../../config/analytics-event-and-category.js';
+import {
+  analyticsCategories,
+  analyticsActions,
+  analyticsLabels,
+} from '../../config/analytics-event-and-category.js';
 import * as Cookies from '../doc-cookies.js';
 
 /**
@@ -53,20 +57,8 @@ export default class ActionsHandler extends LitElement {
       );
     });
 
-    this.addEventListener('autoRenew', async ({ detail }) => {
-      this.handleLoanRenewNow();
-      await this.loanAnanlytics?.storeLoanStatsCount(
-        this.identifier,
-        'autorenew'
-      );
-
-      const analyticsLabel = detail?.renewType === 'auto' ? analyticsLabels.browseAutoRenew : analyticsLabels.browseManualRenew;
-      this.loanAnanlytics?.sendEvent(
-        analyticsCategories.browse,
-        analyticsActions.browseRenew,
-        analyticsLabel,
-        this.identifier
-      );
+    this.addEventListener('autoRenew', ({ detail }) => {
+      this.handleLoanRenewNow(detail?.renewType);
     });
 
     this.addEventListener('autoReturn', async () => {
@@ -177,21 +169,58 @@ export default class ActionsHandler extends LitElement {
     });
   }
 
-  handleLoanRenewNow() {
+  handleLoanRenewNow(renewType) {
     const action = 'renew_loan';
 
     ActionsHandlerService({
       action,
       identifier: this.identifier,
-      success: data => {
-        log('RENEW_LOAN --- ', data, action, data.loan, this.identifier);
-        const activeLoan = data.loan ? data.loan : undefined;
-        const isRenewal = activeLoan.renewal;
+      success: async data => {
+        // Anything thrown in here is an unhandled rejection that dispatches
+        // NOTHING — and IABookActions only clears loanRenewInProgress when
+        // one of these two events arrives, so a throw here latches it on
+        // permanently (dead countdown, loan stuck "active"). Always exit
+        // through exactly one of the two dispatches below.
+        try {
+          log('RENEW_LOAN --- ', data, this.identifier);
+          const activeLoan = data.loan ? data.loan : undefined;
+          // Optional chaining: `data.loan` is genuinely absent on some
+          // failures, and `activeLoan` can be undefined here.
+          const isRenewal = activeLoan?.renewal;
 
-        if (activeLoan && isRenewal) {
-          // when loan is renewed, let's reset timer & let everyone know.
-          this.setBrowseTimeSession();
-        } else {
+          if (activeLoan && isRenewal) {
+            // Await — loanAutoRenewed listeners read this same cache key
+            // immediately; dispatching before the write lands was a race.
+            await this.setBrowseTimeSession();
+
+            // Only record the renew analytics event once the renewal has
+            // actually succeeded — not merely attempted.
+            await this.loanAnanlytics?.storeLoanStatsCount(
+              this.identifier,
+              'autorenew'
+            );
+            const analyticsLabel =
+              renewType === 'auto'
+                ? analyticsLabels.browseAutoRenew
+                : analyticsLabels.browseManualRenew;
+            this.loanAnanlytics?.sendEvent(
+              analyticsCategories.browse,
+              analyticsActions.browseRenew,
+              analyticsLabel,
+              this.identifier
+            );
+
+            // Dispatch the success outcome ONLY for a confirmed renewal —
+            // a `{loan: {renewal: false}}` response goes through
+            // dispatchActionError below instead, never both.
+            this.dispatchEvent(
+              new CustomEvent('loanAutoRenewed', {
+                detail: { action, data: { ...data, loan: activeLoan } },
+              })
+            );
+            return;
+          }
+
           log('RENEW_LOAN ERROR --- ', {
             action,
             isRenewal,
@@ -207,14 +236,17 @@ export default class ActionsHandler extends LitElement {
             error: true,
             message: 'Loan renewal failed: no loan active.',
           });
+        } catch (error) {
+          log('RENEW_LOAN THREW --- ', error);
+          window?.Sentry?.captureException(
+            `${sentryLogs.bookRenewFailed} - Exception: ${error}`
+          );
+          this.dispatchActionError(action, {
+            data,
+            error: true,
+            message: `Loan renewal failed: ${error}`,
+          });
         }
-
-        // dispatch outcome of loan renewal
-        this.dispatchEvent(
-          new CustomEvent('loanAutoRenewed', {
-            detail: { action, data: { ...data, loan: activeLoan } },
-          })
-        );
       },
       error: data => {
         this.dispatchActionError(action, data);
@@ -366,6 +398,12 @@ export default class ActionsHandler extends LitElement {
         new Date().getTime() + this.loanTotalTime * 1000
       );
 
+      log('[ActionsHandler] setBrowseTimeSession: resetting loanTime', {
+        identifier: this.identifier,
+        expireDate,
+        loanTotalTime: this.loanTotalTime,
+      });
+
       // set a value
       await this.localCache.set({
         key: `${this.identifier}-loanTime`,
@@ -375,12 +413,20 @@ export default class ActionsHandler extends LitElement {
 
       // delete pageChangedTime when book is auto renew at nth minute
       await this.localCache.delete(`${this.identifier}-pageChangedTime`);
+
+      log('[ActionsHandler] setBrowseTimeSession: loanTime reset complete', {
+        identifier: this.identifier,
+      });
     } catch (error) {
-      log(error);
+      log('[ActionsHandler] setBrowseTimeSession failed', error);
     }
   }
 
   deleteLoanCookies() {
+    log('[ActionsHandler] deleteLoanCookies: expiring loan cookies', {
+      identifier: this.identifier,
+    });
+
     const date = new Date();
     date.setTime(date.getTime() - 24 * 60 * 60 * 1000); // one day ago
 
@@ -408,7 +454,8 @@ export default class ActionsHandler extends LitElement {
    * @returns {void}
    */
   setStickyAdminAccess(value) {
-    const domain = window.location.hostname === 'localhost' ? 'localhost' : '.archive.org';
+    const domain =
+      window.location.hostname === 'localhost' ? 'localhost' : '.archive.org';
     const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
     Cookies.setItem('sticky-admin-access', value, expires, '/', domain);
   }

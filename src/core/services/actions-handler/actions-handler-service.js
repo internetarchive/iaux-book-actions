@@ -1,5 +1,6 @@
 /* eslint-disable */
 import { sentryLogs } from '../../config/sentry-events.js';
+import log from '../log.js';
 
 /**
  * Helper to call loan service
@@ -17,7 +18,6 @@ export default async function ActionsHandlerService(options) {
   let baseHost = '/services/loans/loan';
   const location = window?.location;
 
-  // return error reponse when not production and has ?error=true param...
   const tokenError = 'loan token not found. please try again later.';
   const borrowError =
     'This book is not available to borrow at this time. Please try again later.';
@@ -28,9 +28,18 @@ export default async function ActionsHandlerService(options) {
     'renew_loan',
     'return_loan',
   ];
+  const searchParams = new URLSearchParams(location?.search);
+  // ?error=true fails every erroneous action (e.g. simulates the book
+  // already being borrowed by someone else). ?failAction=create_token (or
+  // any action name) fails ONLY that action, so a renew_loan can succeed
+  // and the immediately-following create_token can be made to fail —
+  // reproducing WEBDEV-8322's "renewed, but create_token failed" bug
+  // without needing a real book.
   const shouldReturnError =
-    location?.href?.indexOf('?error=true') !== -1 &&
-    location?.hostname !== 'archive.org';
+    location?.hostname !== 'archive.org' &&
+    erroneousActions.includes(option?.action) &&
+    (searchParams.get('error') === 'true' ||
+      searchParams.get('failAction') === option?.action);
 
   const testHostname = ['localhost', 'internetarchive.github.io'];
   let isTest = false;
@@ -42,6 +51,7 @@ export default async function ActionsHandlerService(options) {
   let formData = new FormData();
   formData.append('action', option.action);
   formData.append('identifier', option.identifier);
+
   try {
     await fetch(baseHost, {
       method: 'POST',
@@ -49,7 +59,7 @@ export default async function ActionsHandlerService(options) {
     })
       .then(async response => {
         // intentional error on localhost
-        if (shouldReturnError && erroneousActions.includes(option?.action)) {
+        if (shouldReturnError) {
           return {
             success: false,
             error: option?.action === 'create_token' ? tokenError : borrowError,
@@ -82,8 +92,10 @@ export default async function ActionsHandlerService(options) {
       .then(data => {
         // `data` is the parsed version of the JSON returned from the above endpoint.
         if (!data?.error) {
+          log(`[IABookActions] ✓ ${option.action} succeeded`, data);
           option?.success(data);
         } else {
+          log(`[IABookActions] ✗ ${option.action} failed`, data);
           option?.error(data);
         }
       });
@@ -91,5 +103,20 @@ export default async function ActionsHandlerService(options) {
     window?.Sentry?.captureException(
       `${sentryLogs.actionsHandlerService} - Error: ${error}`
     );
+
+    /**
+     * Report it, don't just swallow it. A rejected fetch (offline, dropped
+     * connection) or a non-JSON body (a 405 returning HTML) lands here, and
+     * calling neither `success` nor `error` leaves every caller waiting on a
+     * callback that never comes.
+     *
+     * For renew_loan that's not merely a missing modal: IABookActions
+     * clears its loanRenewInProgress guard from these callbacks, so a
+     * silent failure latched it on for good and every later renewal
+     * attempt became a no-op. Backgrounding a tab on a flaky mobile
+     * connection is exactly when this fires.
+     */
+    log(`[IABookActions] ✗ ${option.action} threw`, error);
+    option?.error?.({ error: String(error) });
   }
 }
