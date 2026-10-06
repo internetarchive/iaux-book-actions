@@ -20,7 +20,7 @@ import { LoanTokenPoller } from './core/services/loan-token-poller.js';
 import { LoanRenewHelper } from './core/services/loan-renew-helper.js';
 import log from './core/services/log.js';
 import { URLHelper } from './core/config/url-helper.js';
-import { infoIcon } from './assets/data/info.js';
+import { infoIcon } from './assets/data/info-icon.js';
 
 export const events = {
   browseExpired: 'IABookReader:BrowsingHasExpired',
@@ -865,6 +865,15 @@ export default class IABookActions extends LitElement {
    */
   reSyncTimerIfGoneOff(timerSecondsLeft) {
     const currentTime = new Date();
+
+    // No prior anchor to compare against -- e.g. visibilitychange calling
+    // loanStatusCheckInterval() directly before startTimerCountdown() ever
+    // ran, which setupLendingToolbarActions() now skips while a renewal is
+    // in flight. Nothing to resync yet; anchor now and report no drift.
+    if (!this.timeWhenTimerStart) {
+      this.timeWhenTimerStart = currentTime;
+      return { hasSynced: false, whatShouldLeft: Math.round(timerSecondsLeft) };
+    }
 
     // current time - loan time
     const diffInSeconds =
