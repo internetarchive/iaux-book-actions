@@ -129,6 +129,16 @@ export default class IABookActions extends LitElement {
      */
     this.skipNextInitialTokenCall = false;
 
+    /**
+     * True once a create_token failure has torn the session down (see
+     * handleLendingActionError), until a renewal confirms access again. The
+     * teardown's lendingStatus change re-runs setupLendingToolbarActions(),
+     * which would otherwise start a fresh poller straight away; for a
+     * borrowed loan (user_has_borrowed is left as is) that poller's initial
+     * create_token fails the same way, tearing down again, in a tight loop.
+     */
+    this.tokenAccessLost = false;
+
     this.warningModalOpen = false;
 
     /** Once dismissed, don't re-show the warning modal every tick — only
@@ -343,6 +353,7 @@ export default class IABookActions extends LitElement {
       if (
         !hasExpired &&
         !this.loanRenewInProgress &&
+        !this.tokenAccessLost &&
         !window.IALendingIntervals.tokenPoller
       ) {
         // Any confirmed renewal's response already minted a valid access
@@ -781,6 +792,7 @@ export default class IABookActions extends LitElement {
       // redundant confirming create_token call, regardless of which path
       // triggered this renewal.
       this.skipNextInitialTokenCall = true;
+      this.tokenAccessLost = false;
 
       // A page image requested in the gap between expiry and this renewal
       // landing can come back broken — browsers don't retry a failed <img>
@@ -1070,6 +1082,7 @@ export default class IABookActions extends LitElement {
       // that isn't accessible.
       window?.IALendingIntervals?.clearAll();
       this.tokenPoller?.disconnectedCallback();
+      this.tokenAccessLost = true;
       this.lendingStatus = {
         ...this.lendingStatus,
         user_has_browsed: false,

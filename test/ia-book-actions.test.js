@@ -1891,3 +1891,43 @@ describe('handleLendingActionError - a run of unanswered token refreshes (WEBDEV
     expect(el.lendingStatus.secondsLeftOnLoan).to.equal(0);
   });
 });
+
+describe('create_token failure on a borrowed loan does not loop (WEBDEV-9595)', () => {
+  it('does not restart the token poller after the teardown', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'borrowed-teardown-loop',
+        lendingStatus: {
+          is_lendable: true,
+          user_has_borrowed: true,
+          available_to_borrow: false,
+          browsingExpired: false,
+        },
+      })
+    );
+    await el.updateComplete;
+    await aTimeout(150);
+    const startSpy = Sinon.spy(el, 'startLoanTokenPoller');
+    const showErrorModalSpy = Sinon.stub(el, 'showErrorModal');
+
+    el.handleLendingActionError({
+      detail: {
+        action: 'create_token',
+        isInitial: false,
+        consecutiveFailures: MAX_SILENT_TOKEN_REFRESH_FAILURES + 1,
+        data: {
+          error: networkError,
+          detail: 'TypeError: Failed to fetch',
+          networkFailure: true,
+        },
+      },
+    });
+    await el.updateComplete;
+    await aTimeout(300);
+
+    expect(showErrorModalSpy.calledOnce).to.be.true;
+    expect(startSpy.called).to.be.false;
+    expect(window.IALendingIntervals.tokenPoller).to.equal(0);
+  });
+});
