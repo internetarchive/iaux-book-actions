@@ -1,10 +1,10 @@
 import { html, fixture, expect, aTimeout } from '@open-wc/testing';
 import '@internetarchive/modal-manager';
-import '../src/ia-book-actions.js';
 import Sinon from 'sinon';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
 import { LocalCache } from '@internetarchive/local-cache';
+import { MAX_SILENT_TOKEN_REFRESH_FAILURES } from '../src/ia-book-actions.js';
 import {
   unexpectedResponseError,
   networkError,
@@ -1828,6 +1828,66 @@ describe('handleLendingActionError - routine create_token refresh failures (WEBD
     expect(
       showErrorModalSpy.calledOnceWith(serviceAnswer.error, 'create_token')
     ).to.be.true;
+    expect(el.lendingStatus.secondsLeftOnLoan).to.equal(0);
+  });
+});
+
+describe('handleLendingActionError - a run of unanswered token refreshes (WEBDEV-9595)', () => {
+  const blocked = {
+    error: networkError,
+    detail: 'TypeError: Failed to fetch',
+    networkFailure: true,
+  };
+  const setup = async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'token-refresh-run',
+        lendingStatus: {
+          is_lendable: true,
+          user_has_borrowed: true,
+          browsingExpired: false,
+          secondsLeftOnLoan: 300,
+        },
+      })
+    );
+    await el.updateComplete;
+    return el;
+  };
+
+  it(`stays silent for up to ${MAX_SILENT_TOKEN_REFRESH_FAILURES} failures in a row`, async () => {
+    const el = await setup();
+    const showErrorModalSpy = Sinon.spy(el, 'showErrorModal');
+
+    for (let n = 1; n <= MAX_SILENT_TOKEN_REFRESH_FAILURES; n += 1) {
+      el.handleLendingActionError({
+        detail: {
+          action: 'create_token',
+          isInitial: false,
+          consecutiveFailures: n,
+          data: blocked,
+        },
+      });
+    }
+
+    expect(showErrorModalSpy.called).to.be.false;
+  });
+
+  it('shows the modal and resets the bar on the next one, before the access token runs out', async () => {
+    const el = await setup();
+    const showErrorModalSpy = Sinon.spy(el, 'showErrorModal');
+
+    el.handleLendingActionError({
+      detail: {
+        action: 'create_token',
+        isInitial: false,
+        consecutiveFailures: MAX_SILENT_TOKEN_REFRESH_FAILURES + 1,
+        data: blocked,
+      },
+    });
+
+    expect(showErrorModalSpy.calledOnceWith(networkError, 'create_token')).to
+      .be.true;
     expect(el.lendingStatus.secondsLeftOnLoan).to.equal(0);
   });
 });

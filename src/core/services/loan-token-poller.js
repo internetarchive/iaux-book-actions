@@ -48,6 +48,13 @@ export class LoanTokenPoller {
     this.loanTokenInterval = undefined;
 
     /**
+     * create_token failures in a row since the last success, passed to
+     * errorCallback so the consumer can tell a one-off blip from a run of
+     * them — see IABookActions.handleLendingActionError.
+     */
+    this.consecutiveFailures = 0;
+
+    /**
      * loan analytics instance
      * @see loan-analytics.js
      */
@@ -63,12 +70,9 @@ export class LoanTokenPoller {
   async bookAccessed() {
     if (this.borrowType) {
       if (this.skipInitialCall) {
-        log(
-          '[LoanTokenPoller] skipping initial create_token — already minted by the renewal response',
-          {
-            identifier: this.identifier,
-          }
-        );
+        log('[LoanTokenPoller] skipping initial create_token — already minted by the renewal response', {
+          identifier: this.identifier,
+        });
       } else {
         // Do an initial token, then set an interval
         this.handleLoanTokenPoller(true);
@@ -116,6 +120,7 @@ export class LoanTokenPoller {
           identifier: this.identifier,
           isInitial,
         });
+        this.consecutiveFailures = 0;
         if (isInitial) this.successCallback();
       },
     });
@@ -133,17 +138,23 @@ export class LoanTokenPoller {
    */
   handleTokenError(data, isInitial) {
     const action = 'create_token';
+    this.consecutiveFailures += 1;
+    const { consecutiveFailures } = this;
 
     log('[LoanTokenPoller] create_token failed', {
       identifier: this.identifier,
       isInitial,
+      consecutiveFailures,
       error: data?.error,
     });
 
-    // isInitial rides along so the consumer can distinguish "the book won't
-    // open at all" from "a mid-read refresh blipped" — see
+    // isInitial and consecutiveFailures ride along so the consumer can
+    // distinguish "the book won't open at all" from "a mid-read refresh
+    // blipped", and a one-off blip from a run of them — see
     // IABookActions.handleLendingActionError.
-    this.errorCallback({ detail: { action, data, isInitial } });
+    this.errorCallback({
+      detail: { action, data, isInitial, consecutiveFailures },
+    });
 
     // send error to Sentry
     sentryCaptureMessage(
@@ -154,6 +165,7 @@ export class LoanTokenPoller {
         extra: {
           borrowType: this.borrowType,
           isInitial,
+          consecutiveFailures,
           error: data?.error,
           status: data?.status,
           nonJsonResponse: data?.nonJsonResponse === true,

@@ -59,6 +59,17 @@ describe('ActionsHandlerService#parseServiceResponse', () => {
     expect(context.extra.bodySnippet).to.contain('<!DOCTYPE');
   });
 
+  it("treats a JSON body as the service's answer even without a JSON content type", async () => {
+    const body = { success: true, token: 'abc' };
+    const response = new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { 'Content-Type': 'text/html' },
+    });
+
+    expect(await parseServiceResponse(response, option)).to.deep.equal(body);
+    expect(window.Sentry.captureMessage.called).to.be.false;
+  });
+
   it('treats a JSON content type with an unparseable body as non-JSON', async () => {
     const response = new Response('<!DOCTYPE html>', {
       status: 502,

@@ -1,4 +1,4 @@
-import { expect } from '@open-wc/testing';
+import { expect, aTimeout } from '@open-wc/testing';
 import Sinon from 'sinon';
 
 import { LoanTokenPoller } from '../../../src/core/services/loan-token-poller.js';
@@ -220,6 +220,49 @@ describe('handleTokenError - HTML 400 from the WAF (WEBDEV-9595)', () => {
     expect(errorCallback.calledOnce).to.be.true;
     expect(errorCallback.firstCall.args[0].detail.data).to.deep.equal(data);
     expect(errorCallback.firstCall.args[0].detail.isInitial).to.be.false;
+    poller.disconnectedCallback();
+  });
+});
+
+describe('consecutive create_token failures (WEBDEV-9595)', () => {
+  const makePoller = errorCallback =>
+    new LoanTokenPoller({
+      identifier: 'identifier1',
+      borrowType: 'borrowed',
+      successCallback: () => {},
+      errorCallback,
+      pollerDelay: 120,
+      skipInitialCall: true,
+    });
+
+  it('passes the count of failures in a row to errorCallback', () => {
+    const errorCallback = Sinon.spy();
+    const poller = makePoller(errorCallback);
+
+    poller.handleTokenError({ error: 'x' }, false);
+    poller.handleTokenError({ error: 'x' }, false);
+    poller.handleTokenError({ error: 'x' }, false);
+
+    expect(
+      errorCallback.getCalls().map(c => c.args[0].detail.consecutiveFailures)
+    ).to.deep.equal([1, 2, 3]);
+    poller.disconnectedCallback();
+  });
+
+  it('resets the count after a successful refresh', async () => {
+    const errorCallback = Sinon.spy();
+    const poller = makePoller(errorCallback);
+
+    poller.handleTokenError({ error: 'x' }, false);
+    poller.handleTokenError({ error: 'x' }, false);
+    // on localhost the service fakes a create_token success
+    poller.handleLoanTokenPoller(false);
+    await aTimeout(300);
+    poller.handleTokenError({ error: 'x' }, false);
+
+    expect(errorCallback.lastCall.args[0].detail.consecutiveFailures).to.equal(
+      1
+    );
     poller.disconnectedCallback();
   });
 });

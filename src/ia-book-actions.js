@@ -42,6 +42,16 @@ export const modalButtonStyle = {
     'background:none;font-size:inherit;border:0;padding:0;color:#0000ee;cursor:pointer;text-decoration:underline',
 };
 
+/**
+ * How many create_token refreshes in a row may fail without an answer from
+ * the service before the patron is shown the error modal. Each successful
+ * refresh mints an access token good for 10 minutes (petabox
+ * LendingConfig::BOOKREADER_AUTH_SECONDS) and refreshes run every 2 minutes
+ * (tokenDelay), so the 3rd failure in a row (~6 minutes on) still shows the
+ * modal before that token runs out and pages stop loading.
+ */
+export const MAX_SILENT_TOKEN_REFRESH_FAILURES = 2;
+
 export default class IABookActions extends LitElement {
   static get properties() {
     return {
@@ -1014,11 +1024,13 @@ export default class IABookActions extends LitElement {
       recoveringFromLoanExpiry: this.recoveringFromLoanExpiry,
     });
 
+    const consecutiveFailures = event?.detail?.consecutiveFailures ?? 1;
     if (
       action === 'create_token' &&
       !isInitial &&
       (eventData?.nonJsonResponse === true ||
-        eventData?.networkFailure === true)
+        eventData?.networkFailure === true) &&
+      consecutiveFailures <= MAX_SILENT_TOKEN_REFRESH_FAILURES
     ) {
       // The service never answered this routine refresh: something in
       // front of it did (the WAF's /about/400.html, an outage page), or the
@@ -1032,6 +1044,10 @@ export default class IABookActions extends LitElement {
       // Not for the initial call: its success is what runs
       // lendingBarPostInit() and opens the book (see startLoanTokenPoller),
       // so suppressing it would leave a reader that never loads, silently.
+      //
+      // And not forever: past MAX_SILENT_TOKEN_REFRESH_FAILURES in a row,
+      // the last good access token is about to expire, so fall through to
+      // the modal rather than let the reader break with nothing shown.
       log(
         '[IABookActions] create_token routine refresh got no answer from the service — no modal',
         {

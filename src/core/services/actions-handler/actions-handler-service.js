@@ -131,11 +131,12 @@ export default async function ActionsHandlerService(options) {
     });
 
     /**
-     * Report it, don't just swallow it. A rejected fetch (offline, dropped
-     * connection) lands here — a non-JSON body no longer does, see
-     * parseServiceResponse() — as does anything thrown after the response
-     * arrived; calling neither `success` nor `error` leaves every caller
-     * waiting on a callback that never comes. Only the former is a network
+     * Report it, don't just swallow it. This catches a rejected fetch
+     * (offline, dropped or blocked connection) and anything thrown after the
+     * response arrived, including by the caller's own callbacks. Non-JSON
+     * bodies are handled in parseServiceResponse() and don't reach here.
+     * Calling neither `success` nor `error` would leave every caller waiting
+     * on a callback that never comes. Only a rejected fetch is a network
      * problem, so only that one says so.
      *
      * For renew_loan that's not merely a missing modal: IABookActions
@@ -171,16 +172,15 @@ export async function parseServiceResponse(response, option) {
   const { status } = response;
   const contentType = response.headers?.get('content-type') || '';
 
-  // The service always answers with JSON (application/json, or
-  // application/problem+json for OPDS) — anything else never came from it.
+  // The service always answers with JSON; a body that doesn't parse never
+  // came from it. Parsed regardless of Content-Type, so a valid answer is
+  // never mistaken for an error page if a header is ever missing.
   const body = await response.text();
   let data;
-  if (contentType.includes('json')) {
-    try {
-      data = JSON.parse(body);
-    } catch (parseError) {
-      data = undefined;
-    }
+  try {
+    data = JSON.parse(body);
+  } catch (parseError) {
+    data = undefined;
   }
 
   if (data === undefined) {
