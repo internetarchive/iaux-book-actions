@@ -135,6 +135,7 @@ describe('ActionsHandlerService - thrown errors', () => {
 
     expect(error.calledOnce).to.be.true;
     expect(error.firstCall.args[0].error).to.equal(networkError);
+    expect(error.firstCall.args[0].networkFailure).to.be.true;
     const [, context] = window.Sentry.captureException.firstCall.args;
     expect(context.tags).to.deep.equal({
       identifier: 'foo',
@@ -158,5 +159,7 @@ describe('ActionsHandlerService - thrown errors', () => {
     expect(error.calledOnce).to.be.true;
     expect(error.firstCall.args[0].error).to.equal(unexpectedError);
     expect(error.firstCall.args[0].detail).to.contain('boom');
+    // the service did answer, so this isn't treated as "no answer"
+    expect(error.firstCall.args[0].networkFailure).to.be.undefined;
   });
 });

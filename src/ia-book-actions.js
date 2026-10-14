@@ -1017,33 +1017,35 @@ export default class IABookActions extends LitElement {
     if (
       action === 'create_token' &&
       !isInitial &&
-      eventData?.nonJsonResponse === true &&
-      eventData?.status === 400
+      (eventData?.nonJsonResponse === true ||
+        eventData?.networkFailure === true)
     ) {
-      // Something in front of the service (the WAF's /about/400.html)
-      // answered a routine refresh instead of the service itself. It's
-      // already reported to Sentry (ActionsHandlerService/LoanTokenPoller);
-      // the current access token keeps the book readable, and the poll
-      // interval is left running, so the next tick tries again. No modal,
-      // and no session teardown.
+      // The service never answered this routine refresh: something in
+      // front of it did (the WAF's /about/400.html, an outage page), or the
+      // request never got through. That says nothing about the loan, so
+      // no modal and no session teardown — it's already reported to Sentry
+      // (ActionsHandlerService/LoanTokenPoller), the current access token
+      // keeps the book readable, and the poll interval is left running, so
+      // the next tick tries again. The service's own answer (e.g. "You do
+      // not currently have this book borrowed.") still falls through below.
       //
       // Not for the initial call: its success is what runs
       // lendingBarPostInit() and opens the book (see startLoanTokenPoller),
       // so suppressing it would leave a reader that never loads, silently.
       log(
-        '[IABookActions] create_token HTML 400 on a routine refresh — no modal',
+        '[IABookActions] create_token routine refresh got no answer from the service — no modal',
         {
           identifier: this.identifier,
           status: eventData?.status,
+          errorMsg,
         }
       );
       return;
     }
 
     if (action === 'create_token') {
-      // Any other create_token failure — initial or a routine interval
-      // refresh, except the routine HTML 400 above — means access can no
-      // longer be confirmed (e.g. a stale loan-record
+      // Any other create_token failure — initial, or a routine refresh the
+      // service itself answered — means access can no longer be confirmed (e.g. a stale loan-record
       // cache on some other node can make this request fail even though
       // the loan is fine, or the loan may genuinely have just been
       // returned via BookReaderImages.php's revokeAccess()). Don't retry

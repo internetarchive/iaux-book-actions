@@ -145,9 +145,13 @@ export default async function ActionsHandlerService(options) {
      * connection is exactly when this fires.
      */
     log(`[IABookActions] ✗ ${option.action} threw`, error);
+    // networkFailure marks "the service never answered" (like
+    // nonJsonResponse in parseServiceResponse) — see
+    // IABookActions.handleLendingActionError.
     option?.error?.({
       error: reachedResponse ? unexpectedError : networkError,
       detail: String(error),
+      ...(reachedResponse ? {} : { networkFailure: true }),
     });
   }
 }

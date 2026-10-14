@@ -5,7 +5,10 @@ import Sinon from 'sinon';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
 import { LocalCache } from '@internetarchive/local-cache';
-import { unexpectedResponseError } from '../src/core/services/actions-handler/actions-handler-service.js';
+import {
+  unexpectedResponseError,
+  networkError,
+} from '../src/core/services/actions-handler/actions-handler-service.js';
 
 beforeEach(() => {
   const modalManager = document.createElement('modal-manager');
@@ -1734,12 +1737,32 @@ describe('Sentry reports (WEBDEV-9595)', () => {
   });
 });
 
-describe('handleLendingActionError - HTML 400 on create_token (WEBDEV-9595)', () => {
+describe('handleLendingActionError - routine create_token refresh failures (WEBDEV-9595)', () => {
   const htmlBadRequest = {
     success: false,
     error: unexpectedResponseError(400),
     status: 400,
     nonJsonResponse: true,
+  };
+  // the service never answered: no modal on a routine refresh
+  const noAnswer = {
+    'an HTML 400 (WAF block)': htmlBadRequest,
+    'an HTML 502': {
+      ...htmlBadRequest,
+      error: unexpectedResponseError(502),
+      status: 502,
+    },
+    'a blocked or failed request': {
+      error: networkError,
+      detail: 'TypeError: Failed to fetch',
+      networkFailure: true,
+    },
+  };
+  // the service answered "no": the loan may really be gone
+  const serviceAnswer = {
+    success: false,
+    error: 'You do not currently have this book borrowed.',
+    status: 400,
   };
   const liveLoan = {
     is_lendable: true,
@@ -1747,80 +1770,64 @@ describe('handleLendingActionError - HTML 400 on create_token (WEBDEV-9595)', ()
     browsingExpired: false,
     secondsLeftOnLoan: 300,
   };
-
-  it('shows no modal and keeps the session going on a routine refresh', async () => {
+  const setup = async () => {
     const el = await fixture(
       container({
         userid: '@user1',
-        identifier: 'html-400-routine',
+        identifier: 'token-refresh-failure',
         lendingStatus: liveLoan,
       })
     );
     await el.updateComplete;
-    const showErrorModalSpy = Sinon.spy(el, 'showErrorModal');
-    const clearAllSpy = Sinon.spy(window.IALendingIntervals, 'clearAll');
-    el.tokenPoller = { disconnectedCallback: Sinon.spy() };
+    return el;
+  };
 
-    try {
+  for (const [name, data] of Object.entries(noAnswer)) {
+    it(`shows no modal and keeps the session going for ${name}`, async () => {
+      const el = await setup();
+      const showErrorModalSpy = Sinon.spy(el, 'showErrorModal');
+      const clearAllSpy = Sinon.spy(window.IALendingIntervals, 'clearAll');
+      el.tokenPoller = { disconnectedCallback: Sinon.spy() };
+
+      try {
+        el.handleLendingActionError({
+          detail: { action: 'create_token', isInitial: false, data },
+        });
+
+        expect(showErrorModalSpy.called).to.be.false;
+        // none of the create_token teardown ran
+        expect(clearAllSpy.called).to.be.false;
+        expect(el.tokenPoller.disconnectedCallback.called).to.be.false;
+        expect(el.lendingStatus.secondsLeftOnLoan).to.equal(300);
+        expect(el.lendingStatus.available_to_browse).to.be.undefined;
+      } finally {
+        clearAllSpy.restore();
+      }
+    });
+
+    it(`still shows the modal for ${name} when the book is first opening`, async () => {
+      const el = await setup();
+      const showErrorModalSpy = Sinon.spy(el, 'showErrorModal');
+
       el.handleLendingActionError({
-        detail: { action: 'create_token', isInitial: false, data: htmlBadRequest },
+        detail: { action: 'create_token', isInitial: true, data },
       });
 
-      expect(showErrorModalSpy.called).to.be.false;
-      // none of the create_token teardown ran
-      expect(clearAllSpy.called).to.be.false;
-      expect(el.tokenPoller.disconnectedCallback.called).to.be.false;
-      expect(el.lendingStatus.secondsLeftOnLoan).to.equal(300);
-      expect(el.lendingStatus.available_to_browse).to.be.undefined;
-    } finally {
-      clearAllSpy.restore();
-    }
-  });
+      expect(showErrorModalSpy.calledOnce).to.be.true;
+    });
+  }
 
-  it('still shows the modal when the book is first opening', async () => {
-    const el = await fixture(
-      container({
-        userid: '@user1',
-        identifier: 'html-400-initial',
-        lendingStatus: liveLoan,
-      })
-    );
-    await el.updateComplete;
+  it("still shows the modal and resets the bar when the service itself says no", async () => {
+    const el = await setup();
     const showErrorModalSpy = Sinon.spy(el, 'showErrorModal');
 
     el.handleLendingActionError({
-      detail: { action: 'create_token', isInitial: true, data: htmlBadRequest },
+      detail: { action: 'create_token', isInitial: false, data: serviceAnswer },
     });
 
-    expect(showErrorModalSpy.calledOnce).to.be.true;
-  });
-
-  it("still shows the modal for the service's own JSON 400 and for an HTML 5xx", async () => {
-    const el = await fixture(
-      container({
-        userid: '@user1',
-        identifier: 'html-400-other',
-        lendingStatus: liveLoan,
-      })
-    );
-    await el.updateComplete;
-    const showErrorModalSpy = Sinon.spy(el, 'showErrorModal');
-
-    el.handleLendingActionError({
-      detail: {
-        action: 'create_token',
-        isInitial: false,
-        data: { error: 'You do not currently have this book borrowed.' },
-      },
-    });
-    el.handleLendingActionError({
-      detail: {
-        action: 'create_token',
-        isInitial: false,
-        data: { ...htmlBadRequest, status: 502 },
-      },
-    });
-
-    expect(showErrorModalSpy.calledTwice).to.be.true;
+    expect(
+      showErrorModalSpy.calledOnceWith(serviceAnswer.error, 'create_token')
+    ).to.be.true;
+    expect(el.lendingStatus.secondsLeftOnLoan).to.equal(0);
   });
 });
