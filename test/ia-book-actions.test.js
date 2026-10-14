@@ -5,6 +5,7 @@ import Sinon from 'sinon';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
 import { LocalCache } from '@internetarchive/local-cache';
+import { unexpectedResponseError } from '../src/core/services/actions-handler/actions-handler-service.js';
 
 beforeEach(() => {
   const modalManager = document.createElement('modal-manager');
@@ -1697,5 +1698,129 @@ describe('WEBDEV-8322 review fixes', () => {
     });
 
     expect(startSpy.called).to.be.false;
+  });
+});
+
+describe('Sentry reports (WEBDEV-9595)', () => {
+  it('tags its Sentry reports with the identifier and action', async () => {
+    const originalSentry = window.Sentry;
+    window.Sentry = { captureMessage: Sinon.spy() };
+    try {
+      const el = await fixture(
+        container({
+          userid: '@user1',
+          identifier: 'sentry-tagged',
+          lendingStatus: {
+            is_lendable: true,
+            available_to_browse: true,
+            user_has_browsed: true,
+            browsingExpired: false,
+            secondsLeftOnLoan: 300,
+          },
+        })
+      );
+      await el.updateComplete;
+
+      el.sentryCaptureMsg('some message', 'renew_loan');
+
+      const [, context] = window.Sentry.captureMessage.lastCall.args;
+      expect(context.tags).to.deep.equal({
+        identifier: 'sentry-tagged',
+        action: 'renew_loan',
+      });
+    } finally {
+      window.Sentry = originalSentry;
+    }
+  });
+});
+
+describe('handleLendingActionError - HTML 400 on create_token (WEBDEV-9595)', () => {
+  const htmlBadRequest = {
+    success: false,
+    error: unexpectedResponseError(400),
+    status: 400,
+    nonJsonResponse: true,
+  };
+  const liveLoan = {
+    is_lendable: true,
+    user_has_borrowed: true,
+    browsingExpired: false,
+    secondsLeftOnLoan: 300,
+  };
+
+  it('shows no modal and keeps the session going on a routine refresh', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'html-400-routine',
+        lendingStatus: liveLoan,
+      })
+    );
+    await el.updateComplete;
+    const showErrorModalSpy = Sinon.spy(el, 'showErrorModal');
+    const clearAllSpy = Sinon.spy(window.IALendingIntervals, 'clearAll');
+    el.tokenPoller = { disconnectedCallback: Sinon.spy() };
+
+    try {
+      el.handleLendingActionError({
+        detail: { action: 'create_token', isInitial: false, data: htmlBadRequest },
+      });
+
+      expect(showErrorModalSpy.called).to.be.false;
+      // none of the create_token teardown ran
+      expect(clearAllSpy.called).to.be.false;
+      expect(el.tokenPoller.disconnectedCallback.called).to.be.false;
+      expect(el.lendingStatus.secondsLeftOnLoan).to.equal(300);
+      expect(el.lendingStatus.available_to_browse).to.be.undefined;
+    } finally {
+      clearAllSpy.restore();
+    }
+  });
+
+  it('still shows the modal when the book is first opening', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'html-400-initial',
+        lendingStatus: liveLoan,
+      })
+    );
+    await el.updateComplete;
+    const showErrorModalSpy = Sinon.spy(el, 'showErrorModal');
+
+    el.handleLendingActionError({
+      detail: { action: 'create_token', isInitial: true, data: htmlBadRequest },
+    });
+
+    expect(showErrorModalSpy.calledOnce).to.be.true;
+  });
+
+  it("still shows the modal for the service's own JSON 400 and for an HTML 5xx", async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'html-400-other',
+        lendingStatus: liveLoan,
+      })
+    );
+    await el.updateComplete;
+    const showErrorModalSpy = Sinon.spy(el, 'showErrorModal');
+
+    el.handleLendingActionError({
+      detail: {
+        action: 'create_token',
+        isInitial: false,
+        data: { error: 'You do not currently have this book borrowed.' },
+      },
+    });
+    el.handleLendingActionError({
+      detail: {
+        action: 'create_token',
+        isInitial: false,
+        data: { ...htmlBadRequest, status: 502 },
+      },
+    });
+
+    expect(showErrorModalSpy.calledTwice).to.be.true;
   });
 });

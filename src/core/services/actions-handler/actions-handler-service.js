@@ -1,6 +1,21 @@
 /* eslint-disable */
 import { sentryLogs } from '../../config/sentry-events.js';
+import {
+  sentryCaptureMessage,
+  sentryCaptureException,
+} from '../sentry-report.js';
 import log from '../log.js';
+
+/**
+ * Patron-facing messages for failures that never reached the lending
+ * service's own JSON error handling.
+ */
+export const unexpectedResponseError = status =>
+  `Unexpected response from the lending service (HTTP ${status}). Please try again.`;
+export const networkError =
+  'Could not reach the lending service. Please check your connection and try again.';
+export const unexpectedError =
+  'Something went wrong handling the lending service response. Please try again.';
 
 /**
  * Helper to call loan service
@@ -52,12 +67,19 @@ export default async function ActionsHandlerService(options) {
   formData.append('action', option.action);
   formData.append('identifier', option.identifier);
 
+  // Set once a response arrives, so the catch below can tell a failed fetch
+  // (a real network problem) from anything thrown afterwards — including by
+  // the caller's own success/error callback, which run inside this try.
+  let reachedResponse = false;
+
   try {
     await fetch(baseHost, {
       method: 'POST',
       body: formData,
     })
       .then(async response => {
+        reachedResponse = true;
+
         // intentional error on localhost
         if (shouldReturnError) {
           return {
@@ -85,9 +107,7 @@ export default async function ActionsHandlerService(options) {
           };
         }
 
-        // The response is a Response instance.
-        // You parse the data into a useable format using `.json()`
-        return response.json();
+        return parseServiceResponse(response, option);
       })
       .then(data => {
         // `data` is the parsed version of the JSON returned from the above endpoint.
@@ -100,15 +120,23 @@ export default async function ActionsHandlerService(options) {
         }
       });
   } catch (error) {
-    window?.Sentry?.captureException(
-      `${sentryLogs.actionsHandlerService} - Error: ${error}`
-    );
+    sentryCaptureException(error, {
+      identifier: option.identifier,
+      action: option.action,
+      extra: {
+        message: `${sentryLogs.actionsHandlerService} - ${option.action} ${
+          reachedResponse ? 'threw' : 'fetch failed'
+        }`,
+      },
+    });
 
     /**
      * Report it, don't just swallow it. A rejected fetch (offline, dropped
-     * connection) or a non-JSON body (a 405 returning HTML) lands here, and
-     * calling neither `success` nor `error` leaves every caller waiting on a
-     * callback that never comes.
+     * connection) lands here — a non-JSON body no longer does, see
+     * parseServiceResponse() — as does anything thrown after the response
+     * arrived; calling neither `success` nor `error` leaves every caller
+     * waiting on a callback that never comes. Only the former is a network
+     * problem, so only that one says so.
      *
      * For renew_loan that's not merely a missing modal: IABookActions
      * clears its loanRenewInProgress guard from these callbacks, so a
@@ -117,6 +145,75 @@ export default async function ActionsHandlerService(options) {
      * connection is exactly when this fires.
      */
     log(`[IABookActions] ✗ ${option.action} threw`, error);
-    option?.error?.({ error: String(error) });
+    option?.error?.({
+      error: reachedResponse ? unexpectedError : networkError,
+      detail: String(error),
+    });
   }
+}
+
+/**
+ * Parse a lending service response without ever surfacing a raw
+ * `SyntaxError` to the patron. Anything in front of PHP (the WAF, or nginx
+ * swapping in /about/400.html or a 5xx page) can answer with HTML instead
+ * of the service's JSON; that becomes a readable error carrying the HTTP
+ * status, and is reported to Sentry with the identifier/action.
+ *
+ * @param {Response} response
+ * @param {Object} option - the ActionsHandlerService options
+ * @returns {Promise<Object>}
+ */
+export async function parseServiceResponse(response, option) {
+  const { status } = response;
+  const contentType = response.headers?.get('content-type') || '';
+
+  // The service always answers with JSON (application/json, or
+  // application/problem+json for OPDS) — anything else never came from it.
+  const body = await response.text();
+  let data;
+  if (contentType.includes('json')) {
+    try {
+      data = JSON.parse(body);
+    } catch (parseError) {
+      data = undefined;
+    }
+  }
+
+  if (data === undefined) {
+    sentryCaptureMessage(
+      `${sentryLogs.actionsHandlerService} - ${option.action}: non-JSON response (HTTP ${status})`,
+      {
+        identifier: option.identifier,
+        action: option.action,
+        extra: {
+          status,
+          contentType,
+          bodySnippet: body.slice(0, 300),
+        },
+      }
+    );
+    // nonJsonResponse lets callers tell "something in front of PHP answered"
+    // apart from the service's own error — see
+    // IABookActions.handleLendingActionError.
+    return {
+      success: false,
+      error: unexpectedResponseError(status),
+      status,
+      nonJsonResponse: true,
+    };
+  }
+
+  // Carry the HTTP status on the service's own JSON errors too, so it
+  // reaches Sentry. A JSON error status without the service's usual `error`
+  // field would otherwise be treated as a success.
+  if (!response.ok) {
+    return {
+      ...(data && typeof data === 'object' ? data : {}),
+      success: false,
+      error: data?.error || unexpectedResponseError(status),
+      status,
+    };
+  }
+
+  return data;
 }

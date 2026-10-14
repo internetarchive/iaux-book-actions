@@ -2,6 +2,7 @@
 import ActionsHandlerService from './actions-handler/actions-handler-service.js';
 import LoanAnanlytics from './loan-analytics.js';
 import { sentryLogs } from '../config/sentry-events.js';
+import { sentryCaptureMessage } from './sentry-report.js';
 import log from './log.js';
 
 /**
@@ -62,9 +63,12 @@ export class LoanTokenPoller {
   async bookAccessed() {
     if (this.borrowType) {
       if (this.skipInitialCall) {
-        log('[LoanTokenPoller] skipping initial create_token — already minted by the renewal response', {
-          identifier: this.identifier,
-        });
+        log(
+          '[LoanTokenPoller] skipping initial create_token — already minted by the renewal response',
+          {
+            identifier: this.identifier,
+          }
+        );
       } else {
         // Do an initial token, then set an interval
         this.handleLoanTokenPoller(true);
@@ -83,9 +87,10 @@ export class LoanTokenPoller {
         }, this.pollerDelay * 1000);
       }
     } else {
-      window?.Sentry?.captureMessage(
-        `${sentryLogs.bookAccessed} - not borrowed`
-      );
+      sentryCaptureMessage(`${sentryLogs.bookAccessed} - not borrowed`, {
+        identifier: this.identifier,
+        action: 'create_token',
+      });
 
       // if book is not browsed, just clear token polling interval
       this.disconnectedCallback();
@@ -117,8 +122,9 @@ export class LoanTokenPoller {
   }
 
   /**
-   * Reports a create_token failure via errorCallback — no retry, it's
-   * treated as terminal on the first failure. Split out from
+   * Reports every create_token failure via errorCallback — the poller never
+   * retries, and the consumer decides whether a failure is terminal (see
+   * IABookActions.handleLendingActionError). Split out from
    * handleLoanTokenPoller so it's directly testable without needing to
    * mock the network call.
    *
@@ -140,8 +146,20 @@ export class LoanTokenPoller {
     this.errorCallback({ detail: { action, data, isInitial } });
 
     // send error to Sentry
-    window?.Sentry?.captureMessage(
-      `${sentryLogs.handleLoanTokenPoller} - Error: ${JSON.stringify(data)}`
+    sentryCaptureMessage(
+      `${sentryLogs.handleLoanTokenPoller} - create_token failed`,
+      {
+        identifier: this.identifier,
+        action,
+        extra: {
+          borrowType: this.borrowType,
+          isInitial,
+          error: data?.error,
+          status: data?.status,
+          nonJsonResponse: data?.nonJsonResponse === true,
+          response: JSON.stringify(data),
+        },
+      }
     );
 
     // send LendingServiceError to GA

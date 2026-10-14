@@ -2,6 +2,10 @@ import { LitElement } from 'lit';
 
 import { URLHelper } from '../../config/url-helper.js';
 import { sentryLogs } from '../../config/sentry-events.js';
+import {
+  sentryCaptureMessage,
+  sentryCaptureException,
+} from '../sentry-report.js';
 import log from '../log.js';
 
 import ActionsHandlerService from './actions-handler-service.js';
@@ -228,8 +232,13 @@ export default class ActionsHandler extends LitElement {
             data,
             id: this.identifier,
           });
-          window?.Sentry?.captureMessage(
-            `${sentryLogs.bookRenewFailed} - Error: ${JSON.stringify(data)}`
+          sentryCaptureMessage(
+            `${sentryLogs.bookRenewFailed} - no loan active`,
+            {
+              identifier: this.identifier,
+              action,
+              extra: { response: JSON.stringify(data) },
+            }
           );
           this.dispatchActionError(action, {
             data,
@@ -238,9 +247,11 @@ export default class ActionsHandler extends LitElement {
           });
         } catch (error) {
           log('RENEW_LOAN THREW --- ', error);
-          window?.Sentry?.captureException(
-            `${sentryLogs.bookRenewFailed} - Exception: ${error}`
-          );
+          sentryCaptureException(error, {
+            identifier: this.identifier,
+            action,
+            extra: { message: `${sentryLogs.bookRenewFailed} - threw` },
+          });
           this.dispatchActionError(action, {
             data,
             error: true,

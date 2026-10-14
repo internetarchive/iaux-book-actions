@@ -16,6 +16,7 @@ import './core/config/ia-lending-intervals.js';
 import { GetLendingActions } from './core/services/get-lending-actions.js';
 import { mobileContainerWidth } from './core/config/constants.js';
 import { sentryLogs } from './core/config/sentry-events.js';
+import { sentryCaptureMessage } from './core/services/sentry-report.js';
 import { LoanTokenPoller } from './core/services/loan-token-poller.js';
 import { LoanRenewHelper } from './core/services/loan-renew-helper.js';
 import log from './core/services/log.js';
@@ -163,11 +164,13 @@ export default class IABookActions extends LitElement {
   }
 
   /**
-   * send log messages to sentry
+   * send log messages to sentry, tagged with this book's identifier
    * @param {string} msg
+   * @param {string} [action] - the lending action involved, if any
+   * @param {Object} [extra]
    */
-  sentryCaptureMsg(msg) {
-    window?.Sentry?.captureMessage(msg);
+  sentryCaptureMsg(msg, action, extra) {
+    sentryCaptureMessage(msg, { identifier: this.identifier, action, extra });
   }
 
   firstUpdated() {
@@ -435,7 +438,9 @@ export default class IABookActions extends LitElement {
       } catch (error) {
         // Surface localCache failures instead of an unhandled rejection.
         log('[IABookActions] visibilitychange handler failed', error);
-        this.sentryCaptureMsg(`visibilitychange handler failed: ${error}`);
+        this.sentryCaptureMsg('visibilitychange handler failed', undefined, {
+          error: String(error),
+        });
       }
     });
   }
@@ -796,7 +801,7 @@ export default class IABookActions extends LitElement {
       this.modal?.closeModal();
       this.modal.removeAttribute('id');
       this.modal.customModalContent = nothing;
-      this.sentryCaptureMsg(sentryLogs.bookHasRenewed);
+      this.sentryCaptureMsg(sentryLogs.bookHasRenewed, 'renew_loan');
       this.warningModalDismissed = false;
     }
 
@@ -990,10 +995,12 @@ export default class IABookActions extends LitElement {
     this.disableActionGroup = false;
 
     const action = event?.detail?.action;
+    const eventData = event?.detail?.data;
+
     // handleLoanRenewNow's failure path sets `.error` to a boolean flag and
     // puts the real text in `.message` — only take `.error` when it's
     // actually a string, or the modal renders the literal word "true".
-    const rawErrorMsg = event?.detail?.data?.error;
+    const rawErrorMsg = eventData?.error;
     const errorMsg =
       typeof rawErrorMsg === 'string' ? rawErrorMsg : undefined;
     const isInitial = event?.detail?.isInitial === true;
@@ -1007,9 +1014,36 @@ export default class IABookActions extends LitElement {
       recoveringFromLoanExpiry: this.recoveringFromLoanExpiry,
     });
 
+    if (
+      action === 'create_token' &&
+      !isInitial &&
+      eventData?.nonJsonResponse === true &&
+      eventData?.status === 400
+    ) {
+      // Something in front of the service (the WAF's /about/400.html)
+      // answered a routine refresh instead of the service itself. It's
+      // already reported to Sentry (ActionsHandlerService/LoanTokenPoller);
+      // the current access token keeps the book readable, and the poll
+      // interval is left running, so the next tick tries again. No modal,
+      // and no session teardown.
+      //
+      // Not for the initial call: its success is what runs
+      // lendingBarPostInit() and opens the book (see startLoanTokenPoller),
+      // so suppressing it would leave a reader that never loads, silently.
+      log(
+        '[IABookActions] create_token HTML 400 on a routine refresh — no modal',
+        {
+          identifier: this.identifier,
+          status: eventData?.status,
+        }
+      );
+      return;
+    }
+
     if (action === 'create_token') {
-      // Any create_token failure — initial or a routine interval refresh —
-      // means access can no longer be confirmed (e.g. a stale loan-record
+      // Any other create_token failure — initial or a routine interval
+      // refresh, except the routine HTML 400 above — means access can no
+      // longer be confirmed (e.g. a stale loan-record
       // cache on some other node can make this request fail even though
       // the loan is fine, or the loan may genuinely have just been
       // returned via BookReaderImages.php's revokeAccess()). Don't retry
