@@ -16,6 +16,7 @@ import './core/config/ia-lending-intervals.js';
 import { GetLendingActions } from './core/services/get-lending-actions.js';
 import { mobileContainerWidth } from './core/config/constants.js';
 import { sentryLogs } from './core/config/sentry-events.js';
+import { sentryCaptureMessage } from './core/services/sentry-report.js';
 import { LoanTokenPoller } from './core/services/loan-token-poller.js';
 import { LoanRenewHelper } from './core/services/loan-renew-helper.js';
 import log from './core/services/log.js';
@@ -40,6 +41,16 @@ export const modalButtonStyle = {
   refresh:
     'background:none;font-size:inherit;border:0;padding:0;color:#0000ee;cursor:pointer;text-decoration:underline',
 };
+
+/**
+ * How many create_token refreshes in a row may fail without an answer from
+ * the service before the patron is shown the error modal. Each successful
+ * refresh mints an access token good for 10 minutes (petabox
+ * LendingConfig::BOOKREADER_AUTH_SECONDS) and refreshes run every 2 minutes
+ * (tokenDelay), so the 3rd failure in a row (~6 minutes on) still shows the
+ * modal before that token runs out and pages stop loading.
+ */
+export const MAX_SILENT_TOKEN_REFRESH_FAILURES = 2;
 
 export default class IABookActions extends LitElement {
   static get properties() {
@@ -118,6 +129,16 @@ export default class IABookActions extends LitElement {
      */
     this.skipNextInitialTokenCall = false;
 
+    /**
+     * True once a create_token failure has torn the session down (see
+     * handleLendingActionError), until a renewal confirms access again. The
+     * teardown's lendingStatus change re-runs setupLendingToolbarActions(),
+     * which would otherwise start a fresh poller straight away; for a
+     * borrowed loan (user_has_borrowed is left as is) that poller's initial
+     * create_token fails the same way, tearing down again, in a tight loop.
+     */
+    this.tokenAccessLost = false;
+
     this.warningModalOpen = false;
 
     /** Once dismissed, don't re-show the warning modal every tick — only
@@ -163,11 +184,13 @@ export default class IABookActions extends LitElement {
   }
 
   /**
-   * send log messages to sentry
+   * send log messages to sentry, tagged with this book's identifier
    * @param {string} msg
+   * @param {string} [action] - the lending action involved, if any
+   * @param {Object} [extra]
    */
-  sentryCaptureMsg(msg) {
-    window?.Sentry?.captureMessage(msg);
+  sentryCaptureMsg(msg, action, extra) {
+    sentryCaptureMessage(msg, { identifier: this.identifier, action, extra });
   }
 
   firstUpdated() {
@@ -330,6 +353,7 @@ export default class IABookActions extends LitElement {
       if (
         !hasExpired &&
         !this.loanRenewInProgress &&
+        !this.tokenAccessLost &&
         !window.IALendingIntervals.tokenPoller
       ) {
         // Any confirmed renewal's response already minted a valid access
@@ -435,7 +459,9 @@ export default class IABookActions extends LitElement {
       } catch (error) {
         // Surface localCache failures instead of an unhandled rejection.
         log('[IABookActions] visibilitychange handler failed', error);
-        this.sentryCaptureMsg(`visibilitychange handler failed: ${error}`);
+        this.sentryCaptureMsg('visibilitychange handler failed', undefined, {
+          error: String(error),
+        });
       }
     });
   }
@@ -766,6 +792,7 @@ export default class IABookActions extends LitElement {
       // redundant confirming create_token call, regardless of which path
       // triggered this renewal.
       this.skipNextInitialTokenCall = true;
+      this.tokenAccessLost = false;
 
       // A page image requested in the gap between expiry and this renewal
       // landing can come back broken — browsers don't retry a failed <img>
@@ -796,7 +823,7 @@ export default class IABookActions extends LitElement {
       this.modal?.closeModal();
       this.modal.removeAttribute('id');
       this.modal.customModalContent = nothing;
-      this.sentryCaptureMsg(sentryLogs.bookHasRenewed);
+      this.sentryCaptureMsg(sentryLogs.bookHasRenewed, 'renew_loan');
       this.warningModalDismissed = false;
     }
 
@@ -990,10 +1017,12 @@ export default class IABookActions extends LitElement {
     this.disableActionGroup = false;
 
     const action = event?.detail?.action;
+    const eventData = event?.detail?.data;
+
     // handleLoanRenewNow's failure path sets `.error` to a boolean flag and
     // puts the real text in `.message` — only take `.error` when it's
     // actually a string, or the modal renders the literal word "true".
-    const rawErrorMsg = event?.detail?.data?.error;
+    const rawErrorMsg = eventData?.error;
     const errorMsg =
       typeof rawErrorMsg === 'string' ? rawErrorMsg : undefined;
     const isInitial = event?.detail?.isInitial === true;
@@ -1007,9 +1036,44 @@ export default class IABookActions extends LitElement {
       recoveringFromLoanExpiry: this.recoveringFromLoanExpiry,
     });
 
+    const consecutiveFailures = event?.detail?.consecutiveFailures ?? 1;
+    if (
+      action === 'create_token' &&
+      !isInitial &&
+      (eventData?.nonJsonResponse === true ||
+        eventData?.networkFailure === true) &&
+      consecutiveFailures <= MAX_SILENT_TOKEN_REFRESH_FAILURES
+    ) {
+      // The service never answered this routine refresh: something in
+      // front of it did (the WAF's /about/400.html, an outage page), or the
+      // request never got through. That says nothing about the loan, so
+      // no modal and no session teardown — it's already reported to Sentry
+      // (ActionsHandlerService/LoanTokenPoller), the current access token
+      // keeps the book readable, and the poll interval is left running, so
+      // the next tick tries again. The service's own answer (e.g. "You do
+      // not currently have this book borrowed.") still falls through below.
+      //
+      // Not for the initial call: its success is what runs
+      // lendingBarPostInit() and opens the book (see startLoanTokenPoller),
+      // so suppressing it would leave a reader that never loads, silently.
+      //
+      // And not forever: past MAX_SILENT_TOKEN_REFRESH_FAILURES in a row,
+      // the last good access token is about to expire, so fall through to
+      // the modal rather than let the reader break with nothing shown.
+      log(
+        '[IABookActions] create_token routine refresh got no answer from the service — no modal',
+        {
+          identifier: this.identifier,
+          status: eventData?.status,
+          errorMsg,
+        }
+      );
+      return;
+    }
+
     if (action === 'create_token') {
-      // Any create_token failure — initial or a routine interval refresh —
-      // means access can no longer be confirmed (e.g. a stale loan-record
+      // Any other create_token failure — initial, or a routine refresh the
+      // service itself answered — means access can no longer be confirmed (e.g. a stale loan-record
       // cache on some other node can make this request fail even though
       // the loan is fine, or the loan may genuinely have just been
       // returned via BookReaderImages.php's revokeAccess()). Don't retry
@@ -1018,6 +1082,7 @@ export default class IABookActions extends LitElement {
       // that isn't accessible.
       window?.IALendingIntervals?.clearAll();
       this.tokenPoller?.disconnectedCallback();
+      this.tokenAccessLost = true;
       this.lendingStatus = {
         ...this.lendingStatus,
         user_has_browsed: false,

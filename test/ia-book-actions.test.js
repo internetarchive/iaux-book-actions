@@ -1,10 +1,14 @@
 import { html, fixture, expect, aTimeout } from '@open-wc/testing';
 import '@internetarchive/modal-manager';
-import '../src/ia-book-actions.js';
 import Sinon from 'sinon';
 
 import { SharedResizeObserver } from '@internetarchive/shared-resize-observer';
 import { LocalCache } from '@internetarchive/local-cache';
+import { MAX_SILENT_TOKEN_REFRESH_FAILURES } from '../src/ia-book-actions.js';
+import {
+  unexpectedResponseError,
+  networkError,
+} from '../src/core/services/actions-handler/actions-handler-service.js';
 
 beforeEach(() => {
   const modalManager = document.createElement('modal-manager');
@@ -1697,5 +1701,233 @@ describe('WEBDEV-8322 review fixes', () => {
     });
 
     expect(startSpy.called).to.be.false;
+  });
+});
+
+describe('Sentry reports (WEBDEV-9595)', () => {
+  it('tags its Sentry reports with the identifier and action', async () => {
+    const originalSentry = window.Sentry;
+    window.Sentry = { captureMessage: Sinon.spy() };
+    try {
+      const el = await fixture(
+        container({
+          userid: '@user1',
+          identifier: 'sentry-tagged',
+          lendingStatus: {
+            is_lendable: true,
+            available_to_browse: true,
+            user_has_browsed: true,
+            browsingExpired: false,
+            secondsLeftOnLoan: 300,
+          },
+        })
+      );
+      await el.updateComplete;
+
+      el.sentryCaptureMsg('some message', 'renew_loan');
+
+      const [, context] = window.Sentry.captureMessage.lastCall.args;
+      expect(context.tags).to.deep.equal({
+        identifier: 'sentry-tagged',
+        action: 'renew_loan',
+      });
+    } finally {
+      window.Sentry = originalSentry;
+    }
+  });
+});
+
+describe('handleLendingActionError - routine create_token refresh failures (WEBDEV-9595)', () => {
+  const htmlBadRequest = {
+    success: false,
+    error: unexpectedResponseError(400),
+    status: 400,
+    nonJsonResponse: true,
+  };
+  // the service never answered: no modal on a routine refresh
+  const noAnswer = {
+    'an HTML 400 (WAF block)': htmlBadRequest,
+    'an HTML 502': {
+      ...htmlBadRequest,
+      error: unexpectedResponseError(502),
+      status: 502,
+    },
+    'a blocked or failed request': {
+      error: networkError,
+      detail: 'TypeError: Failed to fetch',
+      networkFailure: true,
+    },
+  };
+  // the service answered "no": the loan may really be gone
+  const serviceAnswer = {
+    success: false,
+    error: 'You do not currently have this book borrowed.',
+    status: 400,
+  };
+  const liveLoan = {
+    is_lendable: true,
+    user_has_borrowed: true,
+    browsingExpired: false,
+    secondsLeftOnLoan: 300,
+  };
+  const setup = async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'token-refresh-failure',
+        lendingStatus: liveLoan,
+      })
+    );
+    await el.updateComplete;
+    return el;
+  };
+
+  for (const [name, data] of Object.entries(noAnswer)) {
+    it(`shows no modal and keeps the session going for ${name}`, async () => {
+      const el = await setup();
+      const showErrorModalSpy = Sinon.spy(el, 'showErrorModal');
+      const clearAllSpy = Sinon.spy(window.IALendingIntervals, 'clearAll');
+      el.tokenPoller = { disconnectedCallback: Sinon.spy() };
+
+      try {
+        el.handleLendingActionError({
+          detail: { action: 'create_token', isInitial: false, data },
+        });
+
+        expect(showErrorModalSpy.called).to.be.false;
+        // none of the create_token teardown ran
+        expect(clearAllSpy.called).to.be.false;
+        expect(el.tokenPoller.disconnectedCallback.called).to.be.false;
+        expect(el.lendingStatus.secondsLeftOnLoan).to.equal(300);
+        expect(el.lendingStatus.available_to_browse).to.be.undefined;
+      } finally {
+        clearAllSpy.restore();
+      }
+    });
+
+    it(`still shows the modal for ${name} when the book is first opening`, async () => {
+      const el = await setup();
+      const showErrorModalSpy = Sinon.spy(el, 'showErrorModal');
+
+      el.handleLendingActionError({
+        detail: { action: 'create_token', isInitial: true, data },
+      });
+
+      expect(showErrorModalSpy.calledOnce).to.be.true;
+    });
+  }
+
+  it("still shows the modal and resets the bar when the service itself says no", async () => {
+    const el = await setup();
+    const showErrorModalSpy = Sinon.spy(el, 'showErrorModal');
+
+    el.handleLendingActionError({
+      detail: { action: 'create_token', isInitial: false, data: serviceAnswer },
+    });
+
+    expect(
+      showErrorModalSpy.calledOnceWith(serviceAnswer.error, 'create_token')
+    ).to.be.true;
+    expect(el.lendingStatus.secondsLeftOnLoan).to.equal(0);
+  });
+});
+
+describe('handleLendingActionError - a run of unanswered token refreshes (WEBDEV-9595)', () => {
+  const blocked = {
+    error: networkError,
+    detail: 'TypeError: Failed to fetch',
+    networkFailure: true,
+  };
+  const setup = async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'token-refresh-run',
+        lendingStatus: {
+          is_lendable: true,
+          user_has_borrowed: true,
+          browsingExpired: false,
+          secondsLeftOnLoan: 300,
+        },
+      })
+    );
+    await el.updateComplete;
+    return el;
+  };
+
+  it(`stays silent for up to ${MAX_SILENT_TOKEN_REFRESH_FAILURES} failures in a row`, async () => {
+    const el = await setup();
+    const showErrorModalSpy = Sinon.spy(el, 'showErrorModal');
+
+    for (let n = 1; n <= MAX_SILENT_TOKEN_REFRESH_FAILURES; n += 1) {
+      el.handleLendingActionError({
+        detail: {
+          action: 'create_token',
+          isInitial: false,
+          consecutiveFailures: n,
+          data: blocked,
+        },
+      });
+    }
+
+    expect(showErrorModalSpy.called).to.be.false;
+  });
+
+  it('shows the modal and resets the bar on the next one, before the access token runs out', async () => {
+    const el = await setup();
+    const showErrorModalSpy = Sinon.spy(el, 'showErrorModal');
+
+    el.handleLendingActionError({
+      detail: {
+        action: 'create_token',
+        isInitial: false,
+        consecutiveFailures: MAX_SILENT_TOKEN_REFRESH_FAILURES + 1,
+        data: blocked,
+      },
+    });
+
+    expect(showErrorModalSpy.calledOnceWith(networkError, 'create_token')).to
+      .be.true;
+    expect(el.lendingStatus.secondsLeftOnLoan).to.equal(0);
+  });
+});
+
+describe('create_token failure on a borrowed loan does not loop (WEBDEV-9595)', () => {
+  it('does not restart the token poller after the teardown', async () => {
+    const el = await fixture(
+      container({
+        userid: '@user1',
+        identifier: 'borrowed-teardown-loop',
+        lendingStatus: {
+          is_lendable: true,
+          user_has_borrowed: true,
+          available_to_borrow: false,
+          browsingExpired: false,
+        },
+      })
+    );
+    await el.updateComplete;
+    await aTimeout(150);
+    const startSpy = Sinon.spy(el, 'startLoanTokenPoller');
+    const showErrorModalSpy = Sinon.stub(el, 'showErrorModal');
+
+    el.handleLendingActionError({
+      detail: {
+        action: 'create_token',
+        isInitial: false,
+        consecutiveFailures: MAX_SILENT_TOKEN_REFRESH_FAILURES + 1,
+        data: {
+          error: networkError,
+          detail: 'TypeError: Failed to fetch',
+          networkFailure: true,
+        },
+      },
+    });
+    await el.updateComplete;
+    await aTimeout(300);
+
+    expect(showErrorModalSpy.calledOnce).to.be.true;
+    expect(startSpy.called).to.be.false;
+    expect(window.IALendingIntervals.tokenPoller).to.equal(0);
   });
 });
